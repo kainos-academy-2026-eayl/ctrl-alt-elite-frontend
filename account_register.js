@@ -81,3 +81,4 @@ confirmPasswordInput.addEventListener("input", () => {
     confirmPasswordInput.setCustomValidity("");
     passwordMessage.textContent = "";
 });
+
