@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Welcome to Ctrl-Alt-Elite. Log in, register, or browse products." />
+  <meta name="description" content="Welcome to Ctrl-Alt-Elite. Log in or browse products." />
   <title>Ctrl-Alt-Elite | Home</title>
   <style>
     :root {
@@ -44,10 +44,10 @@
 
     .header-content {
       display: flex;
-      min-height: 5rem;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
+      min-height: 5rem;
     }
 
     .brand {
@@ -71,70 +71,39 @@
       font-size: 1.1rem;
     }
 
-    .account-menu {
-      position: relative;
+    .primary-nav {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.75rem;
     }
 
-    .account-trigger {
+    .nav-link {
       display: inline-flex;
       min-height: 2.75rem;
       align-items: center;
-      gap: 0.5rem;
+      justify-content: center;
       padding: 0.65rem 0.9rem;
+      border: 2px solid transparent;
       border-radius: 0.4rem;
-      color: #14532d;
-      font-weight: 700;
-      cursor: pointer;
-      list-style: none;
-    }
-
-    .account-trigger::-webkit-details-marker {
-      display: none;
-    }
-
-    .account-trigger::after {
-      width: 0.5rem;
-      height: 0.5rem;
-      border-right: 2px solid currentColor;
-      border-bottom: 2px solid currentColor;
-      content: "";
-      transform: translateY(-0.15rem) rotate(45deg);
-      transition: transform 150ms ease;
-    }
-
-    .account-menu[open] .account-trigger::after {
-      transform: translateY(0.1rem) rotate(225deg);
-    }
-
-    .account-trigger:hover,
-    .account-menu[open] .account-trigger {
-      background: #dcfce7;
-    }
-
-    .account-dropdown {
-      position: absolute;
-      z-index: 1;
-      top: calc(100% + 0.5rem);
-      right: 0;
-      display: grid;
-      min-width: 10rem;
-      padding: 0.35rem;
-      border: 1px solid #14532d;
-      border-radius: 0.5rem;
-      background: #f8fafc;
-      box-shadow: 0 4px 12px rgb(20 83 45 / 15%);
-    }
-
-    .account-dropdown a {
-      padding: 0.7rem 0.75rem;
-      border-radius: 0.3rem;
       color: #14532d;
       font-weight: 700;
       text-decoration: none;
     }
 
-    .account-dropdown a:hover {
+    .nav-link:hover {
       background: #dcfce7;
+    }
+
+    .nav-link-primary {
+      border-color: #15803d;
+      background: #15803d;
+      color: #f8fafc;
+    }
+
+    .nav-link-primary:hover {
+      border-color: #14532d;
+      background: #14532d;
     }
 
     main {
@@ -211,11 +180,24 @@
       }
 
       .header-content {
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.5rem;
         min-height: 4.5rem;
+        padding-block: 0.75rem;
       }
 
       .brand {
         font-size: 1rem;
+      }
+
+      .primary-nav {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .nav-link {
+        flex: 1;
       }
 
       .brand-mark {
@@ -246,13 +228,10 @@
         <span class="brand-mark" aria-hidden="true">C</span>
         <span>Ctrl-Alt-Elite</span>
       </a>
-      <details class="account-menu">
-        <summary class="account-trigger">Account</summary>
-        <nav class="account-dropdown" aria-label="Account">
-          <a href="/login">Log in</a>
-          <a href="/register">Register</a>
-        </nav>
-      </details>
+      <nav class="primary-nav" aria-label="Main navigation">
+        <a class="nav-link" href="/products">Browse products</a>
+        <a class="nav-link nav-link-primary" href="/login">Log in</a>
+      </nav>
     </div>
   </header>
 
@@ -263,7 +242,7 @@
       <p class="welcome-copy">
         Explore our collection and find something made for your everyday.
       </p>
-      <a class="button" href="/products">Browse products</a>
+      <a class="button" href="/products">Explore products</a>
     </section>
   </main>
 
