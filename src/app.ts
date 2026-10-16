@@ -2,6 +2,9 @@ import express, { type Express, type Request, type Response } from 'express'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
+const WEB_PAGE_DIRECTORY = fileURLToPath(
+  new URL('../WebPage/', import.meta.url),
+)
 const HOME_PAGE_PATH = fileURLToPath(
   new URL('../WebPage/Homepage.html', import.meta.url),
 )
@@ -11,6 +14,8 @@ const UNAVAILABLE_PAGE_PATH = fileURLToPath(
 
 export function createApp(): Express {
   const app = express()
+
+  app.use(express.static(WEB_PAGE_DIRECTORY, { index: false }))
 
   app.get('/', async (_req: Request, res: Response) => {
     try {
