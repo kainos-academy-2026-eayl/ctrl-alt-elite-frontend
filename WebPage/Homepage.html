@@ -26,7 +26,8 @@
       margin: 0;
     }
 
-    a:focus-visible {
+    a:focus-visible,
+    summary:focus-visible {
       outline: 3px solid #22c55e;
       outline-offset: 4px;
     }
@@ -70,21 +71,69 @@
       font-size: 1.1rem;
     }
 
-    .account-links {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .account-menu {
+      position: relative;
     }
 
-    .header-link {
+    .account-trigger {
+      display: inline-flex;
+      min-height: 2.75rem;
+      align-items: center;
+      gap: 0.5rem;
       padding: 0.65rem 0.9rem;
       border-radius: 0.4rem;
+      color: #14532d;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .account-trigger::-webkit-details-marker {
+      display: none;
+    }
+
+    .account-trigger::after {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      content: "";
+      transform: translateY(-0.15rem) rotate(45deg);
+      transition: transform 150ms ease;
+    }
+
+    .account-menu[open] .account-trigger::after {
+      transform: translateY(0.1rem) rotate(225deg);
+    }
+
+    .account-trigger:hover,
+    .account-menu[open] .account-trigger {
+      background: #dcfce7;
+    }
+
+    .account-dropdown {
+      position: absolute;
+      z-index: 1;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      display: grid;
+      min-width: 10rem;
+      padding: 0.35rem;
+      border: 1px solid #14532d;
+      border-radius: 0.5rem;
+      background: #f8fafc;
+      box-shadow: 0 4px 12px rgb(20 83 45 / 15%);
+    }
+
+    .account-dropdown a {
+      padding: 0.7rem 0.75rem;
+      border-radius: 0.3rem;
       color: #14532d;
       font-weight: 700;
       text-decoration: none;
     }
 
-    .header-link:hover {
+    .account-dropdown a:hover {
       background: #dcfce7;
     }
 
@@ -197,10 +246,13 @@
         <span class="brand-mark" aria-hidden="true">C</span>
         <span>Ctrl-Alt-Elite</span>
       </a>
-      <nav class="account-links" aria-label="Account">
-        <a class="header-link" href="/login">Log in</a>
-        <a class="header-link" href="/register">Register</a>
-      </nav>
+      <details class="account-menu">
+        <summary class="account-trigger">Account</summary>
+        <nav class="account-dropdown" aria-label="Account">
+          <a href="/login">Log in</a>
+          <a href="/register">Register</a>
+        </nav>
+      </details>
     </div>
   </header>
 
