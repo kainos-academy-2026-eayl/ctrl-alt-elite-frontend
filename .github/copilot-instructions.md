@@ -16,6 +16,9 @@ This is a Node.js 22 HTTP service written in TypeScript and built with Express.
 | `npm run typecheck` | Checks TypeScript types without creating output files. |
 | `npm run build` | Type-checks and bundles the service for production. |
 | `npm start` | Runs the built service from `dist/index.js`. |
+| `npm run lint` | Lints and checks formatting with Biome (`biome.json`); also runs as a Husky pre-push hook. |
+| `npm run lint:fix` | Runs Biome and applies all safe fixes. |
+| `npm test` | Runs Vitest unit tests; also runs as a Husky pre-commit hook. |
 
 ## Code Style and Preferences
 

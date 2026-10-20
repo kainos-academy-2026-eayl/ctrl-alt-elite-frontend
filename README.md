@@ -69,6 +69,12 @@ Never commit your `.env` file. It is already listed in [.gitignore](.gitignore);
 | `npm run typecheck` | `tsc` | Checks types without emitting files. |
 | `npm run build` | `tsc` then `esbuild` | Type-checks, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
+| `npm run lint` | `biome check .` | Lints and checks formatting/import order with [Biome](https://biomejs.dev/). Reports issues without changing files. |
+| `npm run lint:fix` | `biome check --write .` | Runs Biome and applies every safe fix it can (formatting, import order, safe lint fixes). |
+| `npm test` | `vitest run --passWithNoTests` | Runs unit tests (`*.test.ts` / `*.spec.ts`) with [Vitest](https://vitest.dev/). Also runs as a Husky `pre-commit` hook. |
+
+Biome is configured in `biome.json`. A [Husky](https://typicode.github.io/husky/) `pre-push` hook runs `npm run lint` and blocks the push if it fails; hooks are installed automatically by `npm install`.
+
 Before pushing, run `npm run typecheck` and `npm run build`.
 
 ## Project structure
