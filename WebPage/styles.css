@@ -162,7 +162,9 @@ h1 {
   *,
   *::before,
   *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced-motion accessibility override must beat all other transition/scroll styles */
     scroll-behavior: auto !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced-motion accessibility override must beat all other transition/scroll styles */
     transition-duration: 0.01ms !important;
   }
 }

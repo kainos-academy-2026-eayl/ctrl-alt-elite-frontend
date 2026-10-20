@@ -1,6 +1,6 @@
-import express, { type Express, type Request, type Response } from 'express'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import express, { type Express, type Request, type Response } from 'express'
 
 const WEB_PAGE_DIRECTORY = fileURLToPath(
   new URL('../WebPage/', import.meta.url),
@@ -10,7 +10,7 @@ const HOME_PAGE_PATH = fileURLToPath(
 )
 const REGISTER_PAGE_PATH = fileURLToPath(
   new URL('../WebPage/Register.html', import.meta.url),
-);
+)
 const UNAVAILABLE_PAGE_PATH = fileURLToPath(
   new URL('../WebPage/Unavailable.html', import.meta.url),
 )
@@ -32,11 +32,11 @@ export function createApp(): Express {
 
   app.get('/register', async (_req: Request, res: Response) => {
     try {
-      const register = await readFile(REGISTER_PAGE_PATH, 'utf8');
-      res.type('html').send(register);
+      const register = await readFile(REGISTER_PAGE_PATH, 'utf8')
+      res.type('html').send(register)
     } catch (error) {
-      console.error('Unable to load the homepage:', error);
-      res.redirect('/unavailable');
+      console.error('Unable to load the homepage:', error)
+      res.redirect('/unavailable')
     }
   })
 
