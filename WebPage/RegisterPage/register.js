@@ -42,7 +42,42 @@ passwordInput.addEventListener("input", () => {
     passwordInput.setCustomValidity("");
 });
 
-registrationForm.addEventListener("submit", (event) => {
+const API_BASE_URL = "";
+const submitButton = registrationForm.querySelector("button[type='submit']");
+
+async function registerAccount() {
+    submitButton.disabled = true;
+    passwordMessage.textContent = "Creating your account...";
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                firstName: document.querySelector("#firstName").value,
+                lastName: document.querySelector("#lastName").value,
+                email: emailInput.value,
+                password: passwordInput.value,
+                confirmPassword: confirmPasswordInput.value
+            })
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            passwordMessage.textContent = data.message || "Unable to create your account. Please try again.";
+            return;
+        }
+
+        registrationForm.reset();
+        passwordMessage.textContent = "Account created successfully.";
+    } catch {
+        passwordMessage.textContent = "Unable to reach the server. Please try again later.";
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+registrationForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     emailInput.setCustomValidity("");
     confirmPasswordInput.setCustomValidity("");
@@ -74,7 +109,7 @@ registrationForm.addEventListener("submit", (event) => {
         return;
     }
 
-    passwordMessage.textContent = "All fields are valid.";
+    await registerAccount();
 });
 
 confirmPasswordInput.addEventListener("input", () => {
