@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/admin.css" />
+  <title>Ctrl-Alt-Elite | Admin Dashboard</title>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="page-width header-content">
+      <a class="brand" href="/admin" aria-label="Ctrl-Alt-Elite admin dashboard">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>Ctrl-Alt-Elite Admin</span>
+      </a>
+      <a class="nav-link" href="/">View store</a>
+    </div>
+  </header>
+
+  <div class="admin-layout page-width">
+    <nav class="admin-sidebar" aria-label="Admin navigation">
+      <ul class="admin-nav-list">
+        <li><a class="admin-nav-link" href="/admin" aria-current="page">Dashboard</a></li>
+        <li><a class="admin-nav-link" href="/admin/products">Products</a></li>
+        <li><a class="admin-nav-link" href="/admin/orders">Orders</a></li>
+        <li><a class="admin-nav-link" href="/admin/customers">Customers</a></li>
+        <li><a class="admin-nav-link" href="/admin/inventory">Inventory</a></li>
+        <li><a class="admin-nav-link" href="/admin/reports">Reports</a></li>
+        <li><a class="admin-nav-link" href="/admin/settings">Settings</a></li>
+      </ul>
+    </nav>
+
+    <main class="admin-main">
+      <h1 class="admin-title">Admin Dashboard</h1>
+
+      <section aria-labelledby="summary-heading">
+        <h2 id="summary-heading" class="admin-section-title">Summary</h2>
+        <ul class="summary-grid">
+          <li class="summary-card">
+            <span class="summary-label">Products</span>
+            <span class="summary-value">0</span>
+          </li>
+          <li class="summary-card">
+            <span class="summary-label">Orders</span>
+            <span class="summary-value">0</span>
+          </li>
+          <li class="summary-card">
+            <span class="summary-label">Customers</span>
+            <span class="summary-value">0</span>
+          </li>
+          <li class="summary-card">
+            <span class="summary-label">Stock Alerts</span>
+            <span class="summary-value">0</span>
+          </li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="quick-actions-heading">
+        <h2 id="quick-actions-heading" class="admin-section-title">Quick Actions</h2>
+        <ul class="quick-actions">
+          <li><a class="quick-action" href="/admin/products">Manage Products</a></li>
+          <li><a class="quick-action" href="/admin/orders">Manage Orders</a></li>
+          <li><a class="quick-action" href="/admin/customers">Manage Customers</a></li>
+          <li><a class="quick-action" href="/admin/inventory">Inventory</a></li>
+          <li><a class="quick-action" href="/admin/reports">Reports</a></li>
+          <li><a class="quick-action" href="/admin/settings">Settings</a></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="page-width">
+      <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
+    </div>
+  </footer>
+  <script src="/controllers/script.js" defer></script>
+</body>
+
+</html>

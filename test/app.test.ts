@@ -77,6 +77,46 @@ describe('frontend routes', () => {
     });
   });
 
+  describe('GET /admin', () => {
+    it('serves the dashboard with summary cards and navigation', async () => {
+      const res = await fetch(`${base}/admin`);
+      assert.equal(res.status, 200);
+      assert.match(res.headers.get('content-type') ?? '', /text\/html/);
+      const html = await res.text();
+      assert.match(html, /Admin Dashboard/);
+      for (const label of ['Products', 'Orders', 'Customers', 'Stock Alerts']) {
+        assert.match(html, new RegExp(`summary-label">${label}<`));
+      }
+      for (const section of [
+        'products',
+        'orders',
+        'customers',
+        'inventory',
+        'reports',
+        'settings',
+      ]) {
+        assert.match(html, new RegExp(`href="/admin/${section}"`));
+      }
+    });
+  });
+
+  describe('GET /admin/:section', () => {
+    it('serves a placeholder page for known sections', async () => {
+      const res = await fetch(`${base}/admin/products`);
+      assert.equal(res.status, 200);
+      const html = await res.text();
+      assert.match(html, /<h1 class="admin-title">Products<\/h1>/);
+      assert.doesNotMatch(html, /\{\{TITLE\}\}/);
+    });
+
+    it('returns 404 for unknown sections', async () => {
+      for (const section of ['nope', 'constructor', '__proto__']) {
+        const res = await fetch(`${base}/admin/${section}`);
+        assert.equal(res.status, 404);
+      }
+    });
+  });
+
   describe('GET /unavailable', () => {
     it('serves the unavailable page with 503', async () => {
       const res = await fetch(`${base}/unavailable`);
@@ -100,6 +140,7 @@ describe('frontend routes', () => {
       ['/assets/styles.css', /text\/css/],
       ['/controllers/script.js', /javascript/],
       ['/assets/register.css', /text\/css/],
+      ['/assets/admin.css', /text\/css/],
       ['/controllers/register.js', /javascript/],
     ] as const) {
       it(`serves ${path}`, async () => {
@@ -116,7 +157,13 @@ describe('frontend routes', () => {
   });
 
   describe('page references', () => {
-    for (const page of ['/', '/register', '/unavailable']) {
+    for (const page of [
+      '/',
+      '/register',
+      '/unavailable',
+      '/admin',
+      '/admin/orders',
+    ]) {
       it(`every local href/src on ${page} resolves`, async () => {
         const html = await (await fetch(`${base}${page}`)).text();
         const refs = [...html.matchAll(/\b(?:href|src)="([^"#]+)"/g)]

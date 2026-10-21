@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/admin.css" />
+  <title>Ctrl-Alt-Elite | Admin | {{TITLE}}</title>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="page-width header-content">
+      <a class="brand" href="/admin" aria-label="Ctrl-Alt-Elite admin dashboard">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>Ctrl-Alt-Elite Admin</span>
+      </a>
+      <a class="nav-link" href="/">View store</a>
+    </div>
+  </header>
+
+  <div class="admin-layout page-width">
+    <nav class="admin-sidebar" aria-label="Admin navigation">
+      <ul class="admin-nav-list">
+        <li><a class="admin-nav-link" href="/admin">Dashboard</a></li>
+        <li><a class="admin-nav-link" href="/admin/products">Products</a></li>
+        <li><a class="admin-nav-link" href="/admin/orders">Orders</a></li>
+        <li><a class="admin-nav-link" href="/admin/customers">Customers</a></li>
+        <li><a class="admin-nav-link" href="/admin/inventory">Inventory</a></li>
+        <li><a class="admin-nav-link" href="/admin/reports">Reports</a></li>
+        <li><a class="admin-nav-link" href="/admin/settings">Settings</a></li>
+      </ul>
+    </nav>
+
+    <main class="admin-main">
+      <h1 class="admin-title">{{TITLE}}</h1>
+      <p class="admin-placeholder">This feature is coming soon.</p>
+      <a class="quick-action admin-back" href="/admin">Back to dashboard</a>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="page-width">
+      <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
+    </div>
+  </footer>
+  <script src="/controllers/script.js" defer></script>
+</body>
+
+</html>

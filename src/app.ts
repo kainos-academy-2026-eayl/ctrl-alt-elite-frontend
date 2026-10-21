@@ -17,6 +17,18 @@ const REGISTER_PAGE_PATH = fileURLToPath(
 const UNAVAILABLE_PAGE_PATH = fileURLToPath(
   new URL('unavailable.html', VIEWS_DIRECTORY),
 );
+const ADMIN_PAGE_PATH = fileURLToPath(new URL('admin.html', VIEWS_DIRECTORY));
+const ADMIN_SECTION_PAGE_PATH = fileURLToPath(
+  new URL('admin-section.html', VIEWS_DIRECTORY),
+);
+const ADMIN_SECTIONS: Record<string, string> = {
+  products: 'Products',
+  orders: 'Orders',
+  customers: 'Customers',
+  inventory: 'Inventory',
+  reports: 'Reports',
+  settings: 'Settings',
+};
 
 export function createApp(backendOrigin: string): Express {
   const app = express();
@@ -42,6 +54,33 @@ export function createApp(backendOrigin: string): Express {
       res.type('html').send(register);
     } catch (error) {
       console.error('Unable to load the register page:', error);
+      res.redirect('/unavailable');
+    }
+  });
+
+  app.get('/admin', async (_req: Request, res: Response) => {
+    try {
+      const adminPage = await readFile(ADMIN_PAGE_PATH, 'utf8');
+      res.type('html').send(adminPage);
+    } catch (error) {
+      console.error('Unable to load the admin dashboard:', error);
+      res.redirect('/unavailable');
+    }
+  });
+
+  app.get('/admin/:section', async (req: Request, res: Response, next) => {
+    const title = Object.hasOwn(ADMIN_SECTIONS, String(req.params.section))
+      ? ADMIN_SECTIONS[String(req.params.section)]
+      : undefined;
+    if (!title) {
+      next();
+      return;
+    }
+    try {
+      const page = await readFile(ADMIN_SECTION_PAGE_PATH, 'utf8');
+      res.type('html').send(page.replaceAll('{{TITLE}}', title));
+    } catch (error) {
+      console.error('Unable to load the admin section page:', error);
       res.redirect('/unavailable');
     }
   });
