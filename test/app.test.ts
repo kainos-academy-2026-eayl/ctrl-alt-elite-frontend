@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it } from 'vitest';
@@ -68,6 +69,19 @@ describe('frontend routes', () => {
     });
   });
 
+  describe('GET /login', () => {
+    it('renders the login template without changing its markup', async () => {
+      const res = await fetch(`${base}/login`, { redirect: 'manual' });
+      assert.equal(res.status, 200);
+      assert.match(res.headers.get('content-type') ?? '', /text\/html/);
+      const template = await readFile(
+        new URL('../src/views/Login.njk', import.meta.url),
+        'utf8',
+      );
+      assert.equal(await res.text(), template);
+    });
+  });
+
   describe('GET /register', () => {
     it('serves the register page as html', async () => {
       const res = await fetch(`${base}/register`);
@@ -98,6 +112,8 @@ describe('frontend routes', () => {
   describe('static assets', () => {
     for (const [path, type] of [
       ['/assets/styles.css', /text\/css/],
+      ['/assets/Login.css', /text\/css/],
+      ['/controllers/Login.js', /javascript/],
       ['/controllers/script.js', /javascript/],
       ['/assets/register.css', /text\/css/],
       ['/controllers/register.js', /javascript/],
@@ -116,7 +132,7 @@ describe('frontend routes', () => {
   });
 
   describe('page references', () => {
-    for (const page of ['/', '/register', '/unavailable']) {
+    for (const page of ['/', '/login', '/register', '/unavailable']) {
       it(`every local href/src on ${page} resolves`, async () => {
         const html = await (await fetch(`${base}${page}`)).text();
         const refs = [...html.matchAll(/\b(?:href|src)="([^"#]+)"/g)]

@@ -1,13 +1,14 @@
 import express, { type Express, type Request, type Response } from 'express'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import nunjucks from 'nunjucks'
 import { createApiProxy } from './util/apiProxy'
 
 const HOME_PAGE_PATH = fileURLToPath(
   new URL('../src/views/homepage.html', import.meta.url),
 )
 const LOGIN_PAGE_PATH = fileURLToPath(
-  new URL('../src/views/Login.html', import.meta.url),
+  new URL('../src/views/Login.njk', import.meta.url),
 )
 const REGISTER_PAGE_PATH = fileURLToPath(
   new URL('../src/views/register.html', import.meta.url),
@@ -24,6 +25,7 @@ const CONTROLLERS_DIRECTORY = fileURLToPath(
 
 export function createApp(backendOrigin: string): Express {
   const app = express();
+  const loginTemplates = new nunjucks.Environment(null, { autoescape: true });
 
   app.use('/api', createApiProxy(backendOrigin));
 
@@ -43,7 +45,7 @@ export function createApp(backendOrigin: string): Express {
   app.get('/login', async (_req: Request, res: Response) => {
     try {
       const login = await readFile(LOGIN_PAGE_PATH, 'utf8')
-      res.type('html').send(login)
+      res.type('html').send(loginTemplates.renderString(login, {}))
     } catch (error) {
       console.error('Unable to load the login page:', error)
       res.redirect('/unavailable')
