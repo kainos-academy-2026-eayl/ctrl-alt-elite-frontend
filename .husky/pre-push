@@ -1,4 +1,11 @@
+<<<<<<< HEAD
 npm test
 npm run lint
 npm run format
 npm run lint:fix
+=======
+npm run lint
+npm run format
+npm run lint:fix
+npm run test
+>>>>>>> origin/main

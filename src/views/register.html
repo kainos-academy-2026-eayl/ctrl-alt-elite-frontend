@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Ctrl-Alt-Elite | Register</title>
+    <meta name="description" content="Create your Ctrl-Alt-Elite account.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/styles.css">
+    <link rel="stylesheet" href="/assets/register.css">
+    <script src="/controllers/register.js" defer></script>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="page-width header-content">
+            <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
+                <span class="brand-mark" aria-hidden="true">C</span>
+                <span>Ctrl-Alt-Elite</span>
+            </a>
+        </div>
+    </header>
+
+    <main>
+        <div class="register-container">
+            <p class="eyebrow">Join Ctrl-Alt-Elite</p>
+            <h1>Create your account</h1>
+            <h2>Please enter your details</h2>
+            <form id="registrationForm" method="post">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" minlength="8" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" minlength="8" required>
+                </div>
+
+                <p id="passwordMessage" role="status" aria-live="polite"></p>
+
+                <button type="submit" class="register-btn">
+                    Register
+                </button>
+            </form>
+
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="page-width">
+            <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
+        </div>
+    </footer>
+    <script src="/controllers/script.js" defer></script>
+</body>
+
+</html>

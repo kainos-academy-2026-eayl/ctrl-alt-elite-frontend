@@ -1,31 +1,30 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
-import nunjucks from 'nunjucks';
+import { createApiProxy } from './util/apiProxy';
 
-const WEB_PAGE_DIRECTORY = fileURLToPath(
-  new URL('../WebPage/', import.meta.url),
+const VIEWS_DIRECTORY = new URL('../src/views/', import.meta.url);
+const ASSETS_DIRECTORY = fileURLToPath(
+  new URL('../src/assets/', import.meta.url),
 );
-const HOME_PAGE_PATH = fileURLToPath(
-  new URL('../WebPage/Homepage.html', import.meta.url),
+const CONTROLLERS_DIRECTORY = fileURLToPath(
+  new URL('../dist/public/controllers/', import.meta.url),
 );
+const HOME_PAGE_PATH = fileURLToPath(new URL('homepage.html', VIEWS_DIRECTORY));
 const REGISTER_PAGE_PATH = fileURLToPath(
-  new URL('../WebPage/Register.html', import.meta.url),
+  new URL('register.html', VIEWS_DIRECTORY),
 );
 const UNAVAILABLE_PAGE_PATH = fileURLToPath(
-  new URL('../WebPage/Unavailable.html', import.meta.url),
-);
-// Resolves to src/views from both src/app.ts (dev) and dist/index.js (build).
-const VIEWS_DIRECTORY = fileURLToPath(
-  new URL('../src/views/', import.meta.url),
+  new URL('unavailable.html', VIEWS_DIRECTORY),
 );
 
-export function createApp(): Express {
+export function createApp(backendOrigin: string): Express {
   const app = express();
 
-  nunjucks.configure(VIEWS_DIRECTORY, { autoescape: true, express: app });
+  app.use('/api', createApiProxy(backendOrigin));
 
-  app.use(express.static(WEB_PAGE_DIRECTORY, { index: false }));
+  app.use('/assets', express.static(ASSETS_DIRECTORY));
+  app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
 
   app.get('/', async (_req: Request, res: Response) => {
     try {
@@ -42,7 +41,7 @@ export function createApp(): Express {
       const register = await readFile(REGISTER_PAGE_PATH, 'utf8');
       res.type('html').send(register);
     } catch (error) {
-      console.error('Unable to load the homepage:', error);
+      console.error('Unable to load the register page:', error);
       res.redirect('/unavailable');
     }
   });
@@ -62,21 +61,6 @@ export function createApp(): Express {
 
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', uptime: process.uptime() });
-  });
-
-  app.get('/basket', (_req: Request, res: Response) => {
-    res.render(
-      'basket.njk',
-      { checkoutUrl: '/checkout', browseProductsUrl: '/' },
-      (error, html) => {
-        if (error) {
-          console.error('Unable to load the basket page:', error);
-          res.redirect('/unavailable');
-          return;
-        }
-        res.type('html').send(html);
-      },
-    );
   });
 
   return app;
