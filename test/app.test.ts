@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import { createApp } from '../src/app';
+import { SAMPLE_PRODUCTS } from '../src/data/sampleProducts';
 
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
@@ -66,6 +67,13 @@ describe('frontend routes', () => {
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       assert.match(await res.text(), /<html/i);
     });
+
+    it('renders an Add to Basket button for each product', async () => {
+      const html = await (await fetch(`${base}/`)).text();
+      const buttons = html.match(/data-add-to-basket /g) ?? [];
+      assert.equal(buttons.length, SAMPLE_PRODUCTS.length);
+      assert.match(html, /data-product-id="sample-lamp"/);
+    });
   });
 
   describe('GET /register', () => {
@@ -74,6 +82,17 @@ describe('frontend routes', () => {
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       assert.match(await res.text(), /<html/i);
+    });
+  });
+
+  describe('GET /basket', () => {
+    it('renders the basket page as html', async () => {
+      const res = await fetch(`${base}/basket`);
+      assert.equal(res.status, 200);
+      assert.match(res.headers.get('content-type') ?? '', /text\/html/);
+      const html = await res.text();
+      assert.match(html, /<h1 id="basket-heading">Your basket<\/h1>/);
+      assert.match(html, /data-basket-checkout/);
     });
   });
 
@@ -101,6 +120,8 @@ describe('frontend routes', () => {
       ['/controllers/script.js', /javascript/],
       ['/assets/register.css', /text\/css/],
       ['/controllers/register.js', /javascript/],
+      ['/assets/basket.css', /text\/css/],
+      ['/controllers/basket.js', /javascript/],
     ] as const) {
       it(`serves ${path}`, async () => {
         const res = await fetch(`${base}${path}`);
@@ -116,7 +137,7 @@ describe('frontend routes', () => {
   });
 
   describe('page references', () => {
-    for (const page of ['/', '/register', '/unavailable']) {
+    for (const page of ['/', '/register', '/basket', '/unavailable']) {
       it(`every local href/src on ${page} resolves`, async () => {
         const html = await (await fetch(`${base}${page}`)).text();
         const refs = [...html.matchAll(/\b(?:href|src)="([^"#]+)"/g)]

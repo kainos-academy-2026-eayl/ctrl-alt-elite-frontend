@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
+import nunjucks from 'nunjucks';
+import { SAMPLE_PRODUCTS } from './data/sampleProducts';
 import { createApiProxy } from './util/apiProxy';
 
 const VIEWS_DIRECTORY = new URL('../src/views/', import.meta.url);
@@ -10,7 +12,6 @@ const ASSETS_DIRECTORY = fileURLToPath(
 const CONTROLLERS_DIRECTORY = fileURLToPath(
   new URL('../dist/public/controllers/', import.meta.url),
 );
-const HOME_PAGE_PATH = fileURLToPath(new URL('homepage.html', VIEWS_DIRECTORY));
 const REGISTER_PAGE_PATH = fileURLToPath(
   new URL('register.html', VIEWS_DIRECTORY),
 );
@@ -21,19 +22,30 @@ const UNAVAILABLE_PAGE_PATH = fileURLToPath(
 export function createApp(backendOrigin: string): Express {
   const app = express();
 
+  nunjucks.configure(fileURLToPath(VIEWS_DIRECTORY), {
+    autoescape: true,
+    express: app,
+  });
+  app.set('view engine', 'njk');
+
   app.use('/api', createApiProxy(backendOrigin));
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
 
-  app.get('/', async (_req: Request, res: Response) => {
-    try {
-      const homepage = await readFile(HOME_PAGE_PATH, 'utf8');
-      res.type('html').send(homepage);
-    } catch (error) {
-      console.error('Unable to load the homepage:', error);
-      res.redirect('/unavailable');
-    }
+  app.get('/', (_req: Request, res: Response) => {
+    res.render(
+      'homepage',
+      { products: SAMPLE_PRODUCTS },
+      (error: Error | null, html?: string) => {
+        if (error || html === undefined) {
+          console.error('Unable to load the homepage:', error);
+          res.redirect('/unavailable');
+          return;
+        }
+        res.type('html').send(html);
+      },
+    );
   });
 
   app.get('/register', async (_req: Request, res: Response) => {
@@ -44,6 +56,21 @@ export function createApp(backendOrigin: string): Express {
       console.error('Unable to load the register page:', error);
       res.redirect('/unavailable');
     }
+  });
+
+  app.get('/basket', (_req: Request, res: Response) => {
+    res.render(
+      'basket',
+      { browseProductsUrl: '/' },
+      (error: Error | null, html?: string) => {
+        if (error || html === undefined) {
+          console.error('Unable to load the basket page:', error);
+          res.redirect('/unavailable');
+          return;
+        }
+        res.type('html').send(html);
+      },
+    );
   });
 
   app.get('/unavailable', async (_req: Request, res: Response) => {

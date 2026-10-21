@@ -1,7 +1,7 @@
 {#
   KAN-28 Basket page.
   The page shell is rendered on the server. Basket items live in the
-  browser's sessionStorage, so /Basket.js fills in the rows and totals.
+  browser's sessionStorage, so /controllers/basket.js fills in the rows and totals.
 #}
 {% set pageTitle = "Basket" %}
 <!doctype html>
@@ -11,8 +11,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="description" content="Review the items in your Ctrl-Alt-Elite basket and continue to checkout." />
-<link rel="stylesheet" href="/styles.css" />
-<link rel="stylesheet" href="/Basket.css" />
+<link rel="stylesheet" href="/assets/styles.css" />
+<link rel="stylesheet" href="/assets/basket.css" />
 <title>Ctrl-Alt-Elite | {{ pageTitle }}</title>
 </head>
 
@@ -36,7 +36,7 @@
   </header>
 
   <main>
-    <section class="page-width basket" aria-labelledby="basket-heading" data-basket data-checkout-url="{{ checkoutUrl }}">
+    <section class="page-width basket" aria-labelledby="basket-heading" data-basket>
       <h1 id="basket-heading">Your basket</h1>
 
       <div class="basket-alert" role="alert" data-basket-alert hidden></div>
@@ -80,8 +80,8 @@
       <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
     </div>
   </footer>
-  <script src="/script.js" defer></script>
-  <script src="/Basket.js" defer></script>
+  <script src="/controllers/script.js" defer></script>
+  <script src="/controllers/basket.js" defer></script>
 </body>
 
 </html>
