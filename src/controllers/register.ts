@@ -59,6 +59,7 @@ emailInput.addEventListener('input', () => {
 
 passwordInput.addEventListener('input', () => {
   passwordInput.setCustomValidity('');
+  confirmPasswordInput.setCustomValidity('');
 });
 
 const API_BASE_URL = '';
