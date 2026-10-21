@@ -6,7 +6,7 @@ const PRODUCT_CATALOG_DIRECTORY = fileURLToPath(
   new URL('../product_catalog/', import.meta.url),
 );
 const PRODUCT_TEMPLATE_DIRECTORY = fileURLToPath(
-  new URL('../templates/', import.meta.url),
+  new URL('../src/views/', import.meta.url),
 );
 
 const DEMO_PRODUCTS = [

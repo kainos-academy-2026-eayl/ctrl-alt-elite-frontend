@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
+import nunjucks from 'nunjucks';
 import { registerProductApp } from './product_app';
 import { createApiProxy } from './util/apiProxy';
 
@@ -18,19 +19,10 @@ const UNAVAILABLE_PAGE_PATH = fileURLToPath(
 )
 const ASSETS_DIRECTORY = fileURLToPath(
   new URL('../src/assets/', import.meta.url),
-);
-
+)
 const CONTROLLERS_DIRECTORY = fileURLToPath(
   new URL('../dist/public/controllers/', import.meta.url),
-);
-const HOME_PAGE_PATH = fileURLToPath(new URL('homepage.html', VIEWS_DIRECTORY));
-
-const REGISTER_PAGE_PATH = fileURLToPath(
-  new URL('register.html', VIEWS_DIRECTORY),
-);
-const UNAVAILABLE_PAGE_PATH = fileURLToPath(
-  new URL('unavailable.html', VIEWS_DIRECTORY),
-);
+)
 
 export function createApp(backendOrigin: string): Express {
   const app = express();
@@ -54,13 +46,13 @@ export function createApp(backendOrigin: string): Express {
 
   app.get('/login', async (_req: Request, res: Response) => {
     try {
-      const login = await readFile(LOGIN_PAGE_PATH, 'utf8')
-      res.type('html').send(loginTemplates.renderString(login, {}))
+      const login = await readFile(LOGIN_PAGE_PATH, 'utf8');
+      res.type('html').send(loginTemplates.renderString(login, {}));
     } catch (error) {
-      console.error('Unable to load the login page:', error)
-      res.redirect('/unavailable')
+      console.error('Unable to load the login page:', error);
+      res.redirect('/unavailable');
     }
-  })
+  });
 
   app.get('/register', async (_req: Request, res: Response) => {
     try {
