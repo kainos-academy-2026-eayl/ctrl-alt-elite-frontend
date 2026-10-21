@@ -8,6 +8,9 @@ const WEB_PAGE_DIRECTORY = fileURLToPath(
 const HOME_PAGE_PATH = fileURLToPath(
   new URL('../WebPage/Homepage.html', import.meta.url),
 )
+const LOGIN_PAGE_PATH = fileURLToPath(
+  new URL('../WebPage/Login.html', import.meta.url),
+)
 const REGISTER_PAGE_PATH = fileURLToPath(
   new URL('../WebPage/Register.html', import.meta.url),
 );
@@ -26,6 +29,16 @@ export function createApp(): Express {
       res.type('html').send(homepage)
     } catch (error) {
       console.error('Unable to load the homepage:', error)
+      res.redirect('/unavailable')
+    }
+  })
+
+  app.get('/login', async (_req: Request, res: Response) => {
+    try {
+      const login = await readFile(LOGIN_PAGE_PATH, 'utf8')
+      res.type('html').send(login)
+    } catch (error) {
+      console.error('Unable to load the login page:', error)
       res.redirect('/unavailable')
     }
   })
