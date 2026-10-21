@@ -4,6 +4,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import { createApp } from '../src/app';
+import { getRedirectPath } from '../src/util/loginRedirect';
 
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
@@ -79,6 +80,14 @@ describe('frontend routes', () => {
         'utf8',
       );
       assert.equal(await res.text(), template);
+    });
+  });
+
+  describe('login redirect', () => {
+    it('sends admins to the portal and everyone else to the homepage', () => {
+      assert.equal(getRedirectPath('ADMIN'), '/admin');
+      assert.equal(getRedirectPath('CUSTOMER'), '/');
+      assert.equal(getRedirectPath(undefined), '/');
     });
   });
 

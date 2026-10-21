@@ -77,3 +77,13 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.login-message {
+  margin: 0;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.login-message:empty {
+  display: none;
+}
