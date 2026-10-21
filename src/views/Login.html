@@ -5,8 +5,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Log in to your Ctrl-Alt-Elite account." />
-  <link rel="stylesheet" href="./styles.css" />
-  <link rel="stylesheet" href="./Login.css" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/Login.css" />
   <title>Log in | Ctrl-Alt-Elite</title>
 </head>
 
@@ -20,12 +20,13 @@
     </div>
   </header>
 
-  <main class="login-main">
-    <section class="login-card" aria-labelledby="login-heading">
+  <main>
+    <section class="login-container" aria-labelledby="login-heading">
+      <p class="eyebrow">Welcome back</p>
       <h1 id="login-heading">Log in</h1>
-      <p class="login-copy">Welcome back. Enter your details to continue.</p>
+      <h2>Please enter your details</h2>
       <form class="login-form" action="/login" method="post">
-        <div class="login-field">
+        <div class="login-form-group">
           <label for="email">Email address</label>
           <input
             id="email"
@@ -35,7 +36,7 @@
             required
           />
         </div>
-        <div class="login-field">
+        <div class="login-form-group">
           <label for="password">Password</label>
           <input
             id="password"
@@ -45,7 +46,7 @@
             required
           />
         </div>
-        <button class="login-submit" type="submit">Log in</button>
+        <button class="login-btn" type="submit">Log in</button>
       </form>
     </section>
   </main>
@@ -55,7 +56,7 @@
       <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
     </div>
   </footer>
-  <script src="./Login.js" defer></script>
+  <script src="/controllers/script.js" defer></script>
 </body>
 
 </html>

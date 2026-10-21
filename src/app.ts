@@ -1,22 +1,26 @@
 import express, { type Express, type Request, type Response } from 'express'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { createApiProxy } from './util/apiProxy'
 
-const WEB_PAGE_DIRECTORY = fileURLToPath(
-  new URL('../WebPage/', import.meta.url),
-)
 const HOME_PAGE_PATH = fileURLToPath(
-  new URL('../WebPage/Homepage.html', import.meta.url),
+  new URL('../src/views/homepage.html', import.meta.url),
 )
 const LOGIN_PAGE_PATH = fileURLToPath(
-  new URL('../WebPage/Login.html', import.meta.url),
+  new URL('../src/views/Login.html', import.meta.url),
 )
 const REGISTER_PAGE_PATH = fileURLToPath(
-  new URL('register.html', VIEWS_DIRECTORY),
-);
+  new URL('../src/views/register.html', import.meta.url),
+)
 const UNAVAILABLE_PAGE_PATH = fileURLToPath(
-  new URL('unavailable.html', VIEWS_DIRECTORY),
-);
+  new URL('../src/views/unavailable.html', import.meta.url),
+)
+const ASSETS_DIRECTORY = fileURLToPath(
+  new URL('../src/assets/', import.meta.url),
+)
+const CONTROLLERS_DIRECTORY = fileURLToPath(
+  new URL('../dist/public/controllers/', import.meta.url),
+)
 
 export function createApp(backendOrigin: string): Express {
   const app = express();
