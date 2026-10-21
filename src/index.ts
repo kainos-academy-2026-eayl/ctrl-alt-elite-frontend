@@ -12,9 +12,6 @@ if (!Number.isInteger(PORT) || PORT < 0 || PORT > 65535) {
   throw new Error(`Invalid PORT: ${process.env.PORT}`);
 }
 
-<<<<<<< HEAD
-const app = createApp();
-=======
 if (!process.env.BACKEND_ORIGIN) {
   throw new Error('BACKEND_ORIGIN environment variable is not set');
 }
@@ -27,7 +24,6 @@ try {
 }
 
 const app = createApp(BACKEND_ORIGIN);
->>>>>>> origin/main
 
 // Register new controllers / middleware here!
 
