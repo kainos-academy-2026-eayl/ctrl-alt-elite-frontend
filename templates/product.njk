@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Browse the Ctrl-Alt-Elite product catalog.">
+    <title>Product catalog | Ctrl-Alt-Elite</title>
+    <link rel="stylesheet" href="/product-catalog/product_catalog.css">
+    <script src="/product-catalog/product_catalog.js" defer></script>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">Ctrl-Alt-Elite</a>
+            <p class="basket-count" id="basketCount" aria-live="polite">Basket (0)</p>
+        </div>
+    </header>
+
+    <main class="catalog-main">
+        <section class="catalog-toolbar" aria-labelledby="catalogTitle">
+            <div>
+                <p class="eyebrow">Shop</p>
+                <h1 id="catalogTitle">Product catalog</h1>
+                <p class="catalog-summary">Browse the latest products from Ctrl-Alt-Elite.</p>
+            </div>
+            <label class="search-field">
+                <span>Search products</span>
+                <input id="productSearch" type="search" placeholder="Search by name or category" autocomplete="off">
+            </label>
+        </section>
+
+        <p class="results-count" id="resultsCount" aria-live="polite">{{ products.length }} products</p>
+
+        <section class="product-grid" id="productGrid" aria-label="Products">
+            {% for product in products %}
+            <article class="product-tile" data-product-card data-search="{{ product.searchText }}">
+                <div class="product-image-wrap">
+                    <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
+                    <span class="product-category">{{ product.category }}</span>
+                </div>
+                <div class="product-content">
+                    <h2>{{ product.name }}</h2>
+                    <p class="product-price">{{ product.priceLabel }}</p>
+                    <div class="product-actions">
+                        <button class="button button-secondary" type="button" data-view-details
+                            data-product-name="{{ product.name }}" data-product-category="{{ product.category }}"
+                            data-product-price="{{ product.priceLabel }}" data-product-image="{{ product.image }}"
+                            data-product-description="{{ product.description }}">View details</button>
+                        <button class="button button-primary" type="button" data-add-to-basket="{{ product.id }}">Add to
+                            basket</button>
+                    </div>
+                </div>
+            </article>
+            {% else %}
+            <p class="empty-state">There are no products to show right now.</p>
+            {% endfor %}
+            <p class="empty-state" id="noSearchResults" hidden>No products match your search.</p>
+        </section>
+    </main>
+
+    <dialog class="details-dialog" id="productDetails" aria-labelledby="detailsName">
+        <div class="dialog-header">
+            <p class="eyebrow" id="detailsCategory"></p>
+            <button class="dialog-close" type="button" data-close-details
+                aria-label="Close product details">&times;</button>
+        </div>
+        <img class="dialog-image" id="detailsImage" alt="">
+        <h2 id="detailsName"></h2>
+        <p class="dialog-price" id="detailsPrice"></p>
+        <p class="dialog-description" id="detailsDescription"></p>
+    </dialog>
+</body>
+
+</html>
