@@ -97,10 +97,10 @@ describe('frontend routes', () => {
 
   describe('static assets', () => {
     for (const [path, type] of [
-      ['/styles.css', /text\/css/],
-      ['/script.js', /javascript/],
-      ['/register.css', /text\/css/],
-      ['/register.js', /javascript/],
+      ['/assets/styles.css', /text\/css/],
+      ['/controllers/script.js', /javascript/],
+      ['/assets/register.css', /text\/css/],
+      ['/controllers/register.js', /javascript/],
     ] as const) {
       it(`serves ${path}`, async () => {
         const res = await fetch(`${base}${path}`);
@@ -113,6 +113,27 @@ describe('frontend routes', () => {
       const res = await fetch(`${base}/does-not-exist`);
       assert.equal(res.status, 404);
     });
+  });
+
+  describe('page references', () => {
+    for (const page of ['/', '/register', '/unavailable']) {
+      it(`every local href/src on ${page} resolves`, async () => {
+        const html = await (await fetch(`${base}${page}`)).text();
+        const refs = [...html.matchAll(/\b(?:href|src)="([^"#]+)"/g)]
+          .map((match) => match[1] as string)
+          .filter((ref) => !/^[a-z][a-z0-9+.-]*:/i.test(ref));
+        assert.ok(refs.length > 0);
+        for (const ref of refs) {
+          const res = await fetch(new URL(ref, `${base}${page}`), {
+            redirect: 'manual',
+          });
+          assert.ok(
+            res.status === 200 || res.status === 503,
+            `${page} references ${ref} which returned ${res.status}`,
+          );
+        }
+      });
+    }
   });
 
   describe('/api proxy', () => {

@@ -2,11 +2,11 @@
 <html lang="en">
 
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="Welcome to Ctrl-Alt-Elite. Log in or browse products." />
-<link rel="stylesheet" href="./styles.css" />
-<title>Ctrl-Alt-Elite | Home</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Welcome to Ctrl-Alt-Elite. Log in or browse products." />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <title>Ctrl-Alt-Elite | Home</title>
 </head>
 
 <body>
@@ -17,6 +17,12 @@
         <span>Ctrl-Alt-Elite</span>
       </a>
       <nav class="primary-nav" aria-label="Main navigation">
+        <details class="account-menu" data-account-menu>
+          <summary>Account</summary>
+          <ul class="account-menu-list">
+            <li><a class="account-menu-link" href="/register">Register</a></li>
+          </ul>
+        </details>
       </nav>
     </div>
   </header>
@@ -36,7 +42,7 @@
       <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
     </div>
   </footer>
-  <script src="./script.js" defer></script>
+  <script src="/controllers/script.js" defer></script>
 </body>
 
 </html>

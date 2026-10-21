@@ -3,20 +3,17 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createApiProxy } from './util/apiProxy';
 
-const WEB_PAGE_DIRECTORY = fileURLToPath(
-  new URL('../WebPage/', import.meta.url),
+const VIEWS_DIRECTORY = new URL('../src/views/', import.meta.url);
+const ASSETS_DIRECTORY = fileURLToPath(new URL('../src/assets/', import.meta.url));
+const CONTROLLERS_DIRECTORY = fileURLToPath(
+  new URL('../src/controllers/', import.meta.url),
 );
-const HOME_PAGE_PATH = fileURLToPath(
-  new URL('../WebPage/Homepage.html', import.meta.url),
-);
-const REGISTER_PAGE_DIRECTORY = fileURLToPath(
-  new URL('../WebPage/RegisterPage/', import.meta.url),
-);
+const HOME_PAGE_PATH = fileURLToPath(new URL('homepage.html', VIEWS_DIRECTORY));
 const REGISTER_PAGE_PATH = fileURLToPath(
-  new URL('../WebPage/RegisterPage/Register.html', import.meta.url),
+  new URL('register.html', VIEWS_DIRECTORY),
 );
 const UNAVAILABLE_PAGE_PATH = fileURLToPath(
-  new URL('../WebPage/Unavailable.html', import.meta.url),
+  new URL('unavailable.html', VIEWS_DIRECTORY),
 );
 
 export function createApp(backendOrigin: string): Express {
@@ -24,8 +21,8 @@ export function createApp(backendOrigin: string): Express {
 
   app.use('/api', createApiProxy(backendOrigin));
 
-  app.use(express.static(WEB_PAGE_DIRECTORY, { index: false }));
-  app.use(express.static(REGISTER_PAGE_DIRECTORY, { index: false }));
+  app.use('/assets', express.static(ASSETS_DIRECTORY));
+  app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
 
   app.get('/', async (_req: Request, res: Response) => {
     try {
@@ -42,7 +39,7 @@ export function createApp(backendOrigin: string): Express {
       const register = await readFile(REGISTER_PAGE_PATH, 'utf8');
       res.type('html').send(register);
     } catch (error) {
-      console.error('Unable to load the homepage:', error);
+      console.error('Unable to load the register page:', error);
       res.redirect('/unavailable');
     }
   });
