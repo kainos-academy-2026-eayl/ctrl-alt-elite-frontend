@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Review the items in your Ctrl-Alt-Elite basket and continue to checkout." />
+<link rel="stylesheet" href="./styles.css" />
+<link rel="stylesheet" href="./Basket.css" />
+<title>Ctrl-Alt-Elite | Basket</title>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="page-width header-content">
+      <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>Ctrl-Alt-Elite</span>
+      </a>
+      <nav class="primary-nav" aria-label="Main navigation">
+        <a class="nav-link basket-icon-link" href="/Basket.html" aria-current="page">
+          <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
+          </svg>
+          <span class="basket-visually-hidden" data-basket-link-label>Basket, 0 items</span>
+          <span class="basket-badge" data-basket-count aria-hidden="true">0</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-width basket" aria-labelledby="basket-heading" data-basket>
+      <h1 id="basket-heading">Your basket</h1>
+
+      <div class="basket-alert" role="alert" data-basket-alert hidden></div>
+
+      <div class="basket-empty" data-basket-empty hidden>
+        <p>Your basket is empty.</p>
+        <a class="basket-button" href="/">Browse products</a>
+      </div>
+
+      <div data-basket-contents hidden>
+        <table class="basket-table">
+          <caption class="basket-visually-hidden">Items in your basket</caption>
+          <thead>
+            <tr>
+              <th scope="col">Product</th>
+              <th scope="col">Unit price</th>
+              <th scope="col">Quantity</th>
+              <th scope="col">Line total</th>
+              <th scope="col"><span class="basket-visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody data-basket-items></tbody>
+        </table>
+
+        <div class="basket-summary">
+          <p class="basket-total">
+            Total (<span data-basket-item-count>0 items</span>):
+            <strong data-basket-total aria-live="polite">£0.00</strong>
+          </p>
+          <button type="button" class="basket-button" data-basket-checkout disabled>Checkout</button>
+        </div>
+      </div>
+
+      <noscript>
+        <p class="basket-alert">Your basket needs JavaScript. Please turn it on in your browser to view your basket.</p>
+      </noscript>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page-width">
+      <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
+    </div>
+  </footer>
+  <script src="./script.js" defer></script>
+  <script src="./Basket.js" defer></script>
+</body>
+
+</html>

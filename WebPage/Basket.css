@@ -1,0 +1,275 @@
+/* KAN-28 Shopping basket. All classes are prefixed with "basket-". */
+
+.basket {
+  align-self: start;
+}
+
+.basket h1 {
+  margin-bottom: 1.5rem;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+}
+
+.basket-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.basket-icon-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+.basket-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  fill: currentColor;
+}
+
+.basket-badge {
+  position: absolute;
+  top: -0.1rem;
+  right: -0.4rem;
+  min-width: 1.4rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: #15803d;
+  color: #f8fafc;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.basket-button {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #15803d;
+  color: #f8fafc;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.basket-button:hover {
+  background: #14532d;
+}
+
+.basket-button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.basket button:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 3px;
+}
+
+.basket-alert {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border-left: 0.35rem solid #ef4444;
+  border-radius: 0.5rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(17 24 39 / 0.12);
+  line-height: 1.5;
+}
+
+.basket-empty {
+  padding: 2.5rem 1.5rem;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(17 24 39 / 0.12);
+  text-align: center;
+}
+
+.basket-empty p {
+  margin: 0 0 1.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.basket-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(17 24 39 / 0.12);
+}
+
+.basket-table th,
+.basket-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.basket-table thead th {
+  color: #14532d;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.basket-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.basket-line-total {
+  font-weight: 700;
+}
+
+.basket-quantity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.basket-quantity button {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 2px solid #15803d;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #14532d;
+  font: inherit;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.basket-quantity button:hover:not(:disabled) {
+  background: #f0fdf4;
+}
+
+.basket-quantity button:disabled {
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.basket-quantity__value {
+  min-width: 2ch;
+  font-weight: 700;
+  text-align: center;
+}
+
+.basket-remove {
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  color: #14532d;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.basket-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.basket-total {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.basket-toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 10;
+  max-width: min(100% - 2rem, 360px);
+  padding: 0.9rem 1.25rem;
+  border-left: 0.35rem solid #22c55e;
+  border-radius: 0.5rem;
+  background: #14532d;
+  color: #f8fafc;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgb(17 24 39 / 0.25);
+  opacity: 0;
+  transform: translateY(0.5rem);
+  transition:
+    opacity 0.2s ease-in-out,
+    transform 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+.basket-toast--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.basket-toast--error {
+  border-left-color: #ef4444;
+}
+
+/* Small screens: show each basket line as a stacked card. */
+@media (max-width: 640px) {
+  .basket-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .basket-table,
+  .basket-table tbody,
+  .basket-table tr,
+  .basket-table th,
+  .basket-table td {
+    display: block;
+  }
+
+  .basket-table tr {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .basket-table th,
+  .basket-table td {
+    padding: 0.4rem 1rem;
+    border-bottom: 0;
+  }
+
+  .basket-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .basket-table td[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    color: #14532d;
+    font-weight: 700;
+  }
+
+  .basket-summary {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: right;
+  }
+
+  .basket-summary .basket-button {
+    width: 100%;
+  }
+}
