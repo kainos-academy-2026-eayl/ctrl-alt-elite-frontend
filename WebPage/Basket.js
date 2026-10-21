@@ -3,6 +3,7 @@
  *
  * The basket lives in sessionStorage, so it survives page navigation and
  * refreshes in the same browser tab but is cleared when the tab is closed.
+ * The basket page (/basket) is rendered from src/views/basket.njk.
  *
  * Product pages – add this markup to get a working "Add to Basket" button:
  *   <link rel="stylesheet" href="/Basket.css" />
@@ -21,7 +22,7 @@
 (() => {
   const BASKET_KEY = 'ctrl-alt-elite:basket';
   const CHECKOUT_KEY = 'ctrl-alt-elite:checkout';
-  const CHECKOUT_URL = '/checkout';
+  const DEFAULT_CHECKOUT_URL = '/checkout';
   const MAX_QUANTITY = 99;
   const TOAST_DURATION_MS = 3000;
 
@@ -356,7 +357,10 @@
       return;
     }
 
-    window.location.assign(CHECKOUT_URL);
+    const checkoutUrl =
+      document.querySelector('[data-basket]')?.dataset.checkoutUrl ||
+      DEFAULT_CHECKOUT_URL;
+    window.location.assign(checkoutUrl);
   }
 
   document.addEventListener('click', (event) => {
