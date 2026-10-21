@@ -1,0 +1,14 @@
+.button-link {
+  display: inline-block;
+  padding: 0.8rem 1.2rem;
+  border-radius: 0.45rem;
+  background: #15803d;
+  color: #f8fafc;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.button-link:hover,
+.button-link:focus-visible {
+  background: #14532d;
+}

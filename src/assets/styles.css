@@ -80,6 +80,62 @@ summary:focus-visible {
   text-underline-offset: 0.2em;
 }
 
+.account-menu {
+  position: relative;
+}
+
+.account-menu summary {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #14532d;
+  border-radius: 0.5rem;
+  background: #15803d;
+  color: #f8fafc;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.account-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-menu summary::after {
+  content: " \25BE";
+}
+
+.account-menu summary:hover {
+  background: #14532d;
+}
+
+.account-menu-list {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 10;
+  min-width: 10rem;
+  margin: 0;
+  padding: 0.35rem;
+  border: 1px solid #14532d;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(20, 83, 45, 0.12);
+  list-style: none;
+}
+
+.account-menu-link {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.35rem;
+  color: #14532d;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.account-menu-link:hover,
+.account-menu-link:focus-visible {
+  background: #f0fdf4;
+}
+
 main {
   display: grid;
   flex: 1;
@@ -162,7 +218,9 @@ h1 {
   *,
   *::before,
   *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: reduced-motion accessibility override must beat all other transition/scroll styles */
     scroll-behavior: auto !important;
+    /* biome-ignore lint/complexity/noImportantStyles: reduced-motion accessibility override must beat all other transition/scroll styles */
     transition-duration: 0.01ms !important;
   }
 }
