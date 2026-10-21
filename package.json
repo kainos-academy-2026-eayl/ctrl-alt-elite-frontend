@@ -25,6 +25,7 @@
     "@biomejs/biome": "2.5.15",
     "@types/express": "5.0.6",
     "@types/node": "26.4.1",
+    "@types/nunjucks": "^3.2.6",
     "esbuild": "0.28.2",
     "husky": "^9.1.7",
     "tsx": "4.23.13",
@@ -33,6 +34,7 @@
   },
   "dependencies": {
     "dotenv": "17.4.2",
-    "express": "5.2.1"
+    "express": "5.2.1",
+    "nunjucks": "^3.2.4"
   }
 }

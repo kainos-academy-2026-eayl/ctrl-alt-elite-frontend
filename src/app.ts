@@ -1,13 +1,8 @@
-import express, { type Express, type Request, type Response } from 'express'
-import { readFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import express, { type Express, type Request, type Response } from 'express';
+import { registerProductApp } from './product_app';
 import { createApiProxy } from './util/apiProxy';
-import { registerProductApp } from './product_app';//see callum about 
-import nunjucks from 'nunjucks';
-
-const templatePath = fileURLToPath(new URL('../templates', import.meta.url));
-
-console.log(templatePath);
 
 const VIEWS_DIRECTORY = new URL('../src/views/', import.meta.url);
 const ASSETS_DIRECTORY = fileURLToPath(
@@ -29,14 +24,6 @@ const UNAVAILABLE_PAGE_PATH = fileURLToPath(
 export function createApp(backendOrigin: string): Express {
   const app = express();
 
-  nunjucks.configure('templates', {
-    autoescape: true,
-    express: app
-  });
-
-  app.set('view engine', 'njk');
-  app.set('views', templatePath);
-
   app.use('/api', createApiProxy(backendOrigin));
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
@@ -53,10 +40,6 @@ export function createApp(backendOrigin: string): Express {
     }
   });
 
-  app.get('/products', async (_req: Request, res: Response) => {
-    res.render('product');
-  });
-
   app.get('/register', async (_req: Request, res: Response) => {
     try {
       const register = await readFile(REGISTER_PAGE_PATH, 'utf8');
@@ -65,7 +48,7 @@ export function createApp(backendOrigin: string): Express {
       console.error('Unable to load the register page:', error);
       res.redirect('/unavailable');
     }
-  });;
+  });
 
   app.get('/unavailable', async (_req: Request, res: Response) => {
     try {
