@@ -8,7 +8,7 @@ const ASSETS_DIRECTORY = fileURLToPath(
   new URL('../src/assets/', import.meta.url),
 );
 const CONTROLLERS_DIRECTORY = fileURLToPath(
-  new URL('../src/controllers/', import.meta.url),
+  new URL('../dist/public/controllers/', import.meta.url),
 );
 const HOME_PAGE_PATH = fileURLToPath(new URL('homepage.html', VIEWS_DIRECTORY));
 const REGISTER_PAGE_PATH = fileURLToPath(

@@ -1,14 +1,29 @@
-const registrationForm = document.querySelector('#registrationForm');
-const emailInput = document.querySelector('#email');
-const passwordInput = document.querySelector('#password');
-const confirmPasswordInput = document.querySelector('#confirmPassword');
-const passwordMessage = document.querySelector('#passwordMessage');
+function getElement<T extends Element>(
+  selector: string,
+  parent: ParentNode = document,
+): T {
+  const element = parent.querySelector<T>(selector);
+  if (!element) {
+    throw new Error(`Element not found: ${selector}`);
+  }
+  return element;
+}
 
-function isValidEmail(email) {
+interface ApiError {
+  message?: string;
+}
+
+const registrationForm = getElement<HTMLFormElement>('#registrationForm');
+const emailInput = getElement<HTMLInputElement>('#email');
+const passwordInput = getElement<HTMLInputElement>('#password');
+const confirmPasswordInput = getElement<HTMLInputElement>('#confirmPassword');
+const passwordMessage = getElement<HTMLElement>('#passwordMessage');
+
+function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function areAllInputsValid() {
+function areAllInputsValid(): boolean {
   return (
     registrationForm.checkValidity() &&
     isValidEmail(emailInput.value) &&
@@ -17,11 +32,11 @@ function areAllInputsValid() {
   );
 }
 
-function passwordsMatch(password, confirmation) {
+function passwordsMatch(password: string, confirmation: string): boolean {
   return password === confirmation;
 }
 
-function isValidPassword(password) {
+function isValidPassword(password: string): boolean {
   const specialCharacters = ['@', '£', '$', '%', '&'];
   const hasSpecialCharacter = specialCharacters.some((character) =>
     password.includes(character),
@@ -47,9 +62,12 @@ passwordInput.addEventListener('input', () => {
 });
 
 const API_BASE_URL = '';
-const submitButton = registrationForm.querySelector("button[type='submit']");
+const submitButton = getElement<HTMLButtonElement>(
+  "button[type='submit']",
+  registrationForm,
+);
 
-async function registerAccount() {
+async function registerAccount(): Promise<void> {
   submitButton.disabled = true;
   passwordMessage.textContent = 'Creating your account...';
 
@@ -58,14 +76,14 @@ async function registerAccount() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        firstName: document.querySelector('#firstName').value,
-        lastName: document.querySelector('#lastName').value,
+        firstName: getElement<HTMLInputElement>('#firstName').value,
+        lastName: getElement<HTMLInputElement>('#lastName').value,
         email: emailInput.value,
         password: passwordInput.value,
         confirmPassword: confirmPasswordInput.value,
       }),
     });
-    const data = await response.json().catch(() => ({}));
+    const data: ApiError = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       passwordMessage.textContent =
@@ -122,3 +140,5 @@ confirmPasswordInput.addEventListener('input', () => {
   confirmPasswordInput.setCustomValidity('');
   passwordMessage.textContent = '';
 });
+
+export {};

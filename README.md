@@ -8,7 +8,7 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
 | `GET /unavailable` | Fallback page, served with `503`. Pages redirect here if they cannot be loaded. |
 | `GET /assets/*` | Stylesheets from [src/assets/](src/assets) |
-| `GET /controllers/*` | Browser scripts from [src/controllers/](src/controllers) |
+| `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
 
@@ -57,9 +57,11 @@ Use `npm ci` rather than `npm install`. It installs the exact versions recorded 
 
 | Script | Command | What it does |
 | --- | --- | --- |
-| `npm run dev` | `tsx watch src/index.ts` | Runs the service from TypeScript source and restarts on file changes. Use this while developing. |
-| `npm run typecheck` | `tsc` | Checks types without emitting files. |
-| `npm run build` | `tsc` then `esbuild` | Type-checks, then bundles the service into `dist/index.js` for production. |
+| `npm run dev` | `build:client` then `tsx watch src/index.ts` | Compiles the browser scripts once, then runs the service from TypeScript source and restarts on file changes. Use this while developing. |
+| `npm run dev:client` | `esbuild … --watch` | Rebuilds the browser scripts whenever `src/controllers/*.ts` changes. Run it in a second terminal alongside `npm run dev`. |
+| `npm run typecheck` | `tsc` and `tsc -p tsconfig.client.json` | Checks types without emitting files: the server code, then the browser scripts (which use DOM types). |
+| `npm run build:client` | `esbuild` | Compiles `src/controllers/*.ts` to browser JavaScript in `dist/public/controllers/`. Runs automatically before `build` and `test`. |
+| `npm run build` | typecheck, `build:client`, then `esbuild` | Type-checks, compiles the browser scripts, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
 | `npm run lint` | `biome check .` | Lints and checks formatting/import order with [Biome](https://biomejs.dev/). Reports issues without changing files. |
 | `npm run lint:fix` | `biome check --write .` | Runs Biome and applies every safe fix it can (formatting, import order, safe lint fixes). |
@@ -79,7 +81,7 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 │   ├── app.ts            # builds the Express app: routes, static folders, API proxy
 │   ├── views/            # HTML pages (homepage, register, unavailable)
 │   ├── assets/           # CSS served at /assets
-│   ├── controllers/      # browser-side JavaScript served at /controllers
+│   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers
 │   ├── util/
 │   │   └── apiProxy.ts   # forwards /api requests to the backend
 │   ├── repos/            # reserved for data access code
@@ -94,7 +96,8 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 ├── .nvmrc                # the Node version this project uses
 ├── package.json          # project metadata, scripts and dependencies
 ├── package-lock.json     # exact dependency versions, committed
-└── tsconfig.json         # TypeScript compiler and type-checking options
+├── tsconfig.json         # TypeScript options for the server code
+└── tsconfig.client.json  # TypeScript options for src/controllers (adds DOM types)
 ```
 
 Generated folders — `node_modules/` and `dist/` — are ignored by git and safe to delete and regenerate.
@@ -114,7 +117,7 @@ Say you want a `/about` page.
 <script src="/controllers/script.js" defer></script>
 ```
 
-Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/`.
+Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/controllers/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/controllers/`.
 
 **2. Register the route** in [src/app.ts](src/app.ts), following the existing pages:
 

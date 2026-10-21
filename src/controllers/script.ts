@@ -1,14 +1,19 @@
 const currentYear = document.querySelector('[data-current-year]');
 
 if (currentYear) {
-  currentYear.textContent = new Date().getFullYear();
+  currentYear.textContent = String(new Date().getFullYear());
 }
 
-const accountMenu = document.querySelector('[data-account-menu]');
+const accountMenu = document.querySelector<HTMLDetailsElement>(
+  '[data-account-menu]',
+);
 
 if (accountMenu) {
   document.addEventListener('click', (event) => {
-    if (!accountMenu.contains(event.target)) {
+    if (
+      !(event.target instanceof Node) ||
+      !accountMenu.contains(event.target)
+    ) {
       accountMenu.removeAttribute('open');
     }
   });
@@ -16,7 +21,9 @@ if (accountMenu) {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && accountMenu.hasAttribute('open')) {
       accountMenu.removeAttribute('open');
-      accountMenu.querySelector('summary').focus();
+      accountMenu.querySelector('summary')?.focus();
     }
   });
 }
+
+export {};
