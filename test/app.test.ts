@@ -271,9 +271,19 @@ describe('frontend routes', () => {
       await res.text();
     });
 
-    it('does not set an auth cookie when the backend returns no token', async () => {
-      const res = await submit('user@example.com', 'CorrectPassword@1');
-      assert.equal(res.headers.get('set-cookie'), null);
+    it('clears an existing auth cookie when the backend returns no token', async () => {
+      const res = await fetch(`${base}/login`, {
+        method: 'POST',
+        headers: { cookie: 'auth_token=admin.jwt.token' },
+        body: new URLSearchParams({
+          email: 'user@example.com',
+          password: 'CorrectPassword@1',
+        }),
+        redirect: 'manual',
+      });
+      const cookie = res.headers.get('set-cookie') ?? '';
+      assert.match(cookie, /^auth_token=;/);
+      assert.match(cookie, /Expires=Thu, 01 Jan 1970/);
       await res.text();
     });
 

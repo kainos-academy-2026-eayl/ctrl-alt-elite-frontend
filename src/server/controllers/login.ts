@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { setAuthCookie } from '../../util/authCookie';
+import { clearAuthCookie, setAuthCookie } from '../../util/authCookie';
 
 const ROLE_REDIRECTS: Record<string, string> = Object.assign(
   Object.create(null),
@@ -127,7 +127,11 @@ export class LoginController {
         return;
       }
       res.setHeader('Cache-Control', 'no-store');
-      if (token) setAuthCookie(res, token);
+      if (token) {
+        setAuthCookie(res, token);
+      } else {
+        clearAuthCookie(res);
+      }
       res.redirect(303, destination);
     } else if (response.status === 401) {
       this.render(res, 401, email, 'Incorrect email or password.');
