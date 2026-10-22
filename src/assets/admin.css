@@ -182,6 +182,20 @@
   font-weight: 700;
 }
 
+.admin-status-badge.is-ok {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.admin-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .admin-empty {
   margin: 0;
   color: #4b5563;

@@ -3,7 +3,7 @@
 {% block content %}
 <header class="admin-page-header">
   <h1>Dashboard</h1>
-  <p class="admin-subtitle">Overview of your store. Figures below are placeholders until live data is connected.</p>
+  <p class="admin-subtitle">Overview of your store. Customer figures are live; other figures are placeholders until they are connected.</p>
 </header>
 
 <section aria-labelledby="summary-heading">
@@ -30,12 +30,31 @@
 
   <section class="admin-card" aria-labelledby="notifications-heading">
     <h2 id="notifications-heading">Notifications</h2>
+    {% if notifications.length %}
+    <ul class="admin-feed">
+      {% for message in notifications %}
+      <li><a href="/admin/customers?sort=newest">{{ message }}</a></li>
+      {% endfor %}
+    </ul>
+    {% else %}
     <p class="admin-empty">No active notifications</p>
+    {% endif %}
   </section>
 
   <section class="admin-card" aria-labelledby="activity-heading">
     <h2 id="activity-heading">Recent Activity</h2>
+    {% if activity.length %}
+    <ul class="admin-feed">
+      {% for item in activity %}
+      <li>
+        <a href="/admin/customers/{{ item.id }}">{{ item.name }}</a> registered
+        <time datetime="{{ item.registrationDate }}">{{ item.registeredDisplay }}</time>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
     <p class="admin-empty">No recent activity available</p>
+    {% endif %}
   </section>
 
   <section class="admin-card" aria-labelledby="status-heading">
@@ -44,7 +63,7 @@
       {% for service in systemStatus %}
       <li>
         <span>{{ service.label }}</span>
-        <span class="admin-status-badge">Status unavailable</span>
+        <span class="admin-status-badge{% if service.ok %} is-ok{% endif %}">{{ service.text }}</span>
       </li>
       {% endfor %}
     </ul>

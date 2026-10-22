@@ -121,9 +121,7 @@ describe('frontend routes', () => {
         'Manage Customers',
         'Inventory Management',
         'Notifications',
-        'No active notifications',
         'Recent Activity',
-        'No recent activity available',
         'System Status',
         'Database Connection',
         'Backend Service',
@@ -140,16 +138,40 @@ describe('frontend routes', () => {
       assert.match(html, /<a[^>]*href="\/"[^>]*>[^<]*Back to homepage/);
     });
 
-    it('stays available when the backend is unreachable', async () => {
+    it('reflects customer data from the customer source', async () => {
+      const html = await (await fetch(`${base}/admin`)).text();
+      const customersCard = html.match(
+        /admin-summary-label">Customers<\/span>\s*<span class="admin-summary-value">(\d+)</,
+      );
+      assert.equal(customersCard?.[1], String(FIXTURE_CUSTOMERS.length));
+      const activity = html.slice(html.indexOf('Recent Activity'));
+      assert.match(activity, /Aoife Devlin<\/a> registered/);
+      assert.match(activity, /href="\/admin\/customers\/c-27"/);
+      assert.match(html, /Connected/);
+    });
+
+    it('falls back to static placeholders when the backend is unreachable', async () => {
       const dead = createServer();
       const deadOrigin = await listen(dead);
       await close(dead);
       const app = createServer(createApp(deadOrigin));
       const origin = await listen(app);
+      const originalError = console.error;
+      console.error = () => {};
       try {
         const res = await fetch(`${origin}/admin`);
         assert.equal(res.status, 200);
+        const html = await res.text();
+        assert.match(
+          html,
+          /admin-summary-label">Customers<\/span>\s*<span class="admin-summary-value">0</,
+        );
+        assert.ok(html.includes('No active notifications'));
+        assert.ok(html.includes('No recent activity available'));
+        assert.ok(html.includes('Status unavailable'));
+        assert.doesNotMatch(html, /Connected/);
       } finally {
+        console.error = originalError;
         await close(app);
       }
     });
