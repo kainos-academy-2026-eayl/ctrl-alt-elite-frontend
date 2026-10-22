@@ -5,8 +5,7 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | Route | What it does |
 | --- | --- |
 | `GET /` | Homepage ([src/views/homepage.html](src/views/homepage.html)) |
-| `GET /login` | Server-rendered Nunjucks login page ([src/views/Login.njk](src/views/Login.njk)) |
-| `POST /login` | [Server-side login controller](src/server/controllers/Login.ts) checks credentials with the backend, redirects to `/` on success, or renders an error |
+| `GET /login` | Nunjucks login page ([src/views/Login.njk](src/views/Login.njk)), with browser TypeScript compiled from [src/controllers/Login.ts](src/controllers/Login.ts) |
 | `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
 | `GET /unavailable` | Fallback page, served with `503`. Pages redirect here if they cannot be loaded. |
 | `GET /assets/*` | Stylesheets from [src/assets/](src/assets) |

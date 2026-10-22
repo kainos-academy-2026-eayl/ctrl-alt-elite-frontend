@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it, vi } from 'vitest';
@@ -284,6 +285,7 @@ describe('frontend routes', () => {
     for (const [path, type] of [
       ['/assets/styles.css', /text\/css/],
       ['/assets/Login.css', /text\/css/],
+      ['/controllers/Login.js', /javascript/],
       ['/controllers/script.js', /javascript/],
       ['/assets/register.css', /text\/css/],
       ['/controllers/register.js', /javascript/],
