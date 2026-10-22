@@ -56,12 +56,15 @@ function renderPagination(
       ? `<a href="${escapeHtml(urlForPage(page + 1))}" rel="next">Next</a>`
       : '<span class="is-disabled" aria-disabled="true">Next</span>';
   const firstPage = Math.max(1, Math.min(page - 3, totalPages - 6));
-  const numbers = Array.from({ length: Math.min(7, totalPages) }, (_, index) => {
-    const number = firstPage + index;
-    return number === page
-      ? `<span class="is-current" aria-current="page">${number}</span>`
-      : `<a href="${escapeHtml(urlForPage(number))}" aria-label="Page ${number}">${number}</a>`;
-  });
+  const numbers = Array.from(
+    { length: Math.min(7, totalPages) },
+    (_, index) => {
+      const number = firstPage + index;
+      return number === page
+        ? `<span class="is-current" aria-current="page">${number}</span>`
+        : `<a href="${escapeHtml(urlForPage(number))}" aria-label="Page ${number}">${number}</a>`;
+    },
+  );
   const items = [previous, ...numbers, next]
     .map((item) => `<li>${item}</li>`)
     .join('');

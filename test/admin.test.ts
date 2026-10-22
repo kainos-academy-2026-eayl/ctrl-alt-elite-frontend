@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { afterAll, beforeAll, describe, it } from 'vitest';
+import { afterAll, beforeAll, describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
 
 function listen(server: Server): Promise<string> {
@@ -17,24 +17,131 @@ function close(server: Server): Promise<void> {
 }
 
 // The server only serves HTML shells; each page's controller script loads data
-// from the backend in the browser, so none of these routes call the backend.
+// from the backend in the browser. Only the access check calls the backend.
 describe('admin portal pages', () => {
+  let backend: Server;
   let frontend: Server;
   let base: string;
+  let checks = 0;
 
   beforeAll(async () => {
-    frontend = createServer(createApp('http://127.0.0.1:1'));
+    backend = createServer((req, res) => {
+      checks += 1;
+      const auth = req.headers.authorization;
+      const ok = req.url === '/api/admin/customers?pageSize=1';
+      res.statusCode = !ok
+        ? 500
+        : auth === 'Bearer admin-token'
+          ? 200
+          : auth === 'Bearer customer-token'
+            ? 403
+            : auth === 'Bearer broken-token'
+              ? 500
+              : 401;
+      res.end('{}');
+    });
+    frontend = createServer(createApp(await listen(backend)));
     base = await listen(frontend);
   });
 
   afterAll(async () => {
     await close(frontend);
+    await close(backend);
   });
 
-  async function get(path: string) {
-    const res = await fetch(`${base}${path}`);
+  async function get(path: string, token = 'admin-token') {
+    const res = await fetch(`${base}${path}`, {
+      headers: token ? { cookie: `auth_token=${token}` } : {},
+      redirect: 'manual',
+    });
     return { status: res.status, html: await res.text(), res };
   }
+
+  describe('access control', () => {
+    it('redirects visitors without a token to the login page', async () => {
+      const before = checks;
+      const { status, res } = await get('/admin', '');
+      assert.equal(status, 303);
+      assert.equal(res.headers.get('location'), '/login');
+      assert.equal(checks, before);
+    });
+
+    it('redirects expired or invalid tokens to the login page', async () => {
+      for (const path of ['/admin', '/admin/customers/abc']) {
+        const { status, res } = await get(path, 'expired-token');
+        assert.equal(status, 303);
+        assert.equal(res.headers.get('location'), '/login');
+      }
+    });
+
+    it('blocks non-admin users on every admin route', async () => {
+      for (const path of [
+        '/admin',
+        '/admin/customers',
+        '/admin/customers/abc',
+        '/admin/orders',
+        '/admin/unknown',
+      ]) {
+        const { status, html, res } = await get(path, 'customer-token');
+        assert.equal(status, 403, path);
+        assert.match(html, /Access denied/);
+        assert.doesNotMatch(html, /admin-sidebar|adminDashboard\.js/);
+        assert.equal(res.headers.get('cache-control'), 'no-store');
+      }
+    });
+
+    it('redirects to the unavailable page when the check fails', async () => {
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const { status, res } = await get('/admin', 'broken-token');
+        assert.equal(status, 302);
+        assert.equal(res.headers.get('location'), '/unavailable');
+      } finally {
+        errorLog.mockRestore();
+      }
+    });
+
+    it('shows a logout form on every admin page', async () => {
+      for (const path of [
+        '/admin',
+        '/admin/customers',
+        '/admin/customers/abc',
+        '/admin/orders',
+      ]) {
+        const { html } = await get(path);
+        assert.match(
+          html,
+          /<form class="admin-logout-form" action="\/logout" method="post">/,
+          path,
+        );
+        assert.match(html, />Log out<\/button>/);
+      }
+    });
+
+    it('clears the auth cookie on logout and redirects to login', async () => {
+      const res = await fetch(`${base}/logout`, {
+        method: 'POST',
+        headers: { cookie: 'auth_token=admin-token' },
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 303);
+      assert.equal(res.headers.get('location'), '/login');
+      assert.equal(res.headers.get('cache-control'), 'no-store');
+      const cookie = res.headers.get('set-cookie') ?? '';
+      assert.match(cookie, /^auth_token=;/);
+      assert.match(cookie, /Expires=Thu, 01 Jan 1970/);
+      assert.match(cookie, /HttpOnly/i);
+    });
+
+    it('does not allow logout through GET', async () => {
+      const res = await fetch(`${base}/logout`, { redirect: 'manual' });
+      assert.equal(res.status, 404);
+    });
+
+    it('lets admin users through', async () => {
+      assert.equal((await get('/admin')).status, 200);
+    });
+  });
 
   describe('dashboard', () => {
     it('serves the navigation and every placeholder section', async () => {

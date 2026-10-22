@@ -1,4 +1,5 @@
 import type { Request, RequestHandler, Response } from 'express';
+import { readAuthCookie } from './authCookie';
 
 const REQUEST_HEADERS_TO_SKIP = new Set([
   'host',
@@ -21,6 +22,12 @@ export function createApiProxy(backendOrigin: string): RequestHandler {
     for (const [name, value] of Object.entries(req.headers)) {
       if (value === undefined || REQUEST_HEADERS_TO_SKIP.has(name)) continue;
       headers.set(name, Array.isArray(value) ? value.join(', ') : value);
+    }
+
+    // The browser cannot read the httpOnly token, so the proxy attaches it.
+    const token = readAuthCookie(req.headers.cookie);
+    if (token && !headers.has('authorization')) {
+      headers.set('authorization', `Bearer ${token}`);
     }
 
     const hasBody = req.method !== 'GET' && req.method !== 'HEAD';

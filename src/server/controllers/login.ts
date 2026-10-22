@@ -1,4 +1,36 @@
 import type { Request, Response } from 'express';
+import { setAuthCookie } from '../../util/authCookie';
+
+const ROLE_REDIRECTS: Record<string, string> = Object.assign(
+  Object.create(null),
+  { ADMIN: '/admin', CUSTOMER: '/' },
+);
+
+function extractRole(payload: unknown): string | undefined {
+  if (typeof payload !== 'object' || payload === null) return undefined;
+  const user = 'user' in payload ? payload.user : undefined;
+  for (const source of [payload, user]) {
+    if (
+      typeof source === 'object' &&
+      source !== null &&
+      'role' in source &&
+      typeof source.role === 'string'
+    ) {
+      return source.role.trim().toUpperCase();
+    }
+  }
+  return undefined;
+}
+
+function extractToken(payload: unknown): string | undefined {
+  return typeof payload === 'object' &&
+    payload !== null &&
+    'token' in payload &&
+    typeof payload.token === 'string' &&
+    payload.token.length > 0
+    ? payload.token
+    : undefined;
+}
 
 export class LoginController {
   constructor(private readonly backendOrigin: string) {}
@@ -54,6 +86,8 @@ export class LoginController {
     }
 
     let response: globalThis.Response;
+    let role: string | undefined;
+    let token: string | undefined;
     try {
       response = await fetch(new URL('/api/auth/login', this.backendOrigin), {
         method: 'POST',
@@ -62,7 +96,13 @@ export class LoginController {
         redirect: 'manual',
         signal: AbortSignal.timeout(10_000),
       });
-      await response.body?.cancel();
+      if (response.status === 200) {
+        const payload: unknown = await response.json().catch(() => null);
+        role = extractRole(payload);
+        token = extractToken(payload);
+      } else {
+        await response.body?.cancel();
+      }
     } catch (error) {
       console.error('Unable to reach the backend login API:', error);
       this.render(
@@ -75,8 +115,20 @@ export class LoginController {
     }
 
     if (response.status === 200) {
+      const destination = role ? ROLE_REDIRECTS[role] : undefined;
+      if (!destination) {
+        console.error('Backend login returned an unknown role:', role);
+        this.render(
+          res,
+          403,
+          email,
+          'Your account role is not recognised. Please contact support.',
+        );
+        return;
+      }
       res.setHeader('Cache-Control', 'no-store');
-      res.redirect(303, '/');
+      if (token) setAuthCookie(res, token);
+      res.redirect(303, destination);
     } else if (response.status === 401) {
       this.render(res, 401, email, 'Incorrect email or password.');
     } else {

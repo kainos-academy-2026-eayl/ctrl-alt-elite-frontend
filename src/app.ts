@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { LoginController } from './server/controllers/login';
+import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,
   ADMIN_QUICK_ACTIONS,
@@ -11,6 +12,7 @@ import {
   findAdminModule,
 } from './util/adminPortal';
 import { createApiProxy } from './util/apiProxy';
+import { clearAuthCookie } from './util/authCookie';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
 
 const HOME_PAGE_PATH = fileURLToPath(
@@ -88,6 +90,12 @@ export function createApp(backendOrigin: string): Express {
     loginController.submit,
   );
 
+  app.post('/logout', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    clearAuthCookie(res);
+    res.redirect(303, '/login');
+  });
+
   app.get('/register', async (_req: Request, res: Response) => {
     try {
       const register = await readFile(REGISTER_PAGE_PATH, 'utf8');
@@ -97,6 +105,8 @@ export function createApp(backendOrigin: string): Express {
       res.redirect('/unavailable');
     }
   });
+
+  app.use('/admin', createAdminGuard(backendOrigin));
 
   // The server only serves page shells. Live data is loaded in the browser by the
   // matching controller in src/controllers, which calls the backend through /api.
