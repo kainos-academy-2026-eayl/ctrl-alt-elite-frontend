@@ -62,6 +62,7 @@ export class LoginController {
         redirect: 'manual',
         signal: AbortSignal.timeout(10_000),
       });
+      await response.body?.cancel();
     } catch (error) {
       console.error('Unable to reach the backend login API:', error);
       this.render(

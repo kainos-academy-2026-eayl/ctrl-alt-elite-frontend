@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it, vi } from 'vitest';
@@ -144,6 +143,95 @@ describe('frontend routes', () => {
         redirect: 'manual',
       });
     }
+
+    for (const status of [200, 401, 500, 302]) {
+      it(`cancels the unused backend body for status ${status}`, async () => {
+        const cancel = vi.fn();
+        const upstream = new Response(new ReadableStream({ cancel }), {
+          status,
+        });
+        const originalFetch = globalThis.fetch;
+        const fetchMock = vi
+          .spyOn(globalThis, 'fetch')
+          .mockResolvedValueOnce(upstream);
+        const errorLog = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {});
+        try {
+          const res = await originalFetch(`${base}/login`, {
+            method: 'POST',
+            body: new URLSearchParams({
+              email: 'user@example.com',
+              password: 'password',
+            }),
+            redirect: 'manual',
+          });
+          const expectedStatus =
+            status === 200 ? 303 : status === 401 ? 401 : 502;
+          assert.equal(res.status, expectedStatus);
+          assert.equal(cancel.mock.calls.length, 1);
+          assert.equal(upstream.bodyUsed, true);
+          await res.text();
+        } finally {
+          fetchMock.mockRestore();
+          errorLog.mockRestore();
+        }
+      });
+    }
+
+    it('handles a backend response without a body', async () => {
+      const originalFetch = globalThis.fetch;
+      const fetchMock = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+      try {
+        const res = await originalFetch(`${base}/login`, {
+          method: 'POST',
+          body: new URLSearchParams({
+            email: 'user@example.com',
+            password: 'password',
+          }),
+          redirect: 'manual',
+        });
+        assert.equal(res.status, 303);
+        assert.equal(res.headers.get('location'), '/');
+        await res.text();
+      } finally {
+        fetchMock.mockRestore();
+      }
+    });
+
+    it('logs cancellation failures and renders the existing backend error', async () => {
+      const cancellationError = new Error('Unable to cancel response');
+      const upstream = new Response(
+        new ReadableStream({
+          cancel: () => Promise.reject(cancellationError),
+        }),
+      );
+      const originalFetch = globalThis.fetch;
+      const fetchMock = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(upstream);
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const res = await originalFetch(`${base}/login`, {
+          method: 'POST',
+          body: new URLSearchParams({
+            email: 'user@example.com',
+            password: 'password',
+          }),
+          redirect: 'manual',
+        });
+        assert.equal(res.status, 502);
+        assert.match(await res.text(), /Unable to reach the server\./);
+        assert.deepEqual(errorLog.mock.calls, [
+          ['Unable to reach the backend login API:', cancellationError],
+        ]);
+      } finally {
+        fetchMock.mockRestore();
+        errorLog.mockRestore();
+      }
+    });
 
     it('sends credentials from the frontend server to the backend and redirects', async () => {
       const res = await submit(' user@example.com ', 'CorrectPassword@1');

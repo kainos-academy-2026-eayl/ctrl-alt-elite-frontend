@@ -3,6 +3,13 @@ import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { LoginController } from './server/controllers/Login';
+import {
+  ADMIN_NAV_ITEMS,
+  ADMIN_QUICK_ACTIONS,
+  ADMIN_SUMMARY_CARDS,
+  ADMIN_SYSTEM_STATUS,
+  findAdminModule,
+} from './util/adminPortal';
 import { createApiProxy } from './util/apiProxy';
 
 const HOME_PAGE_PATH = fileURLToPath(
