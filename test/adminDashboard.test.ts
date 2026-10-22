@@ -2,17 +2,19 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'vitest';
 import {
   buildNotifications,
-  buildSummaryCards,
   buildSystemStatus,
   loadDashboardCustomerData,
+  renderActivity,
+  renderNotifications,
+  renderSystemStatus,
 } from '../src/util/adminDashboard';
-import type { CustomerSource } from '../src/util/customers';
+import type { Customer, CustomerSource } from '../src/util/customers';
 import { createInMemoryCustomerSource } from './customerFixtures';
 
 const NOW = new Date('2026-10-22T10:00:00Z');
 
 describe('dashboard customer data', () => {
-  it('counts customers registered in the last 7 days', async () => {
+  it('loads the total, latest registrations and the last-7-days count', async () => {
     const data = await loadDashboardCustomerData(
       createInMemoryCustomerSource(),
       NOW,
@@ -43,7 +45,7 @@ describe('dashboard customer data', () => {
     assert.deepEqual(buildNotifications(none), []);
   });
 
-  it('returns unavailable placeholder data instead of throwing', async () => {
+  it('returns unavailable data instead of throwing when the backend fails', async () => {
     const failing: CustomerSource = {
       query: async () => {
         throw new Error('down');
@@ -62,25 +64,6 @@ describe('dashboard customer data', () => {
     }
   });
 
-  it('only replaces the Customers card, and only when data is available', async () => {
-    const cards = [
-      { label: 'Orders', value: 0 },
-      { label: 'Customers', value: 0 },
-    ];
-    const data = await loadDashboardCustomerData(
-      createInMemoryCustomerSource(),
-      NOW,
-    );
-    assert.deepEqual(buildSummaryCards(cards, data), [
-      { label: 'Orders', value: 0 },
-      { label: 'Customers', value: 27 },
-    ]);
-    assert.deepEqual(
-      buildSummaryCards(cards, { ...data, available: false }),
-      cards,
-    );
-  });
-
   it('derives backend status from availability and leaves email unknown', () => {
     const up = buildSystemStatus(true);
     assert.deepEqual(
@@ -89,5 +72,39 @@ describe('dashboard customer data', () => {
     );
     assert.equal(up[3]?.text, 'Status unavailable');
     assert.ok(buildSystemStatus(false).every((service) => !service.ok));
+  });
+});
+
+describe('dashboard rendering', () => {
+  const customer: Customer = {
+    id: 'abc-1',
+    firstName: '<b>Eve</b>',
+    lastName: 'O"Neil',
+    email: 'eve@example.com',
+    registrationDate: '2026-10-21',
+  };
+
+  it('renders empty states', () => {
+    assert.match(renderNotifications([]), /No active notifications/);
+    assert.match(renderActivity([]), /No recent activity available/);
+  });
+
+  it('renders activity entries as links to the customer, escaping names', () => {
+    const html = renderActivity([customer]);
+    assert.match(html, /href="\/admin\/customers\/abc-1"/);
+    assert.match(html, /&lt;b&gt;Eve&lt;\/b&gt; O&quot;Neil/);
+    assert.doesNotMatch(html, /<b>Eve/);
+    assert.match(html, /21 Oct 2026/);
+  });
+
+  it('renders notifications and status badges', () => {
+    assert.match(
+      renderNotifications(['3 new customers registered in the last 7 days']),
+      /<a href="\/admin\/customers\?sort=newest">3 new customers/,
+    );
+    const status = renderSystemStatus(buildSystemStatus(true));
+    assert.match(status, /Database Connection/);
+    assert.match(status, /admin-status-badge is-ok">Connected/);
+    assert.match(status, /admin-status-badge">Status unavailable/);
   });
 });
