@@ -32,7 +32,7 @@ export function createApp(backendOrigin: string): Express {
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
-  registerProductApp(app);
+  registerProductApp(app, backendOrigin);
 
   app.get('/', async (_req: Request, res: Response) => {
     try {

@@ -45,6 +45,22 @@ describe('frontend routes', () => {
       } else if (req.url === '/api/missing') {
         res.statusCode = 404;
         res.end('nope');
+      } else if (req.url === '/api/products') {
+        res.setHeader('content-type', 'application/json');
+        res.end(
+          JSON.stringify({
+            products: [
+              {
+                id: 'database-product',
+                name: 'Backend Product',
+                category: 'Test category',
+                price: 25,
+                image: 'https://example.com/product.jpg',
+                description: 'Loaded from the backend test server.',
+              },
+            ],
+          }),
+        );
       } else {
         res.statusCode = 500;
         res.end();
@@ -88,6 +104,17 @@ describe('frontend routes', () => {
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       assert.match(await res.text(), /<html/i);
+    });
+  });
+
+  describe('GET /products', () => {
+    it('renders products returned by the backend API', async () => {
+      const res = await fetch(`${base}/products`);
+      assert.equal(res.status, 200);
+      const html = await res.text();
+      assert.match(html, /Backend Product/);
+      assert.match(html, /Test category/);
+      assert.doesNotMatch(html, /Studio Wireless Headphones/);
     });
   });
 

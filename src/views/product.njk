@@ -34,6 +34,9 @@
         <p class="results-count" id="resultsCount" aria-live="polite">{{ products.length }} products</p>
 
         <section class="product-grid" id="productGrid" aria-label="Products">
+            {% if productError %}
+            <p class="empty-state" role="alert">{{ productError }}</p>
+            {% else %}
             {% for product in products %}
             <article class="product-tile" data-product-card data-search="{{ product.searchText }}">
                 <div class="product-image-wrap">
@@ -56,6 +59,7 @@
             {% else %}
             <p class="empty-state">There are no products to show right now.</p>
             {% endfor %}
+            {% endif %}
             <p class="empty-state" id="noSearchResults" hidden>No products match your search.</p>
         </section>
     </main>

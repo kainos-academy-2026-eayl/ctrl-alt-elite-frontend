@@ -9,50 +9,31 @@ const PRODUCT_TEMPLATE_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
 );
 
-const DEMO_PRODUCTS = [
-  {
-    id: 'studio-headphones',
-    name: 'Studio Wireless Headphones',
-    category: 'Audio',
-    price: 129.99,
-    image:
-      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=85',
-    description:
-      'Comfortable over-ear headphones with clear sound for music, calls, and focused work.',
-  },
-  {
-    id: 'mirrorless-camera',
-    name: 'Compact Mirrorless Camera',
-    category: 'Photography',
-    price: 549.0,
-    image:
-      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=900&q=85',
-    description:
-      'A portable camera for capturing detailed photos and video while travelling.',
-  },
-  {
-    id: 'steel-watch',
-    name: 'Minimal Steel Watch',
-    category: 'Wearables',
-    price: 89.5,
-    image:
-      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=85',
-    description:
-      'A clean, everyday watch with a stainless-steel finish and simple dial.',
-  },
-  {
-    id: 'portable-speaker',
-    name: 'Portable Bluetooth Speaker',
-    category: 'Audio',
-    price: 64.99,
-    image:
-      'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=900&q=85',
-    description:
-      'A compact speaker designed to bring your playlists into any room.',
-  },
-];
+type BackendProduct = {
+  id: string | number;
+  name: string;
+  category: string;
+  price: number | string;
+  image: string;
+  description: string;
+};
 
-export function registerProductApp(app: Express): void {
+function getProducts(payload: unknown): BackendProduct[] {
+  if (Array.isArray(payload)) return payload as BackendProduct[];
+
+  if (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'products' in payload &&
+    Array.isArray(payload.products)
+  ) {
+    return payload.products as BackendProduct[];
+  }
+
+  throw new Error('The products API returned an unexpected response.');
+}
+
+export function registerProductApp(app: Express, backendOrigin: string): void {
   nunjucks.configure(PRODUCT_TEMPLATE_DIRECTORY, {
     autoescape: true,
     express: app,
@@ -64,16 +45,33 @@ export function registerProductApp(app: Express): void {
     express.static(PRODUCT_CATALOG_DIRECTORY, { index: false }),
   );
 
-  app.get('/products', (_req: Request, res: Response) => {
-    const products = DEMO_PRODUCTS.map((product) => ({
-      ...product,
-      priceLabel: new Intl.NumberFormat('en-GB', {
-        style: 'currency',
-        currency: 'GBP',
-      }).format(product.price),
-      searchText: `${product.name} ${product.category}`.toLowerCase(),
-    }));
+  app.get('/products', async (_req: Request, res: Response) => {
+    try {
+      const response = await fetch(new URL('/api/products', backendOrigin), {
+        headers: { accept: 'application/json' },
+      });
 
-    res.render('product.njk', { products });
+      if (!response.ok) {
+        throw new Error(`Products API returned ${response.status}.`);
+      }
+
+      const records = getProducts(await response.json());
+      const products = records.map((product) => ({
+        ...product,
+        priceLabel: new Intl.NumberFormat('en-GB', {
+          style: 'currency',
+          currency: 'GBP',
+        }).format(Number(product.price)),
+        searchText: `${product.name} ${product.category}`.toLowerCase(),
+      }));
+
+      res.render('product.njk', { products });
+    } catch (error) {
+      console.error('Unable to load products from the backend:', error);
+      res.status(502).render('product.njk', {
+        products: [],
+        productError: 'Products are temporarily unavailable.',
+      });
+    }
   });
 }
