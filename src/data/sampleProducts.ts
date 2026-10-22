@@ -2,6 +2,8 @@
  * TEMPORARY sample products so the basket can be tested before the product
  * ticket is complete. To remove: delete this file and the SAMPLE_PRODUCTS
  * import/usage in src/app.ts, then pass the real products to the homepage.
+ * The ids must exist in the backend's product catalogue (prisma/seed.ts), which
+ * is the source of truth for prices in the basket.
  */
 
 export interface Product {

@@ -2,20 +2,17 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'vitest';
 import {
   addedMessage,
-  addItem,
   type BasketItem,
+  type BasketResponse,
   calculateTotals,
-  changeQuantity,
   createCheckoutSnapshot,
   formatItemCount,
   formatPrice,
+  isBasketResponse,
   isValidItem,
   MAX_QUANTITY,
-  maxQuantityMessage,
   nextAddCount,
   parseProduct,
-  parseSavedBasket,
-  removeItem,
 } from '../src/controllers/lib/basketLogic';
 
 const lamp: BasketItem = {
@@ -83,36 +80,45 @@ describe('isValidItem', () => {
   }
 });
 
-describe('parseSavedBasket', () => {
-  it('returns an empty basket when nothing is saved', () => {
-    assert.deepEqual(parseSavedBasket(null), { items: [], repaired: false });
+describe('isBasketResponse', () => {
+  const response: BasketResponse = {
+    id: '6f1c2f0e-6a8e-4c43-9a51-3f3c9b8f4b11',
+    items: [
+      { ...lamp, lineTotalPence: 4998 },
+      { ...mug, lineTotalPence: 550 },
+    ],
+    itemCount: 3,
+    totalPence: 5548,
+    maxQuantity: MAX_QUANTITY,
+  };
+
+  it('accepts a consistent basket from the server', () => {
+    assert.equal(isBasketResponse(response), true);
   });
 
-  it('returns saved items unchanged when they are all valid', () => {
-    assert.deepEqual(parseSavedBasket(JSON.stringify([lamp, mug])), {
-      items: [lamp, mug],
-      repaired: false,
+  it('accepts an empty basket', () => {
+    assert.equal(
+      isBasketResponse({ ...response, items: [], itemCount: 0, totalPence: 0 }),
+      true,
+    );
+  });
+
+  for (const [description, value] of [
+    ['null', null],
+    ['a missing id', { ...response, id: '' }],
+    ['items that are not a list', { ...response, items: 'lamp' }],
+    [
+      'a line total that does not match',
+      { ...response, items: [{ ...lamp, lineTotalPence: 1 }] },
+    ],
+    ['an item count that does not add up', { ...response, itemCount: 4 }],
+    ['a total that does not add up', { ...response, totalPence: 1 }],
+    ['a missing maximum quantity', { ...response, maxQuantity: undefined }],
+  ] as const) {
+    it(`rejects ${description}`, () => {
+      assert.equal(isBasketResponse(value), false);
     });
-  });
-
-  it('drops invalid items and reports the basket as repaired', () => {
-    const raw = JSON.stringify([lamp, { id: '', name: 'Broken' }]);
-    assert.deepEqual(parseSavedBasket(raw), { items: [lamp], repaired: true });
-  });
-
-  it('starts fresh when the saved value is not valid JSON', () => {
-    assert.deepEqual(parseSavedBasket('{not json'), {
-      items: [],
-      repaired: true,
-    });
-  });
-
-  it('starts fresh when the saved value is not a list', () => {
-    assert.deepEqual(parseSavedBasket('{"id":"lamp"}'), {
-      items: [],
-      repaired: true,
-    });
-  });
+  }
 });
 
 describe('parseProduct', () => {
@@ -184,73 +190,6 @@ describe('calculateTotals', () => {
   });
 });
 
-describe('addItem', () => {
-  it('adds a new product with a quantity of 1', () => {
-    assert.deepEqual(addItem([mug], { ...lamp, quantity: 5 }), {
-      status: 'added',
-      items: [mug, { ...lamp, quantity: 1 }],
-    });
-  });
-
-  it('increases the quantity of a product already in the basket', () => {
-    assert.deepEqual(addItem([lamp, mug], mug), {
-      status: 'added',
-      items: [lamp, { ...mug, quantity: 2 }],
-    });
-  });
-
-  it('refuses to go above the maximum quantity', () => {
-    const full = { ...mug, quantity: MAX_QUANTITY };
-    assert.deepEqual(addItem([full], mug), { status: 'at-max' });
-  });
-
-  it('does not change the basket it was given', () => {
-    const items = [{ ...mug }];
-    addItem(items, mug);
-    assert.deepEqual(items, [mug]);
-  });
-});
-
-describe('changeQuantity', () => {
-  it('increases and decreases the matching item only', () => {
-    assert.deepEqual(changeQuantity([lamp, mug], 'sample-mug', 1), [
-      lamp,
-      { ...mug, quantity: 2 },
-    ]);
-    assert.deepEqual(changeQuantity([lamp, mug], 'sample-lamp', -1), [
-      { ...lamp, quantity: 1 },
-      mug,
-    ]);
-  });
-
-  it('never goes below 1', () => {
-    assert.deepEqual(changeQuantity([mug], 'sample-mug', -1), [mug]);
-  });
-
-  it('never goes above the maximum', () => {
-    const full = { ...mug, quantity: MAX_QUANTITY };
-    assert.deepEqual(changeQuantity([full], 'sample-mug', 1), [full]);
-  });
-
-  it('leaves the basket unchanged for an unknown id', () => {
-    assert.deepEqual(changeQuantity([lamp], 'unknown', 1), [lamp]);
-  });
-});
-
-describe('removeItem', () => {
-  it('removes the matching item', () => {
-    assert.deepEqual(removeItem([lamp, mug], 'sample-lamp'), [mug]);
-  });
-
-  it('returns an empty basket when the last item is removed', () => {
-    assert.deepEqual(removeItem([mug], 'sample-mug'), []);
-  });
-
-  it('leaves the basket unchanged for an unknown id', () => {
-    assert.deepEqual(removeItem([lamp], 'unknown'), [lamp]);
-  });
-});
-
 describe('add to basket notification', () => {
   describe('nextAddCount', () => {
     it('starts at 1 when nothing was recently added', () => {
@@ -287,15 +226,6 @@ describe('add to basket notification', () => {
       assert.equal(
         addedMessage('A5 Notebook', 5),
         '5 × A5 Notebook added to your basket',
-      );
-    });
-  });
-
-  describe('maxQuantityMessage', () => {
-    it('explains the maximum quantity has been reached', () => {
-      assert.equal(
-        maxQuantityMessage('A5 Notebook'),
-        `You already have the maximum of ${MAX_QUANTITY} × A5 Notebook in your basket`,
       );
     });
   });

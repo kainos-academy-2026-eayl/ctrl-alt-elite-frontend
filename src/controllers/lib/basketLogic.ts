@@ -1,6 +1,8 @@
 /*
- * Pure basket rules used by src/controllers/basket.ts. Nothing in this file
- * touches the page or sessionStorage, so every function can be unit tested.
+ * Pure basket helpers used by src/controllers/basket.ts. Nothing in this file
+ * touches the page, the network or sessionStorage, so every function can be
+ * unit tested. The backend owns the basket rules (quantity limits, prices and
+ * totals); these helpers format its responses and check they are consistent.
  * Prices are whole pence to avoid floating point rounding errors.
  */
 
@@ -15,6 +17,15 @@ export interface BasketItem {
 
 export interface BasketLine extends BasketItem {
   lineTotalPence: number;
+}
+
+/** The basket returned by every /api/baskets endpoint. */
+export interface BasketResponse {
+  id: string;
+  items: BasketLine[];
+  itemCount: number;
+  totalPence: number;
+  maxQuantity: number;
 }
 
 export interface BasketTotals {
@@ -41,10 +52,6 @@ export interface RecentAdd {
   productId: string;
   count: number;
 }
-
-export type AddResult =
-  | { status: 'added'; items: BasketItem[] }
-  | { status: 'at-max' };
 
 const currency = new Intl.NumberFormat('en-GB', {
   style: 'currency',
@@ -76,30 +83,6 @@ export function isValidItem(item: unknown): item is BasketItem {
   );
 }
 
-/**
- * Reads a saved basket. `repaired` is true when the saved value was
- * unreadable or contained invalid items that had to be dropped.
- */
-export function parseSavedBasket(raw: string | null): {
-  items: BasketItem[];
-  repaired: boolean;
-} {
-  if (raw === null) {
-    return { items: [], repaired: false };
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return { items: [], repaired: true };
-  }
-  if (!Array.isArray(parsed)) {
-    return { items: [], repaired: true };
-  }
-  const items = parsed.filter(isValidItem);
-  return { items, repaired: items.length !== parsed.length };
-}
-
 /** Turns "Add to Basket" button data into a basket item, or null if invalid. */
 export function parseProduct({
   id,
@@ -121,6 +104,38 @@ export function parseProduct({
   return { id: productId, name: productName, unitPricePence, quantity: 1 };
 }
 
+function isValidLine(line: unknown): line is BasketLine {
+  return (
+    isValidItem(line) &&
+    (line as BasketItem & Record<string, unknown>).lineTotalPence ===
+      line.unitPricePence * line.quantity
+  );
+}
+
+/**
+ * Checks a backend response before it is shown, so a malformed or
+ * inconsistent basket (e.g. totals that do not add up) is never displayed.
+ */
+export function isBasketResponse(value: unknown): value is BasketResponse {
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+  const candidate = value as Record<string, unknown>;
+  if (
+    typeof candidate.id !== 'string' ||
+    candidate.id === '' ||
+    !Array.isArray(candidate.items) ||
+    !candidate.items.every(isValidLine) ||
+    !Number.isInteger(candidate.maxQuantity)
+  ) {
+    return false;
+  }
+  const { itemCount, totalPence } = calculateTotals(candidate.items);
+  return (
+    candidate.itemCount === itemCount && candidate.totalPence === totalPence
+  );
+}
+
 export function calculateTotals(items: readonly BasketItem[]): BasketTotals {
   const lines = items.map((item) => ({
     ...item,
@@ -131,48 +146,6 @@ export function calculateTotals(items: readonly BasketItem[]): BasketTotals {
     itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),
     totalPence: lines.reduce((sum, line) => sum + line.lineTotalPence, 0),
   };
-}
-
-export function addItem(
-  items: readonly BasketItem[],
-  product: BasketItem,
-): AddResult {
-  const existing = items.find((item) => item.id === product.id);
-  if (!existing) {
-    return { status: 'added', items: [...items, { ...product, quantity: 1 }] };
-  }
-  if (existing.quantity >= MAX_QUANTITY) {
-    return { status: 'at-max' };
-  }
-  return {
-    status: 'added',
-    items: items.map((item) =>
-      item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
-    ),
-  };
-}
-
-/** Changes a quantity, keeping it between 1 and MAX_QUANTITY. */
-export function changeQuantity(
-  items: readonly BasketItem[],
-  id: string,
-  change: number,
-): BasketItem[] {
-  return items.map((item) =>
-    item.id === id
-      ? {
-          ...item,
-          quantity: Math.min(Math.max(item.quantity + change, 1), MAX_QUANTITY),
-        }
-      : item,
-  );
-}
-
-export function removeItem(
-  items: readonly BasketItem[],
-  id: string,
-): BasketItem[] {
-  return items.filter((item) => item.id !== id);
 }
 
 /**
@@ -190,10 +163,6 @@ export function addedMessage(productName: string, count: number): string {
   return count === 1
     ? `${productName} added to your basket`
     : `${count} × ${productName} added to your basket`;
-}
-
-export function maxQuantityMessage(productName: string): string {
-  return `You already have the maximum of ${MAX_QUANTITY} × ${productName} in your basket`;
 }
 
 export function createCheckoutSnapshot(
