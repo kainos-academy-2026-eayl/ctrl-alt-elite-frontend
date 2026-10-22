@@ -194,6 +194,7 @@ describe('frontend routes', () => {
     async function submit(email: string, password: string) {
       return fetch(`${base}/login`, {
         method: 'POST',
+        headers: { origin: base },
         body: new URLSearchParams({ email, password }),
         redirect: 'manual',
       });
@@ -216,6 +217,7 @@ describe('frontend routes', () => {
         try {
           const res = await originalFetch(`${base}/login`, {
             method: 'POST',
+            headers: { origin: base },
             body: new URLSearchParams({
               email: 'user@example.com',
               password: 'password',
@@ -244,6 +246,7 @@ describe('frontend routes', () => {
       try {
         const res = await originalFetch(`${base}/login`, {
           method: 'POST',
+          headers: { origin: base },
           body: new URLSearchParams({
             email: 'user@example.com',
             password: 'password',
@@ -274,7 +277,7 @@ describe('frontend routes', () => {
     it('clears an existing auth cookie when the backend returns no token', async () => {
       const res = await fetch(`${base}/login`, {
         method: 'POST',
-        headers: { cookie: 'auth_token=admin.jwt.token' },
+        headers: { origin: base, cookie: 'auth_token=admin.jwt.token' },
         body: new URLSearchParams({
           email: 'user@example.com',
           password: 'CorrectPassword@1',
@@ -332,6 +335,7 @@ describe('frontend routes', () => {
       try {
         const res = await originalFetch(`${base}/login`, {
           method: 'POST',
+          headers: { origin: base },
           body: new URLSearchParams({
             email: 'user@example.com',
             password: 'password',
@@ -407,7 +411,7 @@ describe('frontend routes', () => {
       const count = loginRequests.length;
       const res = await fetch(`${base}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { origin: base, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: 'user@example.com',
           password: 'password',
@@ -416,6 +420,26 @@ describe('frontend routes', () => {
       assert.equal(res.status, 415);
       assert.equal(loginRequests.length, count);
       assert.match(await res.text(), /Please submit the login form\./);
+    });
+
+    it('rejects cross-origin login submissions without calling the backend', async () => {
+      const count = loginRequests.length;
+      const res = await fetch(`${base}/login`, {
+        method: 'POST',
+        headers: {
+          origin: 'https://attacker.example',
+          cookie: 'auth_token=admin.jwt.token',
+        },
+        body: new URLSearchParams({
+          email: 'user@example.com',
+          password: 'CorrectPassword@1',
+        }),
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 403);
+      assert.equal(loginRequests.length, count);
+      assert.equal(res.headers.get('set-cookie'), null);
+      await res.text();
     });
 
     it('renders a safe error when the backend fails', async () => {
@@ -442,6 +466,7 @@ describe('frontend routes', () => {
       try {
         const res = await fetch(`${origin}/login`, {
           method: 'POST',
+          headers: { origin },
           body: new URLSearchParams({
             email: 'user@example.com',
             password: 'password',

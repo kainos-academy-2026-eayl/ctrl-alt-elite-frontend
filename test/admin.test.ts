@@ -121,7 +121,7 @@ describe('admin portal pages', () => {
     it('clears the auth cookie on logout and redirects to login', async () => {
       const res = await fetch(`${base}/logout`, {
         method: 'POST',
-        headers: { cookie: 'auth_token=admin-token' },
+        headers: { origin: base, cookie: 'auth_token=admin-token' },
         redirect: 'manual',
       });
       assert.equal(res.status, 303);
@@ -131,6 +131,20 @@ describe('admin portal pages', () => {
       assert.match(cookie, /^auth_token=;/);
       assert.match(cookie, /Expires=Thu, 01 Jan 1970/);
       assert.match(cookie, /HttpOnly/i);
+    });
+
+    it('rejects cross-origin logout submissions without clearing the auth cookie', async () => {
+      const res = await fetch(`${base}/logout`, {
+        method: 'POST',
+        headers: {
+          origin: 'https://attacker.example',
+          cookie: 'auth_token=admin-token',
+        },
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 403);
+      assert.equal(res.headers.get('set-cookie'), null);
+      await res.text();
     });
 
     it('does not allow logout through GET', async () => {
