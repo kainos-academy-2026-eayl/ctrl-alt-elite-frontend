@@ -29,7 +29,10 @@ The frontend controller calls `BACKEND_ORIGIN/api/auth/login` with JSON.
 A successful backend response produces a `303` redirect to the homepage.
 Incorrect credentials render the login page with an error and retain the email,
 but never the password. Backend failures also render an error.
-Login does not require browser JavaScript. This verifies credentials only; it
+Login submission does not require browser JavaScript. An optional browser script
+adds an eye-icon button inside the password field with a Show password / Hide
+password accessible label; without JavaScript the password
+stays masked and the button stays hidden. This verifies credentials only; it
 does not establish a persistent session or protect the homepage.
 
 Server-side controllers live in `src/server/controllers/` and are not bundled for the
