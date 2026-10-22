@@ -5,13 +5,32 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | Route | What it does |
 | --- | --- |
 | `GET /` | Homepage ([src/views/homepage.html](src/views/homepage.html)) |
-| `GET /login` | Nunjucks login page ([src/views/Login.njk](src/views/Login.njk)), with browser TypeScript compiled from [src/controllers/Login.ts](src/controllers/Login.ts) |
+| `GET /login` | Server-rendered Nunjucks login page ([src/views/Login.njk](src/views/Login.njk)) |
+| `POST /login` | [Server-side login controller](src/server/controllers/Login.ts) checks credentials with the backend, redirects to `/` on success, or renders an error |
 | `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
 | `GET /unavailable` | Fallback page, served with `503`. Pages redirect here if they cannot be loaded. |
 | `GET /assets/*` | Stylesheets from [src/assets/](src/assets) |
 | `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
+
+### Login flow
+
+Nunjucks is registered as Express's `.njk` view engine in [src/app.ts](src/app.ts),
+with templates loaded from `src/views/` and automatic HTML escaping enabled.
+Controllers render templates through `res.render()`.
+
+The browser submits the login form to `POST /login` as URL-encoded form data.
+The frontend controller calls `BACKEND_ORIGIN/api/auth/login` with JSON.
+A successful backend response produces a `303` redirect to the homepage.
+Incorrect credentials render the login page with an error and retain the email,
+but never the password. Backend failures also render an error.
+Login does not require browser JavaScript. This verifies credentials only; it
+does not establish a persistent session or protect the homepage.
+
+Server-side controllers live in `src/server/controllers/` and are not bundled for the
+browser. Browser scripts remain in `src/controllers/`; registration still uses its
+existing browser script and API proxy.
 
 ## Requirements
 
@@ -82,6 +101,8 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 │   ├── app.ts            # builds the Express app: routes, static folders, API proxy
 │   ├── views/            # HTML pages (homepage, register, unavailable)
 │   ├── assets/           # CSS served at /assets
+│   ├── server/
+│   │   └── controllers/  # server-side controllers (login)
 │   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers
 │   ├── util/
 │   │   └── apiProxy.ts   # forwards /api requests to the backend
@@ -118,7 +139,7 @@ Say you want a `/about` page.
 <script src="/controllers/script.js" defer></script>
 ```
 
-Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/controllers/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/controllers/`.
+Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/controllers/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/controllers/`. Keep server-side request handlers in `src/server/controllers/`.
 
 **2. Register the route** in [src/app.ts](src/app.ts), following the existing pages:
 
