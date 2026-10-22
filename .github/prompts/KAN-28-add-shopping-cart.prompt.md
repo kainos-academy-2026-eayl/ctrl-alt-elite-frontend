@@ -1,4 +1,3 @@
----
 agent: agent
 model: Claude Haiku 5.5
 description: Shopping cart functionality for adding items to a basket and proceeding to checkout.
