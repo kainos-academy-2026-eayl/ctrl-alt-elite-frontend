@@ -5,6 +5,7 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | Route | What it does |
 | --- | --- |
 | `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Currently lists temporary products from [src/data/sampleProducts.ts](src/data/sampleProducts.ts) until the product ticket is complete. |
+| `GET /search?q=` | Search results page ([src/views/search.njk](src/views/search.njk)). The term is normalised, then searched with the backend product search API (`GET /api/products/search`, see [src/util/productApi.ts](src/util/productApi.ts)). A blank term does not call the backend; if the backend fails, the page redirects to `/unavailable`. |
 | `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
 | `GET /basket` | Basket page ([src/views/basket.njk](src/views/basket.njk)). Items are stored by the backend basket API (`/api/baskets`, via the `/api` proxy); [src/controllers/basket.ts](src/controllers/basket.ts) keeps only the basket id in `sessionStorage`. |
 | `GET /unavailable` | Fallback page, served with `503`. Pages redirect here if they cannot be loaded. |

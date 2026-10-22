@@ -4,7 +4,11 @@ import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { SAMPLE_PRODUCTS } from './data/sampleProducts';
 import { createApiProxy } from './util/apiProxy';
-import { normaliseSearchTerm, searchProducts } from './util/productSearch';
+import { searchProductsApi } from './util/productApi';
+import {
+  normaliseSearchTerm,
+  type ProductSearchResult,
+} from './util/productSearch';
 
 const VIEWS_DIRECTORY = new URL('../src/views/', import.meta.url);
 const ASSETS_DIRECTORY = fileURLToPath(
@@ -49,11 +53,22 @@ export function createApp(backendOrigin: string): Express {
     );
   });
 
-  app.get('/search', (req: Request, res: Response) => {
+  app.get('/search', async (req: Request, res: Response) => {
     const searchTerm = normaliseSearchTerm(req.query.q);
+    let result: ProductSearchResult = { products: [], isClosestMatch: false };
+    if (searchTerm !== '') {
+      try {
+        result = await searchProductsApi(backendOrigin, searchTerm);
+      } catch (error) {
+        console.error('Unable to search products:', error);
+        res.redirect('/unavailable');
+        return;
+      }
+    }
+    const { products, isClosestMatch } = result;
     res.render(
       'search',
-      { searchTerm, products: searchProducts(SAMPLE_PRODUCTS, searchTerm) },
+      { searchTerm, products, isClosestMatch },
       (error: Error | null, html?: string) => {
         if (error || html === undefined) {
           console.error('Unable to load the search page:', error);

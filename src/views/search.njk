@@ -37,7 +37,11 @@
       {% if not searchTerm %}
       <p class="search-message" role="status">Enter a product name or keyword to search.</p>
       {% elif products.length %}
+      {% if isClosestMatch %}
+      <p class="search-message" role="status">No exact matches for "{{ searchTerm }}". Showing the closest {{ "match" if products.length == 1 else "matches" }}.</p>
+      {% else %}
       <p class="search-message" role="status">{{ products.length }} {{ "product" if products.length == 1 else "products" }} found for "{{ searchTerm }}".</p>
+      {% endif %}
       <ul class="product-grid">
         {% for product in products %}
         {% include "_productCard.njk" %}

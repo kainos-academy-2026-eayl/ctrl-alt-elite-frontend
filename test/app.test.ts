@@ -17,6 +17,64 @@ function close(server: Server): Promise<void> {
   return new Promise((resolve) => server.close(() => resolve()));
 }
 
+function product(
+  id: string,
+  name: string,
+  description: string,
+  price: string,
+  isInStock: boolean,
+) {
+  return {
+    id,
+    name,
+    description,
+    imageUrl: '/assets/images/placeholder.svg',
+    price,
+    keywords: [],
+    isInStock,
+  };
+}
+
+const DESK_LAMP = product(
+  'sample-lamp',
+  'Desk Lamp',
+  'Adjustable LED lamp with a warm and a cool light setting.',
+  '24.99',
+  true,
+);
+const NOISE_CANCELLING_HEADPHONES = product(
+  'sample-headphones',
+  'Noise-Cancelling Headphones',
+  'Over-ear headphones with active noise cancelling.',
+  '129.99',
+  true,
+);
+const STUDIO_HEADPHONES = product(
+  'sample-studio-headphones',
+  'Studio Headphones',
+  'Wired studio headphones with a flat sound profile.',
+  '89.00',
+  false,
+);
+const HEADPHONES = [NOISE_CANCELLING_HEADPHONES, STUDIO_HEADPHONES];
+
+/**
+ * Canned responses from the backend's GET /api/products/search, keyed by the
+ * term it receives. The backend owns the matching rules and tests them; any
+ * other term returns no products.
+ */
+const SEARCH_RESPONSES: Record<
+  string,
+  { products: unknown[]; isClosestMatch: boolean }
+> = {
+  lamp: { products: [DESK_LAMP], isClosestMatch: false },
+  'desk lamp': { products: [DESK_LAMP], isClosestMatch: false },
+  'dek lam': { products: [DESK_LAMP], isClosestMatch: true },
+  '<lamp>': { products: [DESK_LAMP], isClosestMatch: true },
+  headphone: { products: HEADPHONES, isClosestMatch: false },
+  hedphones: { products: HEADPHONES, isClosestMatch: true },
+};
+
 async function readBody(req: IncomingMessage): Promise<string> {
   let body = '';
   for await (const chunk of req) body += chunk;
@@ -27,10 +85,29 @@ describe('frontend routes', () => {
   let backend: Server;
   let frontend: Server;
   let base: string;
+  const searchRequests: string[] = [];
 
   beforeAll(async () => {
     backend = createServer(async (req, res) => {
-      if (req.url === '/api/echo') {
+      const url = new URL(req.url ?? '/', 'http://backend');
+      if (url.pathname === '/api/products/search') {
+        const q = url.searchParams.get('q') ?? '';
+        searchRequests.push(q);
+        if (q === 'backend-error') {
+          res.statusCode = 500;
+          res.end(
+            JSON.stringify({ message: 'Unable to complete the request.' }),
+          );
+          return;
+        }
+        res.setHeader('content-type', 'application/json');
+        res.end(
+          JSON.stringify({
+            searchTerm: q,
+            ...(SEARCH_RESPONSES[q] ?? { products: [], isClosestMatch: false }),
+          }),
+        );
+      } else if (req.url === '/api/echo') {
         res.setHeader('content-type', 'application/json');
         res.setHeader('x-custom', 'yes');
         res.setHeader('set-cookie', ['a=1; Path=/', 'b=2; Path=/']);
@@ -95,6 +172,75 @@ describe('frontend routes', () => {
     it('shows a message when nothing matches', async () => {
       const html = await (await fetch(`${base}/search?q=zzzz`)).text();
       assert.match(html, /No products found/);
+    });
+
+    it('shows the count for an exact match', async () => {
+      const html = await (await fetch(`${base}/search?q=desk+lamp`)).text();
+      assert.match(html, /1 product found for "desk lamp"/);
+      assert.doesNotMatch(html, /No exact matches/);
+    });
+
+    it('shows the closest product for a misspelled search', async () => {
+      const html = await (await fetch(`${base}/search?q=dek+lam`)).text();
+      assert.match(
+        html,
+        /No exact matches for "dek lam"\. Showing the closest match\./,
+      );
+      assert.match(html, /Desk Lamp/);
+      assert.doesNotMatch(html, /Ceramic Mug/);
+    });
+
+    it('uses the plural message when several products are closest', async () => {
+      const html = await (await fetch(`${base}/search?q=hedphones`)).text();
+      assert.match(html, /Showing the closest matches\./);
+      assert.match(html, /Noise-Cancelling Headphones/);
+      assert.match(html, /Studio Headphones/);
+    });
+
+    it('escapes the search term in the closest match message', async () => {
+      const html = await (
+        await fetch(`${base}/search?q=${encodeURIComponent('<lamp>')}`)
+      ).text();
+      assert.match(html, /No exact matches for "&lt;lamp&gt;"/);
+      assert.doesNotMatch(html, /<lamp>/);
+    });
+
+    it('searches the backend product API with the normalised term', async () => {
+      searchRequests.length = 0;
+      await fetch(`${base}/search?q=${encodeURIComponent('  desk & lamp  ')}`);
+      assert.deepEqual(searchRequests, ['desk & lamp']);
+    });
+
+    it('does not call the backend for a blank search', async () => {
+      searchRequests.length = 0;
+      const html = await (await fetch(`${base}/search?q=+++`)).text();
+      assert.deepEqual(searchRequests, []);
+      assert.match(html, /Enter a product name or keyword to search\./);
+    });
+
+    it('redirects to the unavailable page when the backend search fails', async () => {
+      const res = await fetch(`${base}/search?q=backend-error`, {
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 302);
+      assert.equal(res.headers.get('location'), '/unavailable');
+    });
+
+    it('redirects to the unavailable page when the backend is unreachable', async () => {
+      const dead = createServer(() => {});
+      const deadOrigin = await listen(dead);
+      await close(dead);
+      const app = createServer(createApp(deadOrigin));
+      const origin = await listen(app);
+      try {
+        const res = await fetch(`${origin}/search?q=lamp`, {
+          redirect: 'manual',
+        });
+        assert.equal(res.status, 302);
+        assert.equal(res.headers.get('location'), '/unavailable');
+      } finally {
+        await close(app);
+      }
     });
 
     it('escapes the search term', async () => {
