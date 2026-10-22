@@ -2,15 +2,23 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
-import { LoginController } from './server/controllers/Login';
+import { createAdminCustomersRouter } from './routes/adminCustomers';
+import {
+  buildActivity,
+  buildNotifications,
+  buildSummaryCards,
+  buildSystemStatus,
+  loadDashboardCustomerData,
+} from './util/adminDashboard';
 import {
   ADMIN_NAV_ITEMS,
   ADMIN_QUICK_ACTIONS,
   ADMIN_SUMMARY_CARDS,
-  ADMIN_SYSTEM_STATUS,
   findAdminModule,
 } from './util/adminPortal';
 import { createApiProxy } from './util/apiProxy';
+import { createApiCustomerSource } from './util/customerApi';
+import type { CustomerSource } from './util/customers';
 
 const HOME_PAGE_PATH = fileURLToPath(
   new URL('../src/views/homepage.html', import.meta.url),
@@ -31,7 +39,14 @@ const CONTROLLERS_DIRECTORY = fileURLToPath(
   new URL('../dist/public/controllers/', import.meta.url),
 );
 
-export function createApp(backendOrigin: string): Express {
+export interface AppOptions {
+  customerSource?: CustomerSource;
+}
+
+export function createApp(
+  backendOrigin: string,
+  { customerSource = createApiCustomerSource(backendOrigin) }: AppOptions = {},
+): Express {
   const app = express();
   app.set('views', VIEWS_DIRECTORY);
   nunjucks.configure([VIEWS_DIRECTORY], {
@@ -79,17 +94,21 @@ export function createApp(backendOrigin: string): Express {
     }
   });
 
-  // The admin portal is static placeholder content and never calls the backend.
-  app.get('/admin', (_req: Request, res: Response) => {
+  // Customer figures are live; if the backend is unreachable the page falls back
+  // to static placeholders instead of failing.
+  app.get('/admin', async (_req: Request, res: Response) => {
     try {
+      const customerData = await loadDashboardCustomerData(customerSource);
       res.type('html').send(
         adminTemplates.render('admin/dashboard.njk', {
           title: 'Dashboard',
           activeSlug: 'dashboard',
           navItems: ADMIN_NAV_ITEMS,
-          summaryCards: ADMIN_SUMMARY_CARDS,
+          summaryCards: buildSummaryCards(ADMIN_SUMMARY_CARDS, customerData),
           quickActions: ADMIN_QUICK_ACTIONS,
-          systemStatus: ADMIN_SYSTEM_STATUS,
+          systemStatus: buildSystemStatus(customerData.available),
+          notifications: buildNotifications(customerData),
+          activity: buildActivity(customerData),
         }),
       );
     } catch (error) {
@@ -97,6 +116,11 @@ export function createApp(backendOrigin: string): Express {
       res.redirect('/unavailable');
     }
   });
+
+  app.use(
+    '/admin/customers',
+    createAdminCustomersRouter(adminTemplates, customerSource),
+  );
 
   app.get('/admin/:section', (req: Request, res: Response, next) => {
     const adminModule = findAdminModule(String(req.params.section));
