@@ -1,26 +1,14 @@
-<!doctype html>
-<html lang="en">
+{% extends "layout.njk" %}
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Log in to your Ctrl-Alt-Elite account." />
-  <link rel="stylesheet" href="/assets/styles.css" />
+{% block title %}Log in | Ctrl-Alt-Elite{% endblock %}
+{% block description %}Log in to your Ctrl-Alt-Elite account.{% endblock %}
+{% block bodyClass %}login-page{% endblock %}
+
+{% block styles %}
   <link rel="stylesheet" href="/assets/Login.css" />
-  <title>Log in | Ctrl-Alt-Elite</title>
-</head>
+{% endblock %}
 
-<body class="login-page">
-  <header class="site-header">
-    <div class="page-width header-content">
-      <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
-        <span class="brand-mark" aria-hidden="true">C</span>
-        <span>Ctrl-Alt-Elite</span>
-      </a>
-    </div>
-  </header>
-
-  <main>
+{% block content %}
     <section class="login-container" aria-labelledby="login-heading">
       <p class="eyebrow">Welcome back</p>
       <h1 id="login-heading">Log in</h1>
@@ -55,13 +43,4 @@
         <button class="login-btn" type="submit">Log in</button>
       </form>
     </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="page-width">
-      <p>&copy; {{ currentYear }} Ctrl-Alt-Elite</p>
-    </div>
-  </footer>
-</body>
-
-</html>
+{% endblock %}

@@ -19,6 +19,11 @@ Nunjucks is registered as Express's `.njk` view engine in [src/app.ts](src/app.t
 with templates loaded from `src/views/` and automatic HTML escaping enabled.
 Controllers render templates through `res.render()`.
 
+The login view extends [src/views/layout.njk](src/views/layout.njk), which owns
+the shared head, header, main wrapper and footer. New Nunjucks pages can extend
+this layout and override the title, description, styles, bodyClass, navigation,
+content and scripts blocks. Pass `currentYear` when rendering for the footer.
+
 The browser submits the login form to `POST /login` as URL-encoded form data.
 The frontend controller calls `BACKEND_ORIGIN/api/auth/login` with JSON.
 A successful backend response produces a `303` redirect to the homepage.
@@ -78,7 +83,7 @@ Use `npm ci` rather than `npm install`. It installs the exact versions recorded 
 | --- | --- | --- |
 | `npm run dev` | `build:client` then `tsx watch src/index.ts` | Compiles the browser scripts once, then runs the service from TypeScript source and restarts on file changes. Use this while developing. |
 | `npm run dev:client` | `esbuild … --watch` | Rebuilds the browser scripts whenever `src/controllers/*.ts` changes. Run it in a second terminal alongside `npm run dev`. |
-| `npm run typecheck` | `tsc` and `tsc -p tsconfig.client.json` | Checks types without emitting files: the server code, then the browser scripts (which use DOM types). |
+| `npm run typecheck` | `tsc` and `tsc -p tsconfig.client.json` | Checks types without emitting files: the server code and tests, then the browser scripts (which use DOM types). |
 | `npm run build:client` | `esbuild` | Compiles `src/controllers/*.ts` to browser JavaScript in `dist/public/controllers/`. Runs automatically before `build` and `test`. |
 | `npm run build` | typecheck, `build:client`, then `esbuild` | Type-checks, compiles the browser scripts, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |

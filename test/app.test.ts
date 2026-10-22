@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it, vi } from 'vitest';
@@ -94,6 +95,33 @@ describe('frontend routes', () => {
   });
 
   describe('GET /login', () => {
+    it('inherits the shared layout and preserves page-specific metadata and styles', async () => {
+      const template = await readFile(
+        new URL('../src/views/Login.njk', import.meta.url),
+        'utf8',
+      );
+      assert.match(template, /{% extends "layout\.njk" %}/);
+      assert.doesNotMatch(template, /<head>|<footer|<!doctype/i);
+
+      const html = await (await fetch(`${base}/login`)).text();
+      for (const tag of ['head', 'header', 'main', 'footer']) {
+        assert.equal(
+          [...html.matchAll(new RegExp(`<${tag}[\\s>]`, 'g'))].length,
+          1,
+        );
+      }
+      assert.match(html, /<title>Log in \| Ctrl-Alt-Elite<\/title>/);
+      assert.match(
+        html,
+        /name="description" content="Log in to your Ctrl-Alt-Elite account\."/,
+      );
+      assert.match(html, /href="\/assets\/styles\.css"/);
+      assert.match(html, /href="\/assets\/Login\.css"/);
+      assert.match(html, /<body class="login-page">/);
+      assert.match(html, /class="site-header"/);
+      assert.match(html, /class="site-footer"/);
+    });
+
     it('configures the Express view engine and views directory', () => {
       const app = createApp('http://127.0.0.1:3001');
       assert.equal(app.get('view engine'), 'njk');
@@ -106,8 +134,17 @@ describe('frontend routes', () => {
     it('redirects to the unavailable page if rendering fails', async () => {
       const app = createApp('http://127.0.0.1:3001');
       vi.spyOn(app, 'render').mockImplementationOnce(
-        (_name, _options, callback) => {
-          callback?.(new Error('Template rendering failed'));
+        (
+          _name: string,
+          optionsOrCallback?: object | ((error: Error, html: string) => void),
+          callback?: (error: Error, html: string) => void,
+        ) => {
+          const onRendered =
+            typeof optionsOrCallback === 'function'
+              ? optionsOrCallback
+              : callback;
+          assert.ok(onRendered);
+          onRendered(new Error('Template rendering failed'), '');
         },
       );
       const server = createServer(app);
