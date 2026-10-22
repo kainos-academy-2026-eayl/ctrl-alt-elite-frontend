@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Search Ctrl-Alt-Elite products by name or keyword." />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/basket.css" />
+  <link rel="stylesheet" href="/assets/search.css" />
+  <title>Ctrl-Alt-Elite | Search</title>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="page-width header-content">
+      <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>Ctrl-Alt-Elite</span>
+      </a>
+      <nav class="primary-nav" aria-label="Main navigation">
+        {% include "_searchForm.njk" %}
+        <a class="nav-link basket-icon-link" href="/basket">
+          <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
+          </svg>
+          <span class="basket-visually-hidden" data-basket-link-label>Basket, 0 items</span>
+          <span class="basket-badge" data-basket-count aria-hidden="true">0</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-width products search-results" aria-labelledby="search-heading">
+      <h1 id="search-heading" class="search-heading">Search results</h1>
+      {% if not searchTerm %}
+      <p class="search-message" role="status">Enter a product name or keyword to search.</p>
+      {% elif products.length %}
+      <p class="search-message" role="status">{{ products.length }} {{ "product" if products.length == 1 else "products" }} found for "{{ searchTerm }}".</p>
+      <ul class="product-grid">
+        {% for product in products %}
+        {% include "_productCard.njk" %}
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="search-message search-no-results" role="status">No products found for "{{ searchTerm }}". Try a different name or keyword.</p>
+      {% endif %}
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page-width">
+      <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
+    </div>
+  </footer>
+  <script src="/controllers/script.js" defer></script>
+  <script src="/controllers/basket.js" defer></script>
+</body>
+
+</html>

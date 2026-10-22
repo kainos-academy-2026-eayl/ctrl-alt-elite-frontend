@@ -71,8 +71,39 @@ describe('frontend routes', () => {
     it('renders an Add to Basket button for each product', async () => {
       const html = await (await fetch(`${base}/`)).text();
       const buttons = html.match(/data-add-to-basket /g) ?? [];
-      assert.equal(buttons.length, SAMPLE_PRODUCTS.length);
+      const inStockCount = SAMPLE_PRODUCTS.filter((p) => p.isInStock).length;
+      assert.equal(buttons.length, inStockCount);
       assert.match(html, /data-product-id="sample-lamp"/);
+    });
+  });
+
+  describe('GET /search', () => {
+    it('shows matching products with name, description and image', async () => {
+      const html = await (await fetch(`${base}/search?q=lamp`)).text();
+      assert.match(html, /Desk Lamp/);
+      assert.match(html, /Adjustable LED lamp/);
+      assert.match(html, /placeholder\.svg/);
+    });
+
+    it('shows out of stock products as unavailable', async () => {
+      const html = await (await fetch(`${base}/search?q=headphone`)).text();
+      assert.match(html, /Studio Headphones/);
+      assert.match(html, /Out of Stock/);
+      assert.match(html, /Noise-Cancelling Headphones/);
+    });
+
+    it('shows a message when nothing matches', async () => {
+      const html = await (await fetch(`${base}/search?q=zzzz`)).text();
+      assert.match(html, /No products found/);
+    });
+
+    it('escapes the search term', async () => {
+      const html = await (
+        await fetch(
+          `${base}/search?q=${encodeURIComponent('<script>x</script>')}`,
+        )
+      ).text();
+      assert.doesNotMatch(html, /<script>x<\/script>/);
     });
   });
 

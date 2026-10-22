@@ -4,6 +4,7 @@ import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { SAMPLE_PRODUCTS } from './data/sampleProducts';
 import { createApiProxy } from './util/apiProxy';
+import { normaliseSearchTerm, searchProducts } from './util/productSearch';
 
 const VIEWS_DIRECTORY = new URL('../src/views/', import.meta.url);
 const ASSETS_DIRECTORY = fileURLToPath(
@@ -40,6 +41,22 @@ export function createApp(backendOrigin: string): Express {
       (error: Error | null, html?: string) => {
         if (error || html === undefined) {
           console.error('Unable to load the homepage:', error);
+          res.redirect('/unavailable');
+          return;
+        }
+        res.type('html').send(html);
+      },
+    );
+  });
+
+  app.get('/search', (req: Request, res: Response) => {
+    const searchTerm = normaliseSearchTerm(req.query.q);
+    res.render(
+      'search',
+      { searchTerm, products: searchProducts(SAMPLE_PRODUCTS, searchTerm) },
+      (error: Error | null, html?: string) => {
+        if (error || html === undefined) {
+          console.error('Unable to load the search page:', error);
           res.redirect('/unavailable');
           return;
         }
