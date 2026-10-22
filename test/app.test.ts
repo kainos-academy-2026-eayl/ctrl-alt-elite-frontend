@@ -4,6 +4,11 @@ import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import { createApp } from '../src/app';
+import type { CustomerSource } from '../src/util/customers';
+import {
+  createInMemoryCustomerSource,
+  FIXTURE_CUSTOMERS,
+} from './customerFixtures';
 
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
@@ -51,7 +56,11 @@ describe('frontend routes', () => {
       }
     });
     const backendOrigin = await listen(backend);
-    frontend = createServer(createApp(backendOrigin));
+    frontend = createServer(
+      createApp(backendOrigin, {
+        customerSource: createInMemoryCustomerSource(),
+      }),
+    );
     base = await listen(frontend);
   });
 
@@ -145,13 +154,7 @@ describe('frontend routes', () => {
       }
     });
 
-    for (const section of [
-      'orders',
-      'customers',
-      'inventory',
-      'reports',
-      'settings',
-    ]) {
+    for (const section of ['orders', 'inventory', 'reports', 'settings']) {
       it(`serves a placeholder page for /admin/${section}`, async () => {
         const res = await fetch(`${base}/admin/${section}`);
         assert.equal(res.status, 200);
@@ -169,6 +172,200 @@ describe('frontend routes', () => {
     it('returns 404 for unknown admin sections', async () => {
       const res = await fetch(`${base}/admin/unknown`);
       assert.equal(res.status, 404);
+    });
+  });
+
+  describe('admin customers', () => {
+    async function get(path: string, origin = base) {
+      const res = await fetch(`${origin}${path}`);
+      return { status: res.status, html: await res.text() };
+    }
+
+    function names(html: string): string[] {
+      return [
+        ...html.matchAll(/<a href="\/admin\/customers\/[\w-]+">([^<]+)<\/a>/g),
+      ].map((match) => match[1] as string);
+    }
+
+    async function withSource(
+      source: CustomerSource,
+      run: (origin: string) => Promise<void>,
+    ) {
+      const app = createServer(
+        createApp('http://127.0.0.1:1', { customerSource: source }),
+      );
+      const origin = await listen(app);
+      try {
+        await run(origin);
+      } finally {
+        await close(app);
+      }
+    }
+
+    it('lists customers with columns, total count and first page only', async () => {
+      const { status, html } = await get('/admin/customers');
+      assert.equal(status, 200);
+      for (const text of [
+        'Customer Name',
+        'Email Address',
+        'Registration Date',
+      ]) {
+        assert.ok(html.includes(text), `missing "${text}"`);
+      }
+      assert.match(
+        html,
+        new RegExp(`Total Customers: ${FIXTURE_CUSTOMERS.length}`),
+      );
+      assert.equal(names(html).length, 10);
+      assert.match(html, /Previous/);
+      assert.match(html, /aria-label="Page 3"/);
+      assert.match(html, /Next/);
+    });
+
+    it('marks Customers as the active navigation item', async () => {
+      const { html } = await get('/admin/customers');
+      assert.match(html, /is-active"\s+href="\/admin\/customers"/);
+    });
+
+    it('searches by name, case-insensitively, across first and last name', async () => {
+      const byFirst = await get('/admin/customers?q=AMELIA');
+      assert.deepEqual(names(byFirst.html), ['Amelia Hart']);
+      const byBoth = await get('/admin/customers?q=okafor%20ben');
+      assert.deepEqual(names(byBoth.html), ['Ben Okafor']);
+    });
+
+    it('searches by email', async () => {
+      const { html } = await get('/admin/customers?email=BEN.okafor@');
+      assert.deepEqual(names(html), ['Ben Okafor']);
+      assert.match(html, /1 matching customer/);
+      assert.match(html, /Total Customers: 27/);
+    });
+
+    it('combines name and email filters', async () => {
+      const match = await get('/admin/customers?q=ben&email=okafor');
+      assert.deepEqual(names(match.html), ['Ben Okafor']);
+      const none = await get('/admin/customers?q=amelia&email=okafor');
+      assert.equal(names(none.html).length, 0);
+      assert.match(none.html, /No customers found/);
+    });
+
+    it('shows a no results message when nothing matches', async () => {
+      const { status, html } = await get('/admin/customers?q=zzzznobody');
+      assert.equal(status, 200);
+      assert.match(html, /No customers found/);
+      assert.equal(names(html).length, 0);
+    });
+
+    it('escapes the search term', async () => {
+      const { html } = await get(
+        '/admin/customers?q=%3Cscript%3Ealert(1)%3C/script%3E',
+      );
+      assert.doesNotMatch(html, /<script>alert/);
+    });
+
+    it('sorts by name and registration date', async () => {
+      const asc = names((await get('/admin/customers?sort=nameAsc')).html);
+      assert.equal(asc[0], 'Amelia Hart');
+      const desc = names((await get('/admin/customers?sort=nameDesc')).html);
+      assert.equal(desc[0], 'Zoe Hamilton');
+      const newest = names((await get('/admin/customers?sort=newest')).html);
+      assert.equal(newest[0], 'Aoife Devlin');
+      const oldest = names((await get('/admin/customers?sort=oldest')).html);
+      assert.equal(oldest[0], 'Amelia Hart');
+    });
+
+    it('falls back to the default sort for unknown values', async () => {
+      const { status, html } = await get('/admin/customers?sort=bogus');
+      assert.equal(status, 200);
+      assert.equal(names(html)[0], 'Amelia Hart');
+    });
+
+    it('paginates and preserves search and sort in page links', async () => {
+      const page3 = await get('/admin/customers?page=3&sort=newest');
+      assert.equal(names(page3.html).length, 7);
+      assert.match(
+        page3.html,
+        /href="\/admin\/customers\?sort=newest&amp;page=2" rel="prev"/,
+      );
+      assert.doesNotMatch(page3.html, /rel="next"/);
+    });
+
+    it('clamps out of range and invalid page numbers', async () => {
+      assert.equal(
+        names((await get('/admin/customers?page=99')).html).length,
+        7,
+      );
+      assert.equal(
+        names((await get('/admin/customers?page=abc')).html).length,
+        10,
+      );
+    });
+
+    it('shows customer details', async () => {
+      const { status, html } = await get('/admin/customers/c-1');
+      assert.equal(status, 200);
+      assert.match(html, /Amelia Hart/);
+      assert.match(html, /amelia\.hart@example\.com/);
+      assert.match(html, /8 Jan 2026/);
+      assert.match(html, /Registration Date/);
+    });
+
+    it('returns 404 for unknown or malformed customer ids', async () => {
+      assert.equal((await get('/admin/customers/c-9999')).status, 404);
+      const bad = await get('/admin/customers/bad%20id');
+      assert.equal(bad.status, 404);
+      assert.match(bad.html, /Customer not found/);
+    });
+
+    it('shows the empty state when there are no customers', async () => {
+      await withSource(createInMemoryCustomerSource([]), async (origin) => {
+        const { status, html } = await get('/admin/customers', origin);
+        assert.equal(status, 200);
+        assert.match(html, /No customers found/);
+        assert.match(html, /Customers will appear here once they register\./);
+        assert.match(html, /Total Customers: 0/);
+      });
+    });
+
+    it('shows the error state when the backend is unreachable', async () => {
+      const app = createServer(createApp('http://127.0.0.1:1'));
+      const origin = await listen(app);
+      const originalError = console.error;
+      console.error = () => {};
+      try {
+        const { status, html } = await get('/admin/customers', origin);
+        assert.equal(status, 503);
+        assert.match(html, /Unable to load customers/);
+      } finally {
+        console.error = originalError;
+        await close(app);
+      }
+    });
+
+    it('shows an error state when customer data cannot be loaded', async () => {
+      const failing: CustomerSource = {
+        query: async () => {
+          throw new Error('boom');
+        },
+        findById: async () => {
+          throw new Error('boom');
+        },
+      };
+      const originalError = console.error;
+      console.error = () => {};
+      try {
+        await withSource(failing, async (origin) => {
+          const list = await get('/admin/customers', origin);
+          assert.equal(list.status, 503);
+          assert.match(list.html, /Unable to load customers/);
+          assert.match(list.html, /Admin navigation/);
+          const detail = await get('/admin/customers/c-1', origin);
+          assert.equal(detail.status, 503);
+          assert.match(detail.html, /Unable to load customer/);
+        });
+      } finally {
+        console.error = originalError;
+      }
     });
   });
 
