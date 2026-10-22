@@ -263,6 +263,87 @@ describe('frontend routes', () => {
     });
   });
 
+  describe('GET /admin', () => {
+    it('serves the dashboard with navigation and placeholder sections', async () => {
+      const res = await fetch(`${base}/admin`);
+      assert.equal(res.status, 200);
+      assert.match(res.headers.get('content-type') ?? '', /text\/html/);
+      const html = await res.text();
+      for (const text of [
+        'Dashboard',
+        'Products',
+        'Orders',
+        'Customers',
+        'Inventory',
+        'Reports',
+        'Settings',
+        'Stock Alerts',
+        'Quick Actions',
+        'Add Product',
+        'View Orders',
+        'Manage Customers',
+        'Inventory Management',
+        'Notifications',
+        'No active notifications',
+        'Recent Activity',
+        'No recent activity available',
+        'System Status',
+        'Database Connection',
+        'Backend Service',
+        'API Status',
+        'Email Service',
+      ]) {
+        assert.ok(html.includes(text), `missing "${text}"`);
+      }
+      assert.match(html, /name="viewport"/);
+    });
+
+    it('links back to the homepage', async () => {
+      const html = await (await fetch(`${base}/admin`)).text();
+      assert.match(html, /<a[^>]*href="\/"[^>]*>[^<]*Back to homepage/);
+    });
+
+    it('stays available when the backend is unreachable', async () => {
+      const dead = createServer();
+      const deadOrigin = await listen(dead);
+      await close(dead);
+      const app = createServer(createApp(deadOrigin));
+      const origin = await listen(app);
+      try {
+        const res = await fetch(`${origin}/admin`);
+        assert.equal(res.status, 200);
+      } finally {
+        await close(app);
+      }
+    });
+
+    for (const section of [
+      'orders',
+      'customers',
+      'inventory',
+      'reports',
+      'settings',
+    ]) {
+      it(`serves a placeholder page for /admin/${section}`, async () => {
+        const res = await fetch(`${base}/admin/${section}`);
+        assert.equal(res.status, 200);
+        assert.match(await res.text(), /Coming soon/);
+      });
+    }
+
+    it('has no Products navigation entry', async () => {
+      const html = await (await fetch(`${base}/admin`)).text();
+      assert.doesNotMatch(html, /href="\/admin\/products"/);
+      const res = await fetch(`${base}/admin/products`);
+      assert.equal(res.status, 404);
+    });
+
+    it('returns 404 for unknown admin sections', async () => {
+      const res = await fetch(`${base}/admin/unknown`);
+      assert.equal(res.status, 404);
+    });
+  });
+
   describe('GET /unavailable', () => {
     it('serves the unavailable page with 503', async () => {
       const res = await fetch(`${base}/unavailable`);
@@ -304,7 +385,7 @@ describe('frontend routes', () => {
   });
 
   describe('page references', () => {
-    for (const page of ['/', '/login', '/register', '/unavailable']) {
+    for (const page of ['/', '/login', '/register', '/unavailable', '/admin']) {
       it(`every local href/src on ${page} resolves`, async () => {
         const html = await (await fetch(`${base}${page}`)).text();
         const refs = [...html.matchAll(/\b(?:href|src)="([^"#]+)"/g)]

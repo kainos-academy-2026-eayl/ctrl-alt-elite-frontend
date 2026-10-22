@@ -35,6 +35,11 @@ export function createApp(backendOrigin: string): Express {
   app.set('view engine', 'njk');
   const loginController = new LoginController(backendOrigin);
 
+  const adminTemplates = new nunjucks.Environment(
+    new nunjucks.FileSystemLoader(VIEWS_DIRECTORY),
+    { autoescape: true, noCache: process.env.NODE_ENV !== 'production' },
+  );
+
   app.use('/api', createApiProxy(backendOrigin));
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
@@ -63,6 +68,45 @@ export function createApp(backendOrigin: string): Express {
       res.type('html').send(register);
     } catch (error) {
       console.error('Unable to load the register page:', error);
+      res.redirect('/unavailable');
+    }
+  });
+
+  // The admin portal is static placeholder content and never calls the backend.
+  app.get('/admin', (_req: Request, res: Response) => {
+    try {
+      res.type('html').send(
+        adminTemplates.render('admin/dashboard.njk', {
+          title: 'Dashboard',
+          activeSlug: 'dashboard',
+          navItems: ADMIN_NAV_ITEMS,
+          summaryCards: ADMIN_SUMMARY_CARDS,
+          quickActions: ADMIN_QUICK_ACTIONS,
+          systemStatus: ADMIN_SYSTEM_STATUS,
+        }),
+      );
+    } catch (error) {
+      console.error('Unable to load the admin dashboard:', error);
+      res.redirect('/unavailable');
+    }
+  });
+
+  app.get('/admin/:section', (req: Request, res: Response, next) => {
+    const adminModule = findAdminModule(String(req.params.section));
+    if (!adminModule) {
+      next();
+      return;
+    }
+    try {
+      res.type('html').send(
+        adminTemplates.render('admin/module.njk', {
+          title: adminModule.label,
+          activeSlug: adminModule.slug,
+          navItems: ADMIN_NAV_ITEMS,
+        }),
+      );
+    } catch (error) {
+      console.error('Unable to load the admin page:', error);
       res.redirect('/unavailable');
     }
   });
