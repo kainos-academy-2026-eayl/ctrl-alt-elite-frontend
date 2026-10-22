@@ -2,6 +2,13 @@ import express, { type Express, type Request, type Response } from 'express'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import nunjucks from 'nunjucks'
+import {
+  ADMIN_NAV_ITEMS,
+  ADMIN_QUICK_ACTIONS,
+  ADMIN_SUMMARY_CARDS,
+  ADMIN_SYSTEM_STATUS,
+  findAdminModule,
+} from './util/adminPortal'
 import { createApiProxy } from './util/apiProxy'
 
 const HOME_PAGE_PATH = fileURLToPath(
@@ -16,6 +23,7 @@ const REGISTER_PAGE_PATH = fileURLToPath(
 const UNAVAILABLE_PAGE_PATH = fileURLToPath(
   new URL('../src/views/unavailable.html', import.meta.url),
 )
+const VIEWS_DIRECTORY = fileURLToPath(new URL('../src/views/', import.meta.url))
 const ASSETS_DIRECTORY = fileURLToPath(
   new URL('../src/assets/', import.meta.url),
 )
@@ -26,6 +34,11 @@ const CONTROLLERS_DIRECTORY = fileURLToPath(
 export function createApp(backendOrigin: string): Express {
   const app = express();
   const loginTemplates = new nunjucks.Environment(null, { autoescape: true });
+
+  const adminTemplates = new nunjucks.Environment(
+    new nunjucks.FileSystemLoader(VIEWS_DIRECTORY),
+    { autoescape: true, noCache: process.env.NODE_ENV !== 'production' },
+  );
 
   app.use('/api', createApiProxy(backendOrigin));
 
@@ -58,6 +71,45 @@ export function createApp(backendOrigin: string): Express {
       res.type('html').send(register);
     } catch (error) {
       console.error('Unable to load the register page:', error);
+      res.redirect('/unavailable');
+    }
+  });
+
+  // The admin portal is static placeholder content and never calls the backend.
+  app.get('/admin', (_req: Request, res: Response) => {
+    try {
+      res.type('html').send(
+        adminTemplates.render('admin/dashboard.njk', {
+          title: 'Dashboard',
+          activeSlug: 'dashboard',
+          navItems: ADMIN_NAV_ITEMS,
+          summaryCards: ADMIN_SUMMARY_CARDS,
+          quickActions: ADMIN_QUICK_ACTIONS,
+          systemStatus: ADMIN_SYSTEM_STATUS,
+        }),
+      );
+    } catch (error) {
+      console.error('Unable to load the admin dashboard:', error);
+      res.redirect('/unavailable');
+    }
+  });
+
+  app.get('/admin/:section', (req: Request, res: Response, next) => {
+    const adminModule = findAdminModule(String(req.params.section));
+    if (!adminModule) {
+      next();
+      return;
+    }
+    try {
+      res.type('html').send(
+        adminTemplates.render('admin/module.njk', {
+          title: adminModule.label,
+          activeSlug: adminModule.slug,
+          navItems: ADMIN_NAV_ITEMS,
+        }),
+      );
+    } catch (error) {
+      console.error('Unable to load the admin page:', error);
       res.redirect('/unavailable');
     }
   });
