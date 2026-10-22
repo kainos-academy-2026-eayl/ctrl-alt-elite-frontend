@@ -1,35 +1,37 @@
-import express, { type Express, type Request, type Response } from 'express'
-import { readFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
-import nunjucks from 'nunjucks'
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import express, { type Express, type Request, type Response } from 'express';
+import nunjucks from 'nunjucks';
 import {
   ADMIN_NAV_ITEMS,
   ADMIN_QUICK_ACTIONS,
   ADMIN_SUMMARY_CARDS,
   ADMIN_SYSTEM_STATUS,
   findAdminModule,
-} from './util/adminPortal'
-import { createApiProxy } from './util/apiProxy'
+} from './util/adminPortal';
+import { createApiProxy } from './util/apiProxy';
 
 const HOME_PAGE_PATH = fileURLToPath(
   new URL('../src/views/homepage.html', import.meta.url),
-)
+);
 const LOGIN_PAGE_PATH = fileURLToPath(
   new URL('../src/views/Login.njk', import.meta.url),
-)
+);
 const REGISTER_PAGE_PATH = fileURLToPath(
   new URL('../src/views/register.html', import.meta.url),
-)
+);
 const UNAVAILABLE_PAGE_PATH = fileURLToPath(
   new URL('../src/views/unavailable.html', import.meta.url),
-)
-const VIEWS_DIRECTORY = fileURLToPath(new URL('../src/views/', import.meta.url))
+);
+const VIEWS_DIRECTORY = fileURLToPath(
+  new URL('../src/views/', import.meta.url),
+);
 const ASSETS_DIRECTORY = fileURLToPath(
   new URL('../src/assets/', import.meta.url),
-)
+);
 const CONTROLLERS_DIRECTORY = fileURLToPath(
   new URL('../dist/public/controllers/', import.meta.url),
-)
+);
 
 export function createApp(backendOrigin: string): Express {
   const app = express();
@@ -57,13 +59,13 @@ export function createApp(backendOrigin: string): Express {
 
   app.get('/login', async (_req: Request, res: Response) => {
     try {
-      const login = await readFile(LOGIN_PAGE_PATH, 'utf8')
-      res.type('html').send(loginTemplates.renderString(login, {}))
+      const login = await readFile(LOGIN_PAGE_PATH, 'utf8');
+      res.type('html').send(loginTemplates.renderString(login, {}));
     } catch (error) {
-      console.error('Unable to load the login page:', error)
-      res.redirect('/unavailable')
+      console.error('Unable to load the login page:', error);
+      res.redirect('/unavailable');
     }
-  })
+  });
 
   app.get('/register', async (_req: Request, res: Response) => {
     try {
