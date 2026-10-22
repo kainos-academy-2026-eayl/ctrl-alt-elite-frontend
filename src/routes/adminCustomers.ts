@@ -68,11 +68,21 @@ export function createAdminCustomersRouter(
             result.page < result.totalPages
               ? urlForPage(result.page + 1)
               : undefined,
-          pageLinks: Array.from({ length: result.totalPages }, (_, index) => ({
-            number: index + 1,
-            current: index + 1 === result.page,
-            url: urlForPage(index + 1),
-          })),
+          pageLinks: Array.from(
+            { length: Math.min(7, result.totalPages) },
+            (_, index) => {
+              const firstPage = Math.max(
+                1,
+                Math.min(result.page - 3, result.totalPages - 6),
+              );
+              const number = firstPage + index;
+              return {
+                number,
+                current: number === result.page,
+                url: urlForPage(number),
+              };
+            },
+          ),
         }),
       );
     } catch (error) {
