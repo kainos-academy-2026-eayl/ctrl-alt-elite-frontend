@@ -106,7 +106,7 @@ describe('frontend routes', () => {
   describe('GET /login', () => {
     it('inherits the shared layout and preserves page-specific metadata and styles', async () => {
       const template = await readFile(
-        new URL('../src/views/Login.njk', import.meta.url),
+        new URL('../src/views/login.njk', import.meta.url),
         'utf8',
       );
       assert.match(template, /{% extends "layout\.njk" %}/);
@@ -125,7 +125,7 @@ describe('frontend routes', () => {
         /name="description" content="Log in to your Ctrl-Alt-Elite account\."/,
       );
       assert.match(html, /href="\/assets\/styles\.css"/);
-      assert.match(html, /href="\/assets\/Login\.css"/);
+      assert.match(html, /href="\/assets\/login\.css"/);
       assert.match(html, /<body class="login-page">/);
       assert.match(html, /class="site-header"/);
       assert.match(html, /class="site-footer"/);
@@ -709,8 +709,8 @@ describe('frontend routes', () => {
   describe('static assets', () => {
     for (const [path, type] of [
       ['/assets/styles.css', /text\/css/],
-      ['/assets/Login.css', /text\/css/],
-      ['/controllers/Login.js', /javascript/],
+      ['/assets/login.css', /text\/css/],
+      ['/controllers/login.js', /javascript/],
       ['/controllers/script.js', /javascript/],
       ['/assets/register.css', /text\/css/],
       ['/controllers/register.js', /javascript/],

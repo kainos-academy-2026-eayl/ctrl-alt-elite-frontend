@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { createAdminCustomersRouter } from './routes/adminCustomers';
+import { LoginController } from './server/controllers/login';
 import {
   buildActivity,
   buildNotifications,

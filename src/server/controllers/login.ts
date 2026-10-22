@@ -11,7 +11,7 @@ export class LoginController {
   ): void {
     res.setHeader('Cache-Control', 'no-store');
     res.render(
-      'Login',
+      'login',
       { email, errorMessage, currentYear: new Date().getFullYear() },
       (error: Error | null, html: string) => {
         if (error) {
