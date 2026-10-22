@@ -5,7 +5,7 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | Route | What it does |
 | --- | --- |
 | `GET /` | Homepage ([src/views/homepage.html](src/views/homepage.html)) |
-| `GET /login` | Nunjucks login page ([src/views/Login.njk](src/views/Login.njk)), with browser TypeScript compiled from [src/controllers/Login.ts](src/controllers/Login.ts) |
+| `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
 | `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
 | `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)). [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
@@ -16,6 +16,29 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
+
+### Login flow
+
+Nunjucks is registered as Express's `.njk` view engine in [src/app.ts](src/app.ts),
+with templates loaded from `src/views/` and automatic HTML escaping enabled.
+Controllers render templates through `res.render()`.
+
+The login view extends [src/views/layout.njk](src/views/layout.njk), which owns
+the shared head, header, main wrapper and footer. New Nunjucks pages can extend
+this layout and override the title, description, styles, bodyClass, navigation,
+content and scripts blocks. Pass `currentYear` when rendering for the footer.
+
+The browser submits the login form to `POST /login` as URL-encoded form data.
+The frontend controller calls `BACKEND_ORIGIN/api/auth/login` with JSON.
+A successful backend response produces a `303` redirect to the homepage.
+Incorrect credentials render the login page with an error and retain the email,
+but never the password. Backend failures also render an error.
+Login does not require browser JavaScript. This verifies credentials only; it
+does not establish a persistent session or protect the homepage.
+
+Server-side controllers live in `src/server/controllers/` and are not bundled for the
+browser. Browser scripts remain in `src/controllers/`; registration still uses its
+existing browser script and API proxy.
 
 ## Requirements
 
@@ -64,7 +87,7 @@ Use `npm ci` rather than `npm install`. It installs the exact versions recorded 
 | --- | --- | --- |
 | `npm run dev` | `build:client` then `tsx watch src/index.ts` | Compiles the browser scripts once, then runs the service from TypeScript source and restarts on file changes. Use this while developing. |
 | `npm run dev:client` | `esbuild … --watch` | Rebuilds the browser scripts whenever `src/controllers/*.ts` changes. Run it in a second terminal alongside `npm run dev`. |
-| `npm run typecheck` | `tsc` and `tsc -p tsconfig.client.json` | Checks types without emitting files: the server code, then the browser scripts (which use DOM types). |
+| `npm run typecheck` | `tsc` and `tsc -p tsconfig.client.json` | Checks types without emitting files: the server code and tests, then the browser scripts (which use DOM types). |
 | `npm run build:client` | `esbuild` | Compiles `src/controllers/*.ts` to browser JavaScript in `dist/public/controllers/`. Runs automatically before `build` and `test`. |
 | `npm run build` | typecheck, `build:client`, then `esbuild` | Type-checks, compiles the browser scripts, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
@@ -86,7 +109,9 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 │   ├── app.ts            # builds the Express app: routes, static folders, API proxy
 │   ├── views/            # HTML pages (homepage, register, unavailable) and admin/ Nunjucks shells
 │   ├── assets/           # CSS served at /assets
-│   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers (page controllers call the backend via /api; customerApi.ts is the customers API client)
+│   ├── server/
+│   │   └── controllers/  # server-side controllers (login)
+│   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers
 │   ├── util/
 │   │   ├── apiProxy.ts   # forwards /api requests to the backend
 │   │   ├── customers.ts  # customer types, query parsing and formatting (shared by controllers)
@@ -125,7 +150,7 @@ Say you want a `/about` page.
 <script src="/controllers/script.js" defer></script>
 ```
 
-Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/controllers/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/controllers/`.
+Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/controllers/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/controllers/`. Keep server-side request handlers in `src/server/controllers/`.
 
 **2. Register the route** in [src/app.ts](src/app.ts), following the existing pages:
 
