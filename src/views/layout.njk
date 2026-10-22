@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="{% block description %}Welcome to Ctrl-Alt-Elite.{% endblock %}" />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  {% block styles %}{% endblock %}
+  <title>{% block title %}Ctrl-Alt-Elite{% endblock %}</title>
+</head>
+
+<body class="{% block bodyClass %}{% endblock %}">
+  <header class="site-header">
+    <div class="page-width header-content">
+      <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>Ctrl-Alt-Elite</span>
+      </a>
+      {% block navigation %}{% endblock %}
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="page-width">
+      <p>&copy; {{ currentYear }} Ctrl-Alt-Elite</p>
+    </div>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

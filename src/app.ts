@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { createAdminCustomersRouter } from './routes/adminCustomers';
+import { LoginController } from './server/controllers/login';
 import {
   buildActivity,
   buildNotifications,
@@ -23,17 +24,14 @@ import type { CustomerSource } from './util/customers';
 const HOME_PAGE_PATH = fileURLToPath(
   new URL('../src/views/homepage.html', import.meta.url),
 );
-const LOGIN_PAGE_PATH = fileURLToPath(
-  new URL('../src/views/Login.njk', import.meta.url),
+const VIEWS_DIRECTORY = fileURLToPath(
+  new URL('../src/views/', import.meta.url),
 );
 const REGISTER_PAGE_PATH = fileURLToPath(
   new URL('../src/views/register.html', import.meta.url),
 );
 const UNAVAILABLE_PAGE_PATH = fileURLToPath(
   new URL('../src/views/unavailable.html', import.meta.url),
-);
-const VIEWS_DIRECTORY = fileURLToPath(
-  new URL('../src/views/', import.meta.url),
 );
 const ASSETS_DIRECTORY = fileURLToPath(
   new URL('../src/assets/', import.meta.url),
@@ -51,7 +49,14 @@ export function createApp(
   { customerSource = createApiCustomerSource(backendOrigin) }: AppOptions = {},
 ): Express {
   const app = express();
-  const loginTemplates = new nunjucks.Environment(null, { autoescape: true });
+  app.set('views', VIEWS_DIRECTORY);
+  nunjucks.configure([VIEWS_DIRECTORY], {
+    autoescape: true,
+    express: app,
+    noCache: process.env.NODE_ENV !== 'production',
+  });
+  app.set('view engine', 'njk');
+  const loginController = new LoginController(backendOrigin);
 
   const adminTemplates = new nunjucks.Environment(
     new nunjucks.FileSystemLoader(VIEWS_DIRECTORY),
@@ -73,15 +78,12 @@ export function createApp(
     }
   });
 
-  app.get('/login', async (_req: Request, res: Response) => {
-    try {
-      const login = await readFile(LOGIN_PAGE_PATH, 'utf8');
-      res.type('html').send(loginTemplates.renderString(login, {}));
-    } catch (error) {
-      console.error('Unable to load the login page:', error);
-      res.redirect('/unavailable');
-    }
-  });
+  app.get('/login', loginController.show);
+  app.post(
+    '/login',
+    express.urlencoded({ extended: false, limit: '16kb' }),
+    loginController.submit,
+  );
 
   app.get('/register', async (_req: Request, res: Response) => {
     try {
