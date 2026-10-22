@@ -27,6 +27,13 @@ export const ADMIN_QUICK_ACTIONS = [
   { label: 'Inventory Management', href: '/admin/inventory' },
 ] as const;
 
+export const ADMIN_SYSTEM_STATUS = [
+  { label: 'Database Connection' },
+  { label: 'Backend Service' },
+  { label: 'API Status' },
+  { label: 'Email Service' },
+] as const;
+
 export function findAdminModule(slug: string): AdminNavItem | undefined {
   return ADMIN_NAV_ITEMS.find(
     (item) => item.slug === slug && item.slug !== 'dashboard',

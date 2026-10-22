@@ -7,6 +7,10 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /` | Homepage ([src/views/homepage.html](src/views/homepage.html)) |
 | `GET /login` | Nunjucks login page ([src/views/Login.njk](src/views/Login.njk)), with browser TypeScript compiled from [src/controllers/Login.ts](src/controllers/Login.ts) |
 | `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
+| `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)). [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
+| `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
+| `GET /admin/customers/:id` | Customer details shell. [adminCustomerDetail.ts](src/controllers/adminCustomerDetail.ts) loads the customer from the backend. |
+| `GET /admin/{orders,inventory,reports,settings}` | "Coming soon" placeholders |
 | `GET /unavailable` | Fallback page, served with `503`. Pages redirect here if they cannot be loaded. |
 | `GET /assets/*` | Stylesheets from [src/assets/](src/assets) |
 | `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |
@@ -80,11 +84,14 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 ├── src/
 │   ├── index.ts          # entry point: config, server startup, shutdown
 │   ├── app.ts            # builds the Express app: routes, static folders, API proxy
-│   ├── views/            # HTML pages (homepage, register, unavailable)
+│   ├── views/            # HTML pages (homepage, register, unavailable) and admin/ Nunjucks shells
 │   ├── assets/           # CSS served at /assets
-│   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers
+│   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers (page controllers call the backend via /api; customerApi.ts is the customers API client)
 │   ├── util/
-│   │   └── apiProxy.ts   # forwards /api requests to the backend
+│   │   ├── apiProxy.ts   # forwards /api requests to the backend
+│   │   ├── customers.ts  # customer types, query parsing and formatting (shared by controllers)
+│   │   ├── customerViews.ts / adminDashboard.ts  # pure HTML rendering helpers used by the controllers
+│   │   └── adminPortal.ts # admin navigation and placeholder content
 │   ├── repos/            # reserved for data access code
 │   └── services/         # reserved for business logic
 ├── test/

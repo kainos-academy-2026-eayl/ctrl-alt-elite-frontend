@@ -2,23 +2,15 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
-import { createAdminCustomersRouter } from './routes/adminCustomers';
-import {
-  buildActivity,
-  buildNotifications,
-  buildSummaryCards,
-  buildSystemStatus,
-  loadDashboardCustomerData,
-} from './util/adminDashboard';
 import {
   ADMIN_NAV_ITEMS,
   ADMIN_QUICK_ACTIONS,
   ADMIN_SUMMARY_CARDS,
+  ADMIN_SYSTEM_STATUS,
   findAdminModule,
 } from './util/adminPortal';
 import { createApiProxy } from './util/apiProxy';
-import { createApiCustomerSource } from './util/customerApi';
-import type { CustomerSource } from './util/customers';
+import { CUSTOMER_SORT_OPTIONS } from './util/customers';
 
 const HOME_PAGE_PATH = fileURLToPath(
   new URL('../src/views/homepage.html', import.meta.url),
@@ -42,14 +34,7 @@ const CONTROLLERS_DIRECTORY = fileURLToPath(
   new URL('../dist/public/controllers/', import.meta.url),
 );
 
-export interface AppOptions {
-  customerSource?: CustomerSource;
-}
-
-export function createApp(
-  backendOrigin: string,
-  { customerSource = createApiCustomerSource(backendOrigin) }: AppOptions = {},
-): Express {
+export function createApp(backendOrigin: string): Express {
   const app = express();
   const loginTemplates = new nunjucks.Environment(null, { autoescape: true });
 
@@ -57,6 +42,24 @@ export function createApp(
     new nunjucks.FileSystemLoader(VIEWS_DIRECTORY),
     { autoescape: true, noCache: process.env.NODE_ENV !== 'production' },
   );
+
+  function renderAdminPage(
+    res: Response,
+    template: string,
+    context: Record<string, unknown>,
+  ): void {
+    try {
+      res.type('html').send(
+        adminTemplates.render(template, {
+          navItems: ADMIN_NAV_ITEMS,
+          ...context,
+        }),
+      );
+    } catch (error) {
+      console.error(`Unable to load the admin page ${template}:`, error);
+      res.redirect('/unavailable');
+    }
+  }
 
   app.use('/api', createApiProxy(backendOrigin));
 
@@ -93,33 +96,32 @@ export function createApp(
     }
   });
 
-  // Customer figures are live; if the backend is unreachable the page falls back
-  // to static placeholders instead of failing.
-  app.get('/admin', async (_req: Request, res: Response) => {
-    try {
-      const customerData = await loadDashboardCustomerData(customerSource);
-      res.type('html').send(
-        adminTemplates.render('admin/dashboard.njk', {
-          title: 'Dashboard',
-          activeSlug: 'dashboard',
-          navItems: ADMIN_NAV_ITEMS,
-          summaryCards: buildSummaryCards(ADMIN_SUMMARY_CARDS, customerData),
-          quickActions: ADMIN_QUICK_ACTIONS,
-          systemStatus: buildSystemStatus(customerData.available),
-          notifications: buildNotifications(customerData),
-          activity: buildActivity(customerData),
-        }),
-      );
-    } catch (error) {
-      console.error('Unable to load the admin dashboard:', error);
-      res.redirect('/unavailable');
-    }
+  // The server only serves page shells. Live data is loaded in the browser by the
+  // matching controller in src/controllers, which calls the backend through /api.
+  app.get('/admin', (_req: Request, res: Response) => {
+    renderAdminPage(res, 'admin/dashboard.njk', {
+      title: 'Dashboard',
+      activeSlug: 'dashboard',
+      summaryCards: ADMIN_SUMMARY_CARDS,
+      quickActions: ADMIN_QUICK_ACTIONS,
+      systemStatus: ADMIN_SYSTEM_STATUS,
+    });
   });
 
-  app.use(
-    '/admin/customers',
-    createAdminCustomersRouter(adminTemplates, customerSource),
-  );
+  app.get('/admin/customers', (_req: Request, res: Response) => {
+    renderAdminPage(res, 'admin/customers.njk', {
+      title: 'Customers',
+      activeSlug: 'customers',
+      sortOptions: CUSTOMER_SORT_OPTIONS,
+    });
+  });
+
+  app.get('/admin/customers/:id', (_req: Request, res: Response) => {
+    renderAdminPage(res, 'admin/customer-detail.njk', {
+      title: 'Customer details',
+      activeSlug: 'customers',
+    });
+  });
 
   app.get('/admin/:section', (req: Request, res: Response, next) => {
     const adminModule = findAdminModule(String(req.params.section));
@@ -127,18 +129,10 @@ export function createApp(
       next();
       return;
     }
-    try {
-      res.type('html').send(
-        adminTemplates.render('admin/module.njk', {
-          title: adminModule.label,
-          activeSlug: adminModule.slug,
-          navItems: ADMIN_NAV_ITEMS,
-        }),
-      );
-    } catch (error) {
-      console.error('Unable to load the admin page:', error);
-      res.redirect('/unavailable');
-    }
+    renderAdminPage(res, 'admin/module.njk', {
+      title: adminModule.label,
+      activeSlug: adminModule.slug,
+    });
   });
 
   app.get('/unavailable', async (_req: Request, res: Response) => {

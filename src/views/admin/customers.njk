@@ -3,90 +3,35 @@
 {% block content %}
 <header class="admin-page-header">
   <h1>Customers</h1>
-  {% if not error %}
-  <p class="admin-subtitle" data-total-customers>Total Customers: {{ totalCustomers }}</p>
-  {% endif %}
+  <p class="admin-subtitle" data-total-customers hidden></p>
 </header>
 
-{% if error %}
-<section class="admin-card customer-state" role="alert" aria-labelledby="customers-error-heading">
-  <h2 id="customers-error-heading">Unable to load customers</h2>
-  <p class="admin-empty">Something went wrong while loading customer data. Please try again.</p>
-  <p><a class="admin-action customer-state-action" href="{{ retryUrl }}">Try again</a></p>
-</section>
-{% else %}
 <form class="customer-toolbar" action="/admin/customers" method="get" role="search">
   <div class="customer-field customer-field-search">
     <label for="customer-search">Search by name</label>
-    <input id="customer-search" name="q" type="search" value="{{ search }}" maxlength="200" autocomplete="off" />
+    <input id="customer-search" name="q" type="search" maxlength="200" autocomplete="off" />
   </div>
   <div class="customer-field customer-field-search">
     <label for="customer-email">Search by email</label>
-    <input id="customer-email" name="email" type="search" value="{{ email }}" maxlength="254" autocomplete="off" />
+    <input id="customer-email" name="email" type="search" maxlength="254" autocomplete="off" />
   </div>
   <div class="customer-field">
     <label for="customer-sort">Sort by</label>
     <select id="customer-sort" name="sort">
       {% for option in sortOptions %}
-      <option value="{{ option.value }}"{% if option.value == sort %} selected{% endif %}>{{ option.label }}</option>
+      <option value="{{ option.value }}">{{ option.label }}</option>
       {% endfor %}
     </select>
   </div>
   <button class="customer-button" type="submit">Apply</button>
 </form>
 
-{% if customers.length == 0 %}
-<section class="admin-card customer-state" aria-labelledby="customers-empty-heading">
-  <h2 id="customers-empty-heading">No customers found</h2>
-  {% if search or email %}
-  <p class="admin-empty">No customers match your search. Try a different name or email address.</p>
-  <p><a href="/admin/customers">Clear search</a></p>
-  {% else %}
-  <p class="admin-empty">Customers will appear here once they register.</p>
-  {% endif %}
-</section>
-{% else %}
-{% if search or email %}
-<p class="admin-subtitle" data-matching-customers>{{ matchingCustomers }} matching {{ "customer" if matchingCustomers == 1 else "customers" }}</p>
-{% endif %}
-<div class="admin-card customer-table-card">
-  <table class="customer-table">
-    <thead>
-      <tr>
-        <th scope="col">Customer Name</th>
-        <th scope="col">Email Address</th>
-        <th scope="col">Registration Date</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for customer in customers %}
-      <tr>
-        <td data-label="Customer Name"><a href="/admin/customers/{{ customer.id }}">{{ customer.name }}</a></td>
-        <td data-label="Email Address">{{ customer.email }}</td>
-        <td data-label="Registration Date"><time datetime="{{ customer.registrationDate }}">{{ customer.registeredDisplay }}</time></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div data-customers-results aria-live="polite">
+  <p class="admin-empty">Loading customers&hellip;</p>
 </div>
+<noscript><p class="admin-empty">JavaScript is required to load customers.</p></noscript>
+{% endblock %}
 
-{% if totalPages > 1 %}
-<nav class="customer-pagination" aria-label="Customer pages">
-  <ul>
-    <li>
-      {% if previousUrl %}<a href="{{ previousUrl }}" rel="prev">Previous</a>{% else %}<span class="is-disabled" aria-disabled="true">Previous</span>{% endif %}
-    </li>
-    {% for item in pageLinks %}
-    <li>
-      {% if item.current %}<span class="is-current" aria-current="page">{{ item.number }}</span>{% else %}<a href="{{ item.url }}" aria-label="Page {{ item.number }}">{{ item.number }}</a>{% endif %}
-    </li>
-    {% endfor %}
-    <li>
-      {% if nextUrl %}<a href="{{ nextUrl }}" rel="next">Next</a>{% else %}<span class="is-disabled" aria-disabled="true">Next</span>{% endif %}
-    </li>
-  </ul>
-</nav>
-{% endif %}
-{% endif %}
-{% endif %}
+{% block scripts %}
+<script src="/controllers/adminCustomers.js" defer></script>
 {% endblock %}
