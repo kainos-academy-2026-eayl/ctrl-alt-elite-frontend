@@ -179,14 +179,29 @@ describe('frontend routes', () => {
       }
     });
 
-    it('renders a server-side form without a browser login script', async () => {
+    it('renders a server-side form with an optional password visibility control', async () => {
       const res = await fetch(`${base}/login`, { redirect: 'manual' });
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       const html = await res.text();
       assert.match(html, /action="\/login" method="post"/);
       assert.match(html, new RegExp(`&copy; ${new Date().getFullYear()}`));
-      assert.doesNotMatch(html, /<script|{{|{%|Incorrect email or password/);
+      assert.match(html, /id="password"[\s\S]*?type="password"/);
+      const toggle = html.match(
+        /<button\b[^>]*data-password-toggle[\s\S]*?<\/button>/,
+      )?.[0];
+      assert.ok(toggle);
+      assert.match(toggle, /type="button"/);
+      assert.match(toggle, /aria-controls="password"/);
+      assert.match(toggle, /aria-label="Show password"/);
+      assert.match(toggle, /title="Show password"/);
+      assert.match(toggle, /\bhidden\s*>/);
+      assert.match(toggle, /<svg\b[^>]*aria-hidden="true"/);
+      assert.match(
+        html,
+        /<script src="\/controllers\/login\.js" defer><\/script>/,
+      );
+      assert.doesNotMatch(html, /{{|{%|Incorrect email or password/);
     });
   });
 

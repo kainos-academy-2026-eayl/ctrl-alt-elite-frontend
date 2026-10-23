@@ -35,16 +35,11 @@ A successful backend response produces a `303` redirect based on its `role`:
 renders the login page with an error.
 Incorrect credentials render the login page with an error and retain the email,
 but never the password. Backend failures also render an error.
-Login does not require browser JavaScript. The backend's `token` is stored in an
-httpOnly `auth_token` cookie (one hour), and the `/api/*` proxy sends it to the
-backend as `Authorization: Bearer`. Every `/admin*` request is first checked
-against the backend's admin-only API: no token or an invalid one redirects to
-`/login`, a non-admin gets a `403` page, and a failed check redirects to
-`/unavailable`. The homepage is not protected.
-
-`POST /logout` (the "Log out" button at the bottom of the admin sidebar) clears
-the `auth_token` cookie and redirects to `/login`. The token itself is not
-revoked on the backend, so it stays valid until it expires.
+Login submission does not require browser JavaScript. An optional browser script
+adds an eye-icon button inside the password field with a Show password / Hide
+password accessible label; without JavaScript the password
+stays masked and the button stays hidden. This verifies credentials only; it
+does not establish a persistent session or protect the homepage.
 
 Server-side controllers live in `src/server/controllers/` and are not bundled for the
 browser. Browser scripts remain in `src/controllers/`; registration still uses its
