@@ -2,7 +2,7 @@
 
 {% block content %}
 <header class="admin-page-header">
-  <h1>Dashboard</h1>
+  <h1>Welcome{% if firstName %}, {{ firstName }}{% endif %}</h1>
   <p class="admin-subtitle">Overview of your store. Customer figures are loaded live; other figures are placeholders until they are connected.</p>
 </header>
 
