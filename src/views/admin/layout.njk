@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Ctrl-Alt-Elite Admin Portal." />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/admin.css" />
+  <title>{{ title }} | Admin | Ctrl-Alt-Elite</title>
+</head>
+
+<body class="admin-page">
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <a class="brand admin-brand" href="/admin" aria-label="Admin Portal home">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>Admin Portal</span>
+      </a>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <ul>
+          {% for item in navItems %}
+          <li>
+            <a
+              class="admin-nav-link{% if item.slug == activeSlug %} is-active{% endif %}"
+              href="{{ item.href }}"
+              {% if item.slug == activeSlug %}aria-current="page"{% endif %}
+            >{{ item.label }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </nav>
+      <a class="admin-home-link" href="/">&larr; Back to homepage</a>
+      <form class="admin-logout-form" action="/logout" method="post">
+        <button class="admin-logout-btn" type="submit">Log out</button>
+      </form>
+    </aside>
+
+    <main class="admin-main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>

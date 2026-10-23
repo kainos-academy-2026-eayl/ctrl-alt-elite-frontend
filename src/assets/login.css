@@ -52,6 +52,46 @@
   border-color: #15803d;
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  min-height: 46px;
+  padding-right: 3.25rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 44px;
+  height: calc(100% - 2px);
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #14532d;
+  cursor: pointer;
+}
+
+.password-toggle:not([hidden]) {
+  display: grid;
+  place-items: center;
+}
+
+.password-eye-slash {
+  display: none;
+}
+
+.password-toggle[aria-label="Hide password"] .password-eye-slash {
+  display: block;
+}
+
+.password-toggle:hover {
+  background: #f0fdf4;
+}
+
 .login-btn {
   width: 100%;
   padding: 0.8rem;
@@ -68,12 +108,28 @@
   background: #14532d;
 }
 
-.login-btn:focus-visible {
+.login-btn:focus-visible,
+.password-toggle:focus-visible {
   outline: 3px solid #22c55e;
   outline-offset: 3px;
+}
+
+.password-toggle:focus-visible {
+  outline-color: #15803d;
+  outline-offset: -4px;
 }
 
 .login-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.login-message {
+  margin: 0 0 1rem;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.login-message:empty {
+  display: none;
 }

@@ -1,0 +1,37 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<header class="admin-page-header">
+  <h1>Customers</h1>
+  <p class="admin-subtitle" data-total-customers hidden></p>
+</header>
+
+<form class="customer-toolbar" action="/admin/customers" method="get" role="search">
+  <div class="customer-field customer-field-search">
+    <label for="customer-search">Search by name</label>
+    <input id="customer-search" name="q" type="search" maxlength="200" autocomplete="off" />
+  </div>
+  <div class="customer-field customer-field-search">
+    <label for="customer-email">Search by email</label>
+    <input id="customer-email" name="email" type="search" maxlength="254" autocomplete="off" />
+  </div>
+  <div class="customer-field">
+    <label for="customer-sort">Sort by</label>
+    <select id="customer-sort" name="sort">
+      {% for option in sortOptions %}
+      <option value="{{ option.value }}">{{ option.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="customer-button" type="submit">Apply</button>
+</form>
+
+<div data-customers-results aria-live="polite">
+  <p class="admin-empty">Loading customers&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to load customers.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminCustomers.js" defer></script>
+{% endblock %}

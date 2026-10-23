@@ -1,0 +1,12 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<header class="admin-page-header">
+  <h1>{{ title }}</h1>
+</header>
+<section class="admin-card" aria-labelledby="coming-soon-heading">
+  <h2 id="coming-soon-heading">Coming soon</h2>
+  <p class="admin-empty">{{ title }} management has not been implemented yet.</p>
+  <p><a href="/admin">Back to dashboard</a></p>
+</section>
+{% endblock %}

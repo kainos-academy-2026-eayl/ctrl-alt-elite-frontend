@@ -1,0 +1,14 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<p><a href="/admin/customers">&larr; Back to customers</a></p>
+
+<div data-customer-detail aria-live="polite">
+  <p class="admin-empty">Loading customer&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to load this customer.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminCustomerDetail.js" defer></script>
+{% endblock %}
