@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'vitest';
-import { normaliseSearchTerm } from '../src/util/productSearch';
+import { normaliseSearchTerm } from '../../src/models/productSearch';
 
 // The matching rules are tested in the backend, which owns product search.
 describe('normaliseSearchTerm', () => {

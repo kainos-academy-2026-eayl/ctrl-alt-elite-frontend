@@ -5,9 +5,9 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | Route | What it does |
 | --- | --- |
 | `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Currently lists temporary products from [src/data/sampleProducts.ts](src/data/sampleProducts.ts) until the product ticket is complete. |
-| `GET /search?q=` | Search results page ([src/views/search.njk](src/views/search.njk)). The term is normalised, then searched with the backend product search API (`GET /api/products/search`, see [src/util/productApi.ts](src/util/productApi.ts)). A blank term does not call the backend; if the backend fails, the page redirects to `/unavailable`. |
+| `GET /search?q=` | Search results page ([src/views/search.njk](src/views/search.njk)). The term is normalised, then searched with the backend product search API (`GET /api/products/search`, see [src/services/productService.ts](src/services/productService.ts)). Search types and term normalisation are in [src/models/productSearch.ts](src/models/productSearch.ts). A blank term does not call the backend; if the backend fails, the page redirects to `/unavailable`. |
 | `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
-| `GET /basket` | Basket page ([src/views/basket.njk](src/views/basket.njk)). Items are stored by the backend basket API (`/api/baskets`, via the `/api` proxy); [src/controllers/basket.ts](src/controllers/basket.ts) keeps only the basket id in `sessionStorage`. |
+| `GET /basket` | Basket page ([src/views/basket.njk](src/views/basket.njk)). Items are stored by the backend basket API (`/api/baskets`, via the `/api` proxy). The browser controller [src/controllers/basket.ts](src/controllers/basket.ts) handles the page and uses [src/services/basketService.ts](src/services/basketService.ts), which calls the API and keeps only the basket id in `sessionStorage`. Basket types and helpers are in [src/models/basket.ts](src/models/basket.ts). |
 | `GET /unavailable` | Fallback page, served with `503`. Pages redirect here if they cannot be loaded. |
 | `GET /assets/*` | Stylesheets from [src/assets/](src/assets) |
 | `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |
@@ -84,12 +84,15 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 │   ├── views/            # HTML pages (homepage, register, unavailable)
 │   ├── assets/           # CSS served at /assets
 │   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers
+│   ├── models/           # shared types and pure helpers (e.g. product, productSearch, basket)
 │   ├── util/
 │   │   └── apiProxy.ts   # forwards /api requests to the backend
 │   ├── repos/            # reserved for data access code
-│   └── services/         # reserved for business logic
-├── test/
-│   └── app.test.ts       # route, static asset, page link and proxy tests
+│   └── services/         # backend API calls, e.g. productService.ts (server) and basketService.ts (browser)
+├── test/                 # mirrors src/: a test for src/<folder>/<name>.ts lives at test/<folder>/<name>.test.ts
+│   ├── app.test.ts       # route, static asset, page link and proxy tests
+│   ├── models/           # tests for src/models
+│   └── services/         # tests for src/services
 ├── .env                  # your local secrets and config (not committed)
 ├── .env.example          # template listing required env variables
 ├── .github/              # GitHub configuration and CI workflow
@@ -119,7 +122,7 @@ Say you want a `/about` page.
 <script src="/controllers/script.js" defer></script>
 ```
 
-Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/controllers/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/controllers/`.
+Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/controllers/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/controllers/`. Keep controllers to page handling: put API calls and business logic in `src/services/` and types in `src/models/`, then import them. They are bundled into the controller's script, so they do not need their own `<script>` tag.
 
 **2. Register the route** in [src/app.ts](src/app.ts), following the existing pages:
 

@@ -1,8 +1,9 @@
 /*
- * Pure basket helpers used by src/controllers/basket.ts. Nothing in this file
- * touches the page, the network or sessionStorage, so every function can be
- * unit tested. The backend owns the basket rules (quantity limits, prices and
- * totals); these helpers format its responses and check they are consistent.
+ * Basket types and pure helpers, used by src/services/basketService.ts and
+ * src/controllers/basket.ts. Nothing in this file touches the page, the
+ * network or sessionStorage, so every function can be unit tested. The
+ * backend owns the basket rules (quantity limits, prices and totals); these
+ * helpers format its responses and check they are consistent.
  * Prices are whole pence to avoid floating point rounding errors.
  */
 

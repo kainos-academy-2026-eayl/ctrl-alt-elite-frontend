@@ -1,13 +1,11 @@
 /*
- * KAN-28 Shopping basket.
+ * KAN-28 Shopping basket – browser controller.
  *
- * The basket is stored by the backend (/api/baskets, reached through this
- * server's /api proxy). The browser only keeps the basket id in
- * sessionStorage, so the basket survives page navigation and refreshes in the
- * same tab but a new basket is started when the tab is closed. The backend
- * owns the prices, quantity limits (1–99) and totals; this file only displays
- * what the server returns. The basket page (/basket) is rendered from
- * src/views/basket.njk.
+ * This file only handles the page: "Add to Basket" clicks, the basket page
+ * (/basket, rendered from src/views/basket.njk), the item count badges and
+ * notifications. Loading, saving and changing the basket is done by
+ * BasketService (src/services/basketService.ts), which talks to the backend
+ * basket API and keeps the basket id in sessionStorage.
  *
  * Product pages – add this markup to get a working "Add to Basket" button:
  *   <link rel="stylesheet" href="/assets/basket.css" />
@@ -29,20 +27,11 @@
  */
 
 import {
-  addBasketItem,
-  BasketApiError,
-  changeBasketItemQuantity,
-  createBasket,
-  getBasket,
-  removeBasketItem,
-} from './lib/basketApi';
-import {
   addedMessage,
   type BasketLine,
   type BasketResponse,
   type BasketTotals,
   calculateTotals,
-  createCheckoutSnapshot,
   formatItemCount,
   formatPrice,
   MAX_QUANTITY,
@@ -50,7 +39,12 @@ import {
   type ProductInput,
   parseProduct,
   type RecentAdd,
-} from './lib/basketLogic';
+} from '../models/basket';
+import {
+  BasketApiError,
+  BasketService,
+  isMissingBasket,
+} from '../services/basketService';
 
 declare global {
   interface Window {
@@ -61,19 +55,7 @@ declare global {
   }
 }
 
-const BASKET_ID_KEY = 'ctrl-alt-elite:basket-id';
-// The basket used to live in the browser under this key; it is now ignored.
-const LEGACY_BASKET_KEY = 'ctrl-alt-elite:basket';
-const CHECKOUT_KEY = 'ctrl-alt-elite:checkout';
 const TOAST_DURATION_MS = 3000;
-
-const EMPTY_BASKET: BasketResponse = {
-  id: '',
-  items: [],
-  itemCount: 0,
-  totalPence: 0,
-  maxQuantity: MAX_QUANTITY,
-};
 
 const ADD_FAILED_MESSAGE =
   'Sorry, we could not add that item. Please try again.';
@@ -88,14 +70,7 @@ const BASKET_RESET_ALERT =
 const CHECKOUT_FAILED_ALERT =
   "We couldn't take your basket to checkout. Your items are still in your basket – please try again. If this keeps happening, refresh the page or allow site data in your browser settings.";
 
-/** The latest basket from the server, or null when it could not be loaded. */
-let basket: BasketResponse | null = null;
-let isLoaded = false;
-// Used when sessionStorage is blocked (e.g. strict privacy settings).
-let memoryBasketId: string | null = null;
-let storageWorks = true;
-let basketWasReset = false;
-let checkoutFailed = false;
+const service = new BasketService(() => sessionStorage);
 
 function getElement<T extends Element>(
   selector: string,
@@ -108,197 +83,69 @@ function getElement<T extends Element>(
   return element;
 }
 
-// Runs basket changes one at a time, in click order, so a slow response can
-// never overwrite the result of a later click.
-let pendingWork: Promise<unknown> = Promise.resolve();
-function runInOrder<T>(task: () => Promise<T>): Promise<T> {
-  const result = pendingWork.then(task, task);
-  pendingWork = result.catch(() => undefined);
-  return result;
-}
-
-function readBasketId(): string | null {
-  if (!storageWorks) {
-    return memoryBasketId;
-  }
-  try {
-    return sessionStorage.getItem(BASKET_ID_KEY);
-  } catch (error) {
-    console.error('Basket storage is unavailable:', error);
-    storageWorks = false;
-    return memoryBasketId;
-  }
-}
-
-function saveBasketId(basketId: string | null): void {
-  memoryBasketId = basketId;
-  if (!storageWorks) {
-    return;
-  }
-  try {
-    if (basketId === null) {
-      sessionStorage.removeItem(BASKET_ID_KEY);
-    } else {
-      sessionStorage.setItem(BASKET_ID_KEY, basketId);
-    }
-  } catch (error) {
-    console.error('Unable to save the basket id:', error);
-    storageWorks = false;
-  }
-}
-
-/** The basket changed, so any earlier checkout snapshot is now out of date. */
-function clearCheckoutSnapshot(): void {
-  checkoutFailed = false;
-  if (!storageWorks) {
-    return;
-  }
-  try {
-    sessionStorage.removeItem(CHECKOUT_KEY);
-  } catch (error) {
-    console.error('Unable to clear the checkout snapshot:', error);
-  }
-}
-
-function removeLegacyBasket(): void {
-  try {
-    sessionStorage.removeItem(LEGACY_BASKET_KEY);
-  } catch {
-    // Storage is blocked; readBasketId() reports this when it is first used.
-  }
-}
-
-async function loadBasket(): Promise<void> {
-  const basketId = readBasketId();
-  isLoaded = true;
-  if (basketId === null) {
-    basket = EMPTY_BASKET;
-    return;
-  }
-  try {
-    basket = await getBasket(basketId);
-  } catch (error) {
-    if (
-      error instanceof BasketApiError &&
-      (error.isNotFound || error.status === 400)
-    ) {
-      saveBasketId(null);
-      basketWasReset = true;
-      basket = EMPTY_BASKET;
-      return;
-    }
-    console.error('Unable to load the basket:', error);
-    basket = null;
-  }
-}
-
-async function ensureBasketId(): Promise<string> {
-  const existingId = readBasketId();
-  if (existingId !== null) {
-    return existingId;
-  }
-  const created = await createBasket();
-  saveBasketId(created.id);
-  return created.id;
-}
-
-async function addItemToCurrentBasket(
-  productId: string,
-): Promise<BasketResponse> {
-  try {
-    return await addBasketItem(await ensureBasketId(), productId);
-  } catch (error) {
-    if (!(error instanceof BasketApiError && error.isNotFound)) {
-      throw error;
-    }
-    // The saved basket no longer exists, so start a new one and try once more.
-    saveBasketId(null);
-    return addBasketItem(await ensureBasketId(), productId);
-  }
-}
-
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof BasketApiError ? error.message : fallback;
 }
 
-function addToBasket(input: ProductInput): Promise<boolean> {
-  return runInOrder(async () => {
-    const product = parseProduct(input);
-    if (!product) {
-      console.error('Invalid product passed to addToBasket:', input);
-      showToast(ADD_FAILED_MESSAGE, true);
-      return false;
-    }
+async function addToBasket(input: ProductInput): Promise<boolean> {
+  const product = parseProduct(input);
+  if (!product) {
+    console.error('Invalid product passed to addToBasket:', input);
+    showToast(ADD_FAILED_MESSAGE, true);
+    return false;
+  }
 
-    let updated: BasketResponse;
-    try {
-      updated = await addItemToCurrentBasket(product.id);
-    } catch (error) {
-      console.error('Unable to add to the basket:', error);
-      showToast(errorMessage(error, ADD_FAILED_MESSAGE), true);
-      return false;
-    }
-    basket = updated;
-    clearCheckoutSnapshot();
-    renderBasketPage();
+  let updated: BasketResponse;
+  try {
+    updated = await service.addItem(product.id);
+  } catch (error) {
+    console.error('Unable to add to the basket:', error);
+    showToast(errorMessage(error, ADD_FAILED_MESSAGE), true);
+    return false;
+  }
+  renderBasketPage();
 
-    const name =
-      updated.items.find((item) => item.id === product.id)?.name ??
-      product.name;
-    const addedCount = nextAddCount(recentAdd, product.id);
-    showToast(addedMessage(name, addedCount));
-    recentAdd = { productId: product.id, count: addedCount };
-    return true;
-  });
+  const name =
+    updated.items.find((item) => item.id === product.id)?.name ?? product.name;
+  const addedCount = nextAddCount(recentAdd, product.id);
+  showToast(addedMessage(name, addedCount));
+  recentAdd = { productId: product.id, count: addedCount };
+  return true;
 }
 
-async function recoverFromFailedUpdate(error: unknown): Promise<void> {
-  console.error('Unable to update the basket:', error);
-  if (!(error instanceof BasketApiError && error.isNotFound)) {
+function showUpdateError(error: unknown): void {
+  // A missing basket is explained by the reset alert instead.
+  if (!isMissingBasket(error)) {
     showToast(errorMessage(error, UPDATE_FAILED_MESSAGE), true);
   }
-  // Reload so the page always shows what the server really holds.
-  await loadBasket();
 }
 
-function changeQuantity(productId: string, change: number): Promise<void> {
-  return runInOrder(async () => {
-    const basketId = readBasketId();
-    try {
-      if (basketId === null) {
-        throw new BasketApiError(404, 'Basket not found.');
-      }
-      basket = await changeBasketItemQuantity(basketId, productId, change);
-      clearCheckoutSnapshot();
-    } catch (error) {
-      await recoverFromFailedUpdate(error);
-    }
-    renderBasketPage();
-  });
+async function changeQuantity(
+  productId: string,
+  change: number,
+): Promise<void> {
+  try {
+    await service.changeQuantity(productId, change);
+  } catch (error) {
+    showUpdateError(error);
+  }
+  renderBasketPage();
 }
 
-function removeItem(productId: string): Promise<void> {
-  return runInOrder(async () => {
-    const removed = basket?.items.find((item) => item.id === productId);
-    const basketId = readBasketId();
-    try {
-      if (basketId === null) {
-        throw new BasketApiError(404, 'Basket not found.');
-      }
-      await removeBasketItem(basketId, productId);
-      clearCheckoutSnapshot();
-      await loadBasket();
-      if (removed) {
-        showToast(`${removed.name} removed from your basket`);
-      }
-    } catch (error) {
-      await recoverFromFailedUpdate(error);
+async function removeItem(productId: string): Promise<void> {
+  try {
+    const removed = await service.removeItem(productId);
+    if (removed) {
+      showToast(`${removed.name} removed from your basket`);
     }
-    renderBasketPage();
-  });
+  } catch (error) {
+    showUpdateError(error);
+  }
+  renderBasketPage();
 }
 
 function updateBadges(): void {
+  const { basket } = service;
   if (basket === null) {
     return;
   }
@@ -344,16 +191,16 @@ function showAlert(message: string): void {
 }
 
 function currentAlertMessage(): string {
-  if (basket === null) {
+  if (service.basket === null) {
     return LOAD_FAILED_ALERT;
   }
-  if (!storageWorks) {
+  if (!service.storageWorks) {
     return STORAGE_BLOCKED_ALERT;
   }
-  if (checkoutFailed) {
+  if (service.checkoutFailed) {
     return CHECKOUT_FAILED_ALERT;
   }
-  return basketWasReset ? BASKET_RESET_ALERT : '';
+  return service.basketWasReset ? BASKET_RESET_ALERT : '';
 }
 
 function createButton(
@@ -442,9 +289,11 @@ function renderBasketPage(): void {
   updateBadges();
 
   const page = document.querySelector<HTMLElement>('[data-basket]');
-  if (!page || !isLoaded) {
+  if (!page || !service.isLoaded) {
     return;
   }
+
+  const { basket } = service;
 
   // When the basket could not be loaded, show neither the contents nor the
   // empty message so the customer never sees wrong information.
@@ -471,51 +320,17 @@ function renderBasketPage(): void {
   showAlert(currentAlertMessage());
 }
 
-function goToCheckout(): Promise<void> {
-  return runInOrder(async () => {
-    // Re-read the basket so the snapshot is exactly what the server holds now.
-    await loadBasket();
-    if (basket === null || basket.items.length === 0) {
-      renderBasketPage();
-      return;
-    }
-
-    const snapshot = JSON.stringify(
-      createCheckoutSnapshot(basket.items, new Date()),
-    );
-
-    try {
-      if (!storageWorks) {
-        throw new Error('Basket storage is unavailable');
-      }
-      sessionStorage.setItem(CHECKOUT_KEY, snapshot);
-      if (sessionStorage.getItem(CHECKOUT_KEY) !== snapshot) {
-        throw new Error('Checkout snapshot did not save correctly');
-      }
-    } catch (error) {
-      console.error('Unable to send the basket to checkout:', error);
-      // Never leave a stale or partial snapshot for the checkout page to show.
-      try {
-        sessionStorage.removeItem(CHECKOUT_KEY);
-      } catch {
-        // Storage is unusable, so there is nothing to clean up.
-      }
-      checkoutFailed = true;
-      renderBasketPage();
-      return;
-    }
-
-    checkoutFailed = false;
-    renderBasketPage();
+async function goToCheckout(): Promise<void> {
+  const result = await service.prepareCheckout(new Date());
+  renderBasketPage();
+  if (result === 'saved') {
     showToast('Your basket is ready for checkout');
-  });
+  }
 }
 
-function refreshBasket(): Promise<void> {
-  return runInOrder(async () => {
-    await loadBasket();
-    renderBasketPage();
-  });
+async function refreshBasket(): Promise<void> {
+  await service.refresh();
+  renderBasketPage();
 }
 
 document.addEventListener('click', (event) => {
@@ -545,8 +360,8 @@ window.addEventListener('pageshow', (event) => {
 
 window.Basket = {
   add: addToBasket,
-  getItems: () => calculateTotals(basket?.items ?? []),
+  getItems: () => calculateTotals(service.basket?.items ?? []),
 };
 
-removeLegacyBasket();
+service.removeLegacyBasket();
 void refreshBasket();

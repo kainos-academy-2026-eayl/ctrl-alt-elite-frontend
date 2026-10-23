@@ -3,12 +3,12 @@ import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { SAMPLE_PRODUCTS } from './data/sampleProducts';
-import { createApiProxy } from './util/apiProxy';
-import { searchProductsApi } from './util/productApi';
 import {
   normaliseSearchTerm,
   type ProductSearchResult,
-} from './util/productSearch';
+} from './models/productSearch';
+import { searchProductsApi } from './services/productService';
+import { createApiProxy } from './util/apiProxy';
 
 const VIEWS_DIRECTORY = new URL('../src/views/', import.meta.url);
 const ASSETS_DIRECTORY = fileURLToPath(

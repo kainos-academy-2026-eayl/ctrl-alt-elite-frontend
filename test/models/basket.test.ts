@@ -13,7 +13,7 @@ import {
   MAX_QUANTITY,
   nextAddCount,
   parseProduct,
-} from '../src/controllers/lib/basketLogic';
+} from '../../src/models/basket';
 
 const lamp: BasketItem = {
   id: 'sample-lamp',
