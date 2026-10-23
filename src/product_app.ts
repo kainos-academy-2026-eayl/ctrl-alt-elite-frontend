@@ -16,7 +16,20 @@ type BackendProduct = {
   price: number | string;
   image: string;
   description: string;
+  stock?: unknown;
 };
+
+function getStock(value: unknown): number | null {
+  if (
+    typeof value !== 'number' &&
+    (typeof value !== 'string' || value.trim() === '')
+  ) {
+    return null;
+  }
+
+  const stock = Number(value);
+  return Number.isSafeInteger(stock) && stock >= 0 ? stock : null;
+}
 
 function getProducts(payload: unknown): BackendProduct[] {
   if (Array.isArray(payload)) return payload as BackendProduct[];
@@ -56,16 +69,29 @@ export function registerProductApp(app: Express, backendOrigin: string): void {
       }
 
       const records = getProducts(await response.json());
-      const products = records.map((product) => ({
-        ...product,
-        priceLabel: new Intl.NumberFormat('en-GB', {
-          style: 'currency',
-          currency: 'GBP',
-        }).format(Number(product.price)),
-        searchText: `${product.name} ${product.category}`.toLowerCase(),
-      }));
+      const products = records.map((product) => {
+        const stock = getStock(product.stock);
+        return {
+          ...product,
+          stock,
+          stockLabel:
+            stock === null
+              ? 'Stock unavailable'
+              : stock === 0
+                ? 'Out of stock'
+                : `${stock} in stock`,
+          available: stock !== null && stock > 0,
+          priceLabel: new Intl.NumberFormat('en-GB', {
+            style: 'currency',
+            currency: 'GBP',
+          }).format(Number(product.price)),
+        };
+      });
 
-      res.render('product.njk', { products });
+      const categories = [
+        ...new Set(products.map((product) => product.category)),
+      ];
+      res.render('product.njk', { products, categories });
     } catch (error) {
       console.error('Unable to load products from the backend:', error);
       res.status(502).render('product.njk', {

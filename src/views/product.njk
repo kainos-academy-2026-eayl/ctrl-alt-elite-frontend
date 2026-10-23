@@ -25,11 +25,16 @@
                 <h1 id="catalogTitle">Product catalog</h1>
                 <p class="catalog-summary">Browse the latest products from Ctrl-Alt-Elite.</p>
             </div>
-            <label class="search-field">
-                <span>Search products</span>
-                <input id="productSearch" type="search" placeholder="Search by name or category" autocomplete="off">
-            </label>
         </section>
+
+        {% if categories.length %}
+        <div class="category-filters" role="group" aria-label="Filter by category">
+            {% for category in categories %}
+            <button class="button button-secondary category-filter" type="button" data-category-filter="{{ category }}"
+                aria-pressed="false" aria-controls="productGrid">{{ category }}</button>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         <p class="results-count" id="resultsCount" aria-live="polite">{{ products.length }} products</p>
 
@@ -38,7 +43,7 @@
             <p class="empty-state" role="alert">{{ productError }}</p>
             {% else %}
             {% for product in products %}
-            <article class="product-tile" data-product-card data-search="{{ product.searchText }}">
+            <article class="product-tile" data-product-card data-category="{{ product.category }}">
                 <div class="product-image-wrap">
                     <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
                     <span class="product-category">{{ product.category }}</span>
@@ -46,12 +51,14 @@
                 <div class="product-content">
                     <h2>{{ product.name }}</h2>
                     <p class="product-price">{{ product.priceLabel }}</p>
+                    <p class="product-stock">{{ product.stockLabel }}</p>
                     <div class="product-actions">
                         <button class="button button-secondary" type="button" data-view-details
                             data-product-name="{{ product.name }}" data-product-category="{{ product.category }}"
                             data-product-price="{{ product.priceLabel }}" data-product-image="{{ product.image }}"
                             data-product-description="{{ product.description }}">View details</button>
-                        <button class="button button-primary" type="button" data-add-to-basket="{{ product.id }}">Add to
+                        <button class="button button-primary" type="button" data-add-to-basket="{{ product.id }}"
+                            {% if not product.available %} disabled{% endif %}>Add to
                             basket</button>
                     </div>
                 </div>
@@ -60,7 +67,6 @@
             <p class="empty-state">There are no products to show right now.</p>
             {% endfor %}
             {% endif %}
-            <p class="empty-state" id="noSearchResults" hidden>No products match your search.</p>
         </section>
     </main>
 

@@ -57,7 +57,21 @@ describe('frontend routes', () => {
                 price: 25,
                 image: 'https://example.com/product.jpg',
                 description: 'Loaded from the backend test server.',
+                stock: 12,
               },
+              ...[0, '7', undefined, null, '', ' ', 'invalid', -1, 1.5].map(
+                (stock, index) => ({
+                  id: `stock-${index}`,
+                  name: `Stock fixture ${index}`,
+                  category: ['Audio', 'Photography', 'Test category'][
+                    index % 3
+                  ],
+                  price: 10,
+                  image: 'https://example.com/product.jpg',
+                  description: 'Stock test product.',
+                  stock,
+                }),
+              ),
             ],
           }),
         );
@@ -115,6 +129,52 @@ describe('frontend routes', () => {
       assert.match(html, /Backend Product/);
       assert.match(html, /Test category/);
       assert.doesNotMatch(html, /Studio Wireless Headphones/);
+    });
+
+    it('removes search while keeping the product count', async () => {
+      const html = await (await fetch(`${base}/products`)).text();
+      assert.doesNotMatch(
+        html,
+        /productSearch|search-field|data-search|noSearchResults/,
+      );
+      assert.match(html, /10 products/);
+    });
+
+    it('renders one category toggle per backend category and tags product cards', async () => {
+      const html = await (await fetch(`${base}/products`)).text();
+      const filters = [...html.matchAll(/data-category-filter="([^"]+)"/g)].map(
+        (match) => match[1],
+      );
+      assert.deepEqual(filters, ['Test category', 'Audio', 'Photography']);
+      assert.equal((html.match(/aria-pressed="false"/g) ?? []).length, 3);
+      assert.equal(
+        (html.match(/data-product-card data-category=/g) ?? []).length,
+        10,
+      );
+    });
+
+    it('shows stock quantities and disables unavailable products', async () => {
+      const html = await (await fetch(`${base}/products`)).text();
+      const cards = [
+        ...html.matchAll(/<article\b[^>]*>([\s\S]*?)<\/article>/g),
+      ].map((match) => match[1] as string);
+      assert.equal(cards.length, 10);
+      for (const [index, card] of cards.entries()) {
+        const button = card.match(
+          /<button\b[^>]*data-add-to-basket[^>]*>/,
+        )?.[0];
+        assert.ok(button);
+        if (index === 0 || index === 2) {
+          assert.match(card, index === 0 ? /12 in stock/ : /7 in stock/);
+          assert.doesNotMatch(button, /\bdisabled\b/);
+        } else {
+          assert.match(
+            card,
+            index === 1 ? /Out of stock/ : /Stock unavailable/,
+          );
+          assert.match(button, /\bdisabled\b/);
+        }
+      }
     });
   });
 

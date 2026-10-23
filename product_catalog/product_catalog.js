@@ -7,14 +7,6 @@
     }
     return element;
   }
-  var searchInput = getRequiredElement('#productSearch');
-  var productCards = Array.from(
-    // Changed
-    document.querySelectorAll('[data-product-card]'),
-    // Changed
-  );
-  var resultsCount = getRequiredElement('#resultsCount');
-  var noSearchResults = getRequiredElement('#noSearchResults');
   var basketCount = getRequiredElement('#basketCount');
   var detailsDialog = getRequiredElement('#productDetails');
   var detailsName = getRequiredElement('#detailsName');
@@ -24,17 +16,34 @@
   var detailsImage = getRequiredElement('#detailsImage');
   var closeDetailsButton = getRequiredElement('[data-close-details]');
   var basketItemCount = 0;
-  searchInput.addEventListener('input', () => {
-    const query = searchInput.value.trim().toLocaleLowerCase();
-    let visibleCount = 0;
-    for (const card of productCards) {
-      const matches = (card.dataset.search ?? '').includes(query);
-      card.hidden = !matches;
-      visibleCount += Number(matches);
-    }
-    resultsCount.textContent = `${visibleCount} ${visibleCount === 1 ? 'product' : 'products'}`;
-    noSearchResults.hidden = visibleCount > 0;
+  const categoryButtons = document.querySelectorAll('[data-category-filter]');
+  const productCards = document.querySelectorAll('[data-product-card]');
+  const resultsCount = getRequiredElement('#resultsCount');
+  let selectedCategory = null;
+
+  categoryButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      selectedCategory =
+        selectedCategory === button.dataset.categoryFilter
+          ? null
+          : button.dataset.categoryFilter;
+      let visibleCount = 0;
+      productCards.forEach((card) => {
+        card.hidden =
+          selectedCategory !== null &&
+          card.dataset.category !== selectedCategory;
+        visibleCount += Number(!card.hidden);
+      });
+      categoryButtons.forEach((categoryButton) => {
+        categoryButton.setAttribute(
+          'aria-pressed',
+          String(categoryButton.dataset.categoryFilter === selectedCategory),
+        );
+      });
+      resultsCount.textContent = `${visibleCount} ${visibleCount === 1 ? 'product' : 'products'}`;
+    });
   });
+
   document.querySelectorAll('[data-view-details]').forEach((button) => {
     button.addEventListener('click', () => {
       const productName = button.dataset.productName ?? '';
