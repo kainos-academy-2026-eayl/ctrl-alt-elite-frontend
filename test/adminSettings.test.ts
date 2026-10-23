@@ -9,6 +9,11 @@ import {
   validatePasswordForm,
 } from '../src/util/adminPassword';
 import {
+  UPDATE_PROFILE_PATH,
+  updateProfile,
+  validateProfileForm,
+} from '../src/util/adminProfile';
+import {
   applyPreferences,
   DASHBOARD_WIDGETS,
   loadSystemStatuses,
@@ -201,8 +206,8 @@ describe('admin settings page', () => {
     const { status, html } = await getSettings(adminToken);
     assert.equal(status, 200);
     assert.match(html, /<h1>Settings<\/h1>/);
-    assert.match(html, /<dd>Ada Lovelace &lt;b&gt;<\/dd>/);
-    assert.match(html, /<dd>ada@example\.com<\/dd>/);
+    assert.match(html, /<dd data-profile-name>Ada Lovelace &lt;b&gt;<\/dd>/);
+    assert.match(html, /<dd data-profile-email>ada@example\.com<\/dd>/);
     assert.match(html, /<dd>Administrator<\/dd>/);
     assert.doesNotMatch(html, /data-settings-profile-error/);
   });
@@ -289,6 +294,31 @@ describe('admin settings page', () => {
       role: 'Administrator',
     });
     assert.equal(await loadAdminProfile(backendOrigin, null), null);
+  });
+
+  it('renders a hidden edit form prefilled and escaped', async () => {
+    const { html } = await getSettings(adminToken);
+    assert.match(html, /<button[^>]*hidden data-profile-edit>Edit<\/button>/);
+    assert.match(html, /<form[^>]*method="post"[^>]*hidden data-profile-form>/);
+    assert.match(
+      html,
+      /name="name" type="text"[^>]*value="Ada Lovelace &lt;b&gt;"/,
+    );
+    assert.match(
+      html,
+      /name="email" type="email"[^>]*value="ada@example\.com"/,
+    );
+    assert.match(html, /data-profile-cancel>Cancel<\/button>/);
+  });
+
+  it('has no edit controls when the profile cannot be loaded', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { html } = await getSettings(brokenToken);
+      assert.doesNotMatch(html, /data-profile-edit|data-profile-form/);
+    } finally {
+      errorLog.mockRestore();
+    }
   });
 
   it('renders the change password form', async () => {
@@ -394,5 +424,102 @@ describe('change password', () => {
       async () => new Response('<html>', { status: 502 }),
     );
     assert.match(notJson.message, generic);
+  });
+});
+
+describe('edit profile', () => {
+  const form = { name: 'Ada Lovelace', email: 'ada@example.com' };
+
+  it('accepts a valid name and email', () => {
+    assert.equal(validateProfileForm(form), null);
+    assert.equal(
+      validateProfileForm({ name: '  Ada  ', email: ' ada@example.com ' }),
+      null,
+    );
+  });
+
+  it('rejects an empty or overlong name and an invalid email', () => {
+    assert.match(validateProfileForm({ ...form, name: '  ' }) ?? '', /name/);
+    assert.match(
+      validateProfileForm({ ...form, name: 'a'.repeat(101) }) ?? '',
+      /100 characters/,
+    );
+    assert.match(validateProfileForm({ ...form, email: '' }) ?? '', /email/);
+    for (const email of ['plain', 'a@b', 'a b@c.com', '@c.com']) {
+      assert.match(
+        validateProfileForm({ ...form, email }) ?? '',
+        /valid email/,
+        email,
+      );
+    }
+  });
+
+  it('sends a trimmed PUT and uses the profile the backend returns', async () => {
+    const fetchImpl = vi.fn(
+      async (_input: string | URL | Request, _init?: RequestInit) =>
+        Response.json({
+          name: 'Ada L.',
+          email: 'ada@elite.com',
+          role: 'ADMIN',
+        }),
+    );
+    const result = await updateProfile(
+      { name: ' Ada Lovelace ', email: ' ada@example.com ' },
+      fetchImpl,
+    );
+    assert.deepEqual(result, {
+      ok: true,
+      message: 'Profile updated successfully.',
+      profile: { name: 'Ada L.', email: 'ada@elite.com' },
+    });
+    const [url, init] = fetchImpl.mock.calls[0] ?? [];
+    assert.equal(url, UPDATE_PROFILE_PATH);
+    assert.equal(init?.method, 'PUT');
+    assert.deepEqual(JSON.parse(String(init?.body)), form);
+  });
+
+  it('falls back to the submitted values and a default message', async () => {
+    const result = await updateProfile(
+      form,
+      async () => new Response(null, { status: 204 }),
+    );
+    assert.deepEqual(result, {
+      ok: true,
+      message: 'Profile updated successfully.',
+      profile: form,
+    });
+  });
+
+  it('uses the backend message when one accompanies the profile', async () => {
+    const result = await updateProfile(form, async () =>
+      Response.json({ ...form, message: 'Saved.' }),
+    );
+    assert.equal(result.message, 'Saved.');
+  });
+
+  it('shows the backend message for client errors', async () => {
+    const result = await updateProfile(form, async () =>
+      Response.json({ message: 'Email is already in use.' }, { status: 409 }),
+    );
+    assert.deepEqual(result, {
+      ok: false,
+      message: 'Email is already in use.',
+    });
+  });
+
+  it('shows a generic message for server errors and network failures', async () => {
+    const generic = /Unable to update your profile/;
+    const serverError = await updateProfile(form, async () =>
+      Response.json({ message: 'stack trace at db.ts' }, { status: 500 }),
+    );
+    assert.equal(serverError.ok, false);
+    assert.match(serverError.message, generic);
+    assert.doesNotMatch(serverError.message, /stack trace/);
+
+    const unreachable = await updateProfile(form, async () => {
+      throw new Error('down');
+    });
+    assert.equal(unreachable.ok, false);
+    assert.match(unreachable.message, generic);
   });
 });

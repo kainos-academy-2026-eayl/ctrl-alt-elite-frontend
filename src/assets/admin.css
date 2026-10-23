@@ -113,6 +113,29 @@
   place-items: normal;
 }
 
+.admin-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #15803d;
+  border-radius: 999px;
+  color: #14532d;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-back-link:hover {
+  background: #f0fdf4;
+}
+
+.admin-back-link:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
 .admin-page-header h1 {
   margin: 0 0 0.25rem;
   color: #14532d;
@@ -500,6 +523,65 @@
   break-inside: avoid;
 }
 
+.admin-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-card-header h2 {
+  margin: 0;
+}
+
+.admin-details[hidden],
+.customer-details[hidden],
+.admin-form[hidden] {
+  display: none;
+}
+
+.customer-manage {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+  max-width: 64rem;
+}
+
+@media (max-width: 768px) {
+  .customer-manage {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-secondary-button {
+  min-height: 2.6rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid #15803d;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #14532d;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.admin-secondary-button:hover {
+  background: #f0fdf4;
+}
+
+.admin-secondary-button:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
 .admin-option-list {
   display: flex;
   flex-direction: column;
@@ -525,6 +607,10 @@
   text-decoration: underline;
   text-underline-offset: 0.2em;
   cursor: pointer;
+}
+
+.admin-link-button[hidden] {
+  display: none;
 }
 
 .admin-link-button:disabled {
@@ -590,6 +676,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.admin-empty + .admin-form {
+  margin-top: 0.75rem;
 }
 
 .admin-form .customer-button {
@@ -744,4 +834,22 @@ html[data-theme="dark"] .admin-link-button {
 
 html[data-theme="dark"] .admin-link-button:disabled {
   color: #64748b;
+}
+
+html[data-theme="dark"] .admin-back-link {
+  border-color: #22c55e;
+  color: #86efac;
+}
+
+html[data-theme="dark"] .admin-back-link:hover {
+  background: #14532d;
+}
+
+html[data-theme="dark"] .admin-secondary-button {
+  border-color: #22c55e;
+  color: #86efac;
+}
+
+html[data-theme="dark"] .admin-secondary-button:hover {
+  background: #14532d;
 }

@@ -1,4 +1,5 @@
 import { changePassword, validatePasswordForm } from '../util/adminPassword';
+import { updateProfile, validateProfileForm } from '../util/adminProfile';
 import {
   applyHiddenWidgets,
   applyTheme,
@@ -102,6 +103,78 @@ async function showSystemStatus(): Promise<void> {
   if (error) error.hidden = available;
 }
 
+function getElement<T extends Element>(selector: string): T {
+  const element = document.querySelector<T>(selector);
+  if (!element) throw new Error(`Element not found: ${selector}`);
+  return element;
+}
+
+function setUpProfileForm(): void {
+  // The form is absent when the profile could not be loaded.
+  if (!document.querySelector('[data-profile-form]')) return;
+
+  const form = getElement<HTMLFormElement>('[data-profile-form]');
+  const details = getElement<HTMLElement>('[data-settings-profile]');
+  const editButton = getElement<HTMLButtonElement>('[data-profile-edit]');
+  const cancelButton = getElement<HTMLButtonElement>('[data-profile-cancel]');
+  const saveButton = getElement<HTMLButtonElement>('[data-profile-save]');
+  const error = getElement<HTMLElement>('[data-profile-error]');
+  const success = getElement<HTMLElement>('[data-profile-success]');
+  const nameText = getElement<HTMLElement>('[data-profile-name]');
+  const emailText = getElement<HTMLElement>('[data-profile-email]');
+  const nameInput = getElement<HTMLInputElement>('#profile-name');
+  const emailInput = getElement<HTMLInputElement>('#profile-email');
+
+  // Editing needs script, so the Edit button only appears once it has loaded.
+  editButton.hidden = false;
+
+  function setEditing(editing: boolean): void {
+    form.hidden = !editing;
+    details.hidden = editing;
+    editButton.hidden = editing;
+    error.hidden = true;
+    if (editing) success.hidden = true;
+  }
+
+  editButton.addEventListener('click', () => {
+    nameInput.value = nameText.textContent ?? '';
+    emailInput.value = emailText.textContent ?? '';
+    setEditing(true);
+    nameInput.focus();
+  });
+
+  cancelButton.addEventListener('click', () => setEditing(false));
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const values = { name: nameInput.value, email: emailInput.value };
+
+    const problem = validateProfileForm(values);
+    if (problem) {
+      error.textContent = problem;
+      error.hidden = false;
+      return;
+    }
+
+    saveButton.disabled = true;
+    const result = await updateProfile(values);
+    saveButton.disabled = false;
+
+    if (!result.ok) {
+      error.textContent = result.message;
+      error.hidden = false;
+      return;
+    }
+    if (result.profile) {
+      nameText.textContent = result.profile.name;
+      emailText.textContent = result.profile.email;
+    }
+    setEditing(false);
+    success.textContent = result.message;
+    success.hidden = false;
+  });
+}
+
 function setUpPasswordForm(): void {
   const form = document.querySelector<HTMLFormElement>('[data-password-form]');
   const error = document.querySelector<HTMLElement>('[data-password-error]');
@@ -148,6 +221,7 @@ function setUpPasswordForm(): void {
 }
 
 setUpDarkMode();
+setUpProfileForm();
 setUpPasswordForm();
 setUpWidgetPreferences();
 void showSystemStatus();

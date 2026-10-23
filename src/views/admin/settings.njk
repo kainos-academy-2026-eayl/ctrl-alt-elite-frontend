@@ -9,22 +9,43 @@
 
 <div class="admin-settings">
   <section class="admin-card" aria-labelledby="profile-heading">
-    <h2 id="profile-heading">Profile</h2>
+    <div class="admin-card-header">
+      <h2 id="profile-heading">Profile</h2>
+      {% if profile %}
+      <button class="admin-link-button" type="button" hidden data-profile-edit>Edit</button>
+      {% endif %}
+    </div>
     {% if profile %}
     <dl class="admin-details" data-settings-profile>
       <div>
         <dt>Name</dt>
-        <dd>{{ profile.name }}</dd>
+        <dd data-profile-name>{{ profile.name }}</dd>
       </div>
       <div>
         <dt>Email Address</dt>
-        <dd>{{ profile.email }}</dd>
+        <dd data-profile-email>{{ profile.email }}</dd>
       </div>
       <div>
         <dt>Role</dt>
         <dd>{{ profile.role }}</dd>
       </div>
     </dl>
+    <form class="admin-form" method="post" action="/admin/settings" novalidate hidden data-profile-form>
+      <div class="admin-field">
+        <label for="profile-name">Name</label>
+        <input id="profile-name" name="name" type="text" autocomplete="name" maxlength="100" value="{{ profile.name }}" required />
+      </div>
+      <div class="admin-field">
+        <label for="profile-email">Email Address</label>
+        <input id="profile-email" name="email" type="email" autocomplete="email" maxlength="254" value="{{ profile.email }}" required />
+      </div>
+      <p class="admin-error" role="alert" data-profile-error hidden></p>
+      <div class="admin-form-actions">
+        <button class="customer-button" type="submit" data-profile-save>Save Changes</button>
+        <button class="admin-secondary-button" type="button" data-profile-cancel>Cancel</button>
+      </div>
+    </form>
+    <p class="admin-success" role="status" data-profile-success hidden></p>
     {% else %}
     <p class="admin-error" role="alert" data-settings-profile-error>Unable to load your profile details. Please try again later.</p>
     {% endif %}
