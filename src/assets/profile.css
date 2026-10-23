@@ -1,0 +1,38 @@
+.profile-card {
+  max-width: 480px;
+  padding: 2rem;
+  border: 1px solid #14532d;
+  border-radius: 0.7rem;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(20, 83, 45, 0.12);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.profile-card h1 {
+  font-size: clamp(2rem, 6vw, 2.75rem);
+}
+
+.profile-preview-avatar {
+  display: block;
+  margin: 1.5rem auto;
+}
+
+.profile-card h2 {
+  margin: 0;
+  color: #14532d;
+  font-size: 1.4rem;
+}
+
+.profile-copy,
+.profile-placeholder {
+  line-height: 1.6;
+}
+
+.profile-placeholder {
+  margin: 1.5rem 0 0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: #f0fdf4;
+  color: #14532d;
+}

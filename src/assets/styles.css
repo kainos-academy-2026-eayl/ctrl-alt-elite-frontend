@@ -18,6 +18,7 @@ body {
 }
 
 a:focus-visible,
+.account-menu-button:focus-visible,
 summary:focus-visible {
   outline: 3px solid #22c55e;
   outline-offset: 4px;
@@ -85,6 +86,11 @@ summary:focus-visible {
 }
 
 .account-menu summary {
+  display: flex;
+  min-height: 44px;
+  max-width: min(24rem, 45vw);
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 0.9rem;
   border: 1px solid #14532d;
   border-radius: 0.5rem;
@@ -124,11 +130,38 @@ summary:focus-visible {
 
 .account-menu-link {
   display: block;
+  min-height: 44px;
   padding: 0.5rem 0.75rem;
   border-radius: 0.35rem;
   color: #14532d;
   font-weight: 700;
   text-decoration: none;
+}
+
+.account-avatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.account-label {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-list form {
+  margin: 0;
+}
+
+.account-menu-button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
 }
 
 .account-menu-link:hover,
@@ -205,8 +238,43 @@ h1 {
     justify-content: center;
   }
 
+  .home-page .header-content {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .home-page .brand {
+    min-width: 0;
+  }
+
+  .home-page .brand > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .home-page .primary-nav {
+    width: auto;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  .home-page .account-label {
+    display: none;
+  }
+
+  .home-page .account-name {
+    display: block;
+    max-width: 5rem;
+  }
+
   .brand-mark {
     width: 2.2rem;
+  }
+
+  .home-page .brand-mark {
+    flex-shrink: 0;
   }
 
   main {

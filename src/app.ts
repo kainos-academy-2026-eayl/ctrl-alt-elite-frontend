@@ -14,6 +14,7 @@ import {
 import { createApiProxy } from './util/apiProxy';
 import { clearAuthCookie } from './util/authCookie';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
+import { LoginSession } from './util/loginSession';
 
 function requireSameOrigin(
   req: Request,
@@ -36,9 +37,6 @@ function requireSameOrigin(
   res.status(403).type('text').send('Forbidden');
 }
 
-const HOME_PAGE_PATH = fileURLToPath(
-  new URL('../src/views/homepage.html', import.meta.url),
-);
 const VIEWS_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
 );
@@ -55,7 +53,14 @@ const CONTROLLERS_DIRECTORY = fileURLToPath(
   new URL('../dist/public/controllers/', import.meta.url),
 );
 
-export function createApp(backendOrigin: string): Express {
+export interface AppOptions {
+  jwtSecret?: string;
+}
+
+export function createApp(
+  backendOrigin: string,
+  { jwtSecret = process.env.JWT_SECRET }: AppOptions = {},
+): Express {
   const app = express();
   app.set('views', VIEWS_DIRECTORY);
   nunjucks.configure([VIEWS_DIRECTORY], {
@@ -64,7 +69,8 @@ export function createApp(backendOrigin: string): Express {
     noCache: process.env.NODE_ENV !== 'production',
   });
   app.set('view engine', 'njk');
-  const loginController = new LoginController(backendOrigin);
+  const loginSession = new LoginSession(jwtSecret);
+  const loginController = new LoginController(backendOrigin, loginSession);
 
   const adminTemplates = new nunjucks.Environment(
     new nunjucks.FileSystemLoader(VIEWS_DIRECTORY),
@@ -94,10 +100,16 @@ export function createApp(backendOrigin: string): Express {
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
 
-  app.get('/', async (_req: Request, res: Response) => {
+  app.get('/', async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
     try {
-      const homepage = await readFile(HOME_PAGE_PATH, 'utf8');
-      res.type('html').send(homepage);
+      const account = await loginSession.getAccount(req, res);
+      res.type('html').send(
+        adminTemplates.render('homepage.html', {
+          isAuthenticated: account !== null,
+          accountName: account?.name ?? 'Account',
+        }),
+      );
     } catch (error) {
       console.error('Unable to load the homepage:', error);
       res.redirect('/unavailable');
@@ -112,9 +124,30 @@ export function createApp(backendOrigin: string): Express {
     loginController.submit,
   );
 
+  app.get('/profile', async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      const account = await loginSession.getAccount(req, res);
+      if (!account) {
+        res.redirect('/login');
+        return;
+      }
+      res.type('html').send(
+        adminTemplates.render('profile.njk', {
+          account,
+          currentYear: new Date().getFullYear(),
+        }),
+      );
+    } catch (error) {
+      console.error('Unable to load the profile page:', error);
+      res.redirect('/unavailable');
+    }
+  });
+
   app.post('/logout', requireSameOrigin, (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     clearAuthCookie(res);
+    loginSession.clear(res);
     res.redirect(303, '/login');
   });
 

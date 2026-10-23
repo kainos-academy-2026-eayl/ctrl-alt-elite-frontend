@@ -179,14 +179,18 @@ describe('frontend routes', () => {
       }
     });
 
-    it('renders a server-side form without a browser login script', async () => {
+    it('renders a server-side form with optional password visibility script', async () => {
       const res = await fetch(`${base}/login`, { redirect: 'manual' });
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       const html = await res.text();
       assert.match(html, /action="\/login" method="post"/);
       assert.match(html, new RegExp(`&copy; ${new Date().getFullYear()}`));
-      assert.doesNotMatch(html, /<script|{{|{%|Incorrect email or password/);
+      assert.match(
+        html,
+        /<script src="\/controllers\/login\.js" defer><\/script>/,
+      );
+      assert.doesNotMatch(html, /{{|{%|Incorrect email or password/);
     });
   });
 

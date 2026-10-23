@@ -4,8 +4,10 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 
 | Route | What it does |
 | --- | --- |
-| `GET /` | Homepage ([src/views/homepage.html](src/views/homepage.html)) |
+| `GET /` | Homepage ([src/views/homepage.html](src/views/homepage.html)), with account options based on the signed-in session |
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
+| `GET /profile` | Read-only profile preview ([src/views/profile.njk](src/views/profile.njk)); guests are redirected to login |
+| `POST /logout` | Clears the frontend session and backend auth cookie, then redirects to login |
 | `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
 | `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)). [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
@@ -35,16 +37,45 @@ A successful backend response produces a `303` redirect based on its `role`:
 renders the login page with an error.
 Incorrect credentials render the login page with an error and retain the email,
 but never the password. Backend failures also render an error.
-Login does not require browser JavaScript. The backend's `token` is stored in an
-httpOnly `auth_token` cookie (one hour), and the `/api/*` proxy sends it to the
-backend as `Authorization: Bearer`. Every `/admin*` request is first checked
-against the backend's admin-only API: no token or an invalid one redirects to
-`/login`, a non-admin gets a `403` page, and a failed check redirects to
-`/unavailable`. The homepage is not protected.
+Login submission does not require browser JavaScript. An optional browser script
+adds an eye-icon button inside the password field with a Show password / Hide
+password accessible label; without JavaScript the password
+stays masked and the button stays hidden.
 
-`POST /logout` (the "Log out" button at the bottom of the admin sidebar) clears
-the `auth_token` cookie and redirects to `/login`. The token itself is not
-revoked on the backend, so it stays valid until it expires.
+The backend's `token` is stored in an httpOnly `auth_token` cookie and the
+`/api/*` proxy sends it to the backend as `Authorization: Bearer`. Every
+`/admin*` request is checked against the backend's admin-only API: no token or
+an invalid one redirects to `/login`, a non-admin gets a `403` page, and a
+failed check redirects to `/unavailable`.
+
+Set `JWT_SECRET` in the frontend's private `.env` (at least 32 bytes). Keep it out
+of source control and browser scripts. After the backend confirms credentials,
+the frontend also signs its own one-hour login cookie using the authenticated
+user ID. Both the existing `{ user: { id } }` and newer `{ userId }` backend
+responses are supported. On subsequent homepage requests, the frontend verifies
+the cookie's HS256 signature, issuer, audience, identity and expiry. The cookie
+is HttpOnly, SameSite=Lax and expires in one hour. Production cookies require
+HTTPS. Invalid or expired cookies are cleared and render guest options;
+personalized homepage responses are not cached.
+
+The homepage dropdown stays at the top right, including on mobile. Guests see
+Login/Register; signed-in users see My Profile/Logout with a default avatar.
+The signed-in button displays the account's first and last name, saved in the
+signed cookie at login; if the backend provides no name, it uses the email.
+Older cookies without a name keep the Account label until the next login.
+Long names are truncated visually to keep the header usable on small screens.
+My Profile opens `/profile`, a small read-only preview with the signed-in name,
+a default avatar and a coming-soon message. It uses the shared layout and checks
+the login cookie server-side; guests and expired sessions are redirected to login.
+Profile editing, uploads and settings are not implemented.
+The existing dropdown supports keyboard access, Escape and outside-click closing.
+`POST /logout` clears both cookies and redirects to `/login`. The backend token
+itself is not revoked and remains valid until it expires. The frontend login
+cookie is not a backend API access token and cannot authorize backend requests.
+No profile-management pages or backend changes are included.
+
+For your real accounts, open `http://localhost:3000` (or your configured frontend
+port). Temporary test servers are not connected to your account database.
 
 Server-side controllers live in `src/server/controllers/` and are not bundled for the
 browser. Browser scripts remain in `src/controllers/`; registration still uses its
