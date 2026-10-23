@@ -6,6 +6,8 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | --- | --- |
 | `GET /` | Homepage ([src/views/homepage.html](src/views/homepage.html)) |
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
+| `GET /profile` | Read-only profile preview ([src/views/profile.njk](src/views/profile.njk)); guests are redirected to login |
+| `POST /logout` | Clears the browser's login cookie and redirects to the homepage |
 | `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
 | `GET /unavailable` | Fallback page, served with `503`. Pages redirect here if they cannot be loaded. |
 | `GET /assets/*` | Stylesheets from [src/assets/](src/assets) |
@@ -32,8 +34,35 @@ but never the password. Backend failures also render an error.
 Login submission does not require browser JavaScript. An optional browser script
 adds an eye-icon button inside the password field with a Show password / Hide
 password accessible label; without JavaScript the password
-stays masked and the button stays hidden. This verifies credentials only; it
-does not establish a persistent session or protect the homepage.
+stays masked and the button stays hidden.
+
+Set `JWT_SECRET` in the frontend's private `.env` (at least 32 bytes). Keep it out
+of source control and browser scripts. After the backend confirms credentials,
+the frontend signs its own one-hour login cookie using the authenticated user ID.
+Both the existing `{ user: { id } }` and newer `{ userId }` backend responses are
+supported; the backend does not need to issue a token. On subsequent homepage
+requests, the frontend verifies the cookie's HS256 signature, issuer, audience,
+identity and expiry. The cookie is HttpOnly, SameSite=Lax and expires in one hour.
+Production cookies require HTTPS. Invalid or expired cookies are cleared and
+render guest options; personalized homepage responses are not cached.
+
+The homepage dropdown stays at the top right, including on mobile. Guests see
+Login/Register; signed-in users see My Profile/Logout with a default avatar.
+The signed-in button displays the account's first and last name, saved in the
+signed cookie at login; if the backend provides no name, it uses the email.
+Older cookies without a name keep the Account label until the next login.
+Long names are truncated visually to keep the header usable on small screens.
+My Profile opens `/profile`, a small read-only preview with the signed-in name,
+a default avatar and a coming-soon message. It uses the shared layout and checks
+the login cookie server-side; guests and expired sessions are redirected to login.
+Profile editing, uploads and settings are not implemented.
+The existing dropdown supports keyboard access, Escape and outside-click closing.
+Logout clears this browser's cookie only. This frontend login cookie is not a
+backend API access token and cannot be used to authorize backend requests.
+No profile-management pages or backend changes are included.
+
+For your real accounts, open `http://localhost:3000` (or your configured frontend
+port). Temporary test servers are not connected to your account database.
 
 Server-side controllers live in `src/server/controllers/` and are not bundled for the
 browser. Browser scripts remain in `src/controllers/`; registration still uses its

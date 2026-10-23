@@ -20,10 +20,8 @@ import {
 import { createApiProxy } from './util/apiProxy';
 import { createApiCustomerSource } from './util/customerApi';
 import type { CustomerSource } from './util/customers';
+import { LoginSession } from './util/loginSession';
 
-const HOME_PAGE_PATH = fileURLToPath(
-  new URL('../src/views/homepage.html', import.meta.url),
-);
 const VIEWS_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
 );
@@ -42,11 +40,15 @@ const CONTROLLERS_DIRECTORY = fileURLToPath(
 
 export interface AppOptions {
   customerSource?: CustomerSource;
+  jwtSecret?: string;
 }
 
 export function createApp(
   backendOrigin: string,
-  { customerSource = createApiCustomerSource(backendOrigin) }: AppOptions = {},
+  {
+    customerSource = createApiCustomerSource(backendOrigin),
+    jwtSecret = process.env.JWT_SECRET,
+  }: AppOptions = {},
 ): Express {
   const app = express();
   app.set('views', VIEWS_DIRECTORY);
@@ -56,7 +58,8 @@ export function createApp(
     noCache: process.env.NODE_ENV !== 'production',
   });
   app.set('view engine', 'njk');
-  const loginController = new LoginController(backendOrigin);
+  const loginSession = new LoginSession(jwtSecret);
+  const loginController = new LoginController(backendOrigin, loginSession);
 
   const adminTemplates = new nunjucks.Environment(
     new nunjucks.FileSystemLoader(VIEWS_DIRECTORY),
@@ -68,9 +71,14 @@ export function createApp(
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
 
-  app.get('/', async (_req: Request, res: Response) => {
+  app.get('/', async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
     try {
-      const homepage = await readFile(HOME_PAGE_PATH, 'utf8');
+      const account = await loginSession.getAccount(req, res);
+      const homepage = adminTemplates.render('homepage.html', {
+        isAuthenticated: account !== null,
+        accountName: account?.name ?? 'Account',
+      });
       res.type('html').send(homepage);
     } catch (error) {
       console.error('Unable to load the homepage:', error);
@@ -84,6 +92,41 @@ export function createApp(
     express.urlencoded({ extended: false, limit: '16kb' }),
     loginController.submit,
   );
+
+  app.get('/profile', async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      const account = await loginSession.getAccount(req, res);
+      if (!account) {
+        res.redirect('/login');
+        return;
+      }
+      res.type('html').send(
+        adminTemplates.render('profile.njk', {
+          account,
+          currentYear: new Date().getFullYear(),
+        }),
+      );
+    } catch (error) {
+      console.error('Unable to load the profile page:', error);
+      res.redirect('/unavailable');
+    }
+  });
+
+  app.post('/logout', (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const origin = req.get('origin');
+    if (
+      req.get('sec-fetch-site') === 'cross-site' ||
+      (origin && origin !== `${req.protocol}://${req.get('host')}`)
+    ) {
+      console.warn('Cross-origin logout denied.');
+      res.status(403).type('text').send('Please log out from this website.');
+      return;
+    }
+    loginSession.clear(res);
+    res.redirect(303, '/');
+  });
 
   app.get('/register', async (_req: Request, res: Response) => {
     try {

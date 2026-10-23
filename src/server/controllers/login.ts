@@ -1,7 +1,11 @@
 import type { Request, Response } from 'express';
+import type { LoginSession } from '../../util/loginSession';
 
 export class LoginController {
-  constructor(private readonly backendOrigin: string) {}
+  constructor(
+    private readonly backendOrigin: string,
+    private readonly loginSession: LoginSession,
+  ) {}
 
   private render(
     res: Response,
@@ -62,7 +66,7 @@ export class LoginController {
         redirect: 'manual',
         signal: AbortSignal.timeout(10_000),
       });
-      await response.body?.cancel();
+      if (response.status !== 200) await response.body?.cancel();
     } catch (error) {
       console.error('Unable to reach the backend login API:', error);
       this.render(
@@ -75,6 +79,54 @@ export class LoginController {
     }
 
     if (response.status === 200) {
+      try {
+        const body: unknown = await response.json();
+        let userId: unknown;
+        let accountName = 'Account';
+        if (typeof body === 'object' && body !== null) {
+          const account =
+            'user' in body &&
+            typeof body.user === 'object' &&
+            body.user !== null
+              ? body.user
+              : body;
+          userId =
+            'id' in account
+              ? account.id
+              : 'userId' in account
+                ? account.userId
+                : undefined;
+          const firstName =
+            'firstName' in account && typeof account.firstName === 'string'
+              ? account.firstName.trim()
+              : '';
+          const lastName =
+            'lastName' in account && typeof account.lastName === 'string'
+              ? account.lastName.trim()
+              : '';
+          const accountEmail =
+            'email' in account && typeof account.email === 'string'
+              ? account.email.trim()
+              : '';
+          accountName =
+            [firstName, lastName].filter(Boolean).join(' ') ||
+            accountEmail ||
+            'Account';
+        }
+        await this.loginSession.save(res, userId, accountName);
+      } catch (error) {
+        console.error(
+          'Unable to validate the login session:',
+          error instanceof Error ? error.name : 'Unknown error',
+        );
+        this.render(
+          res,
+          502,
+          email,
+          'Unable to confirm your login. Please try again.',
+        );
+        return;
+      }
       res.setHeader('Cache-Control', 'no-store');
       res.redirect(303, '/');
     } else if (response.status === 401) {

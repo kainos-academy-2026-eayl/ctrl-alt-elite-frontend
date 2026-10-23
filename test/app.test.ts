@@ -9,6 +9,7 @@ import {
   createInMemoryCustomerSource,
   FIXTURE_CUSTOMERS,
 } from './customerFixtures';
+import { TEST_JWT_SECRET } from './sessionFixtures';
 
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
@@ -55,11 +56,29 @@ describe('frontend routes', () => {
           body.email === 'user@example.com' &&
           body.password === 'CorrectPassword@1'
         ) {
-          res.end(JSON.stringify({ user: { id: 'user-1' } }));
+          res.end(
+            JSON.stringify({
+              user: { id: 'user-1', email: body.email },
+            }),
+          );
         } else {
           res.statusCode = 401;
           res.end(JSON.stringify({ message: 'Incorrect email or password.' }));
         }
+      } else if (req.url === '/api/auth/register') {
+        const body = JSON.parse(await readBody(req));
+        res.setHeader('content-type', 'application/json');
+        res.statusCode = 201;
+        res.end(
+          JSON.stringify({
+            user: {
+              id: 'registered-user',
+              firstName: body.firstName,
+              lastName: body.lastName,
+              email: body.email,
+            },
+          }),
+        );
       } else if (req.url === '/api/echo') {
         res.setHeader('content-type', 'application/json');
         res.setHeader('x-custom', 'yes');
@@ -84,6 +103,7 @@ describe('frontend routes', () => {
     frontend = createServer(
       createApp(backendOrigin, {
         customerSource: createInMemoryCustomerSource(),
+        jwtSecret: TEST_JWT_SECRET,
       }),
     );
     base = await listen(frontend);
@@ -205,7 +225,7 @@ describe('frontend routes', () => {
       });
     }
 
-    for (const status of [200, 401, 500, 302]) {
+    for (const status of [401, 500, 302]) {
       it(`cancels the unused backend body for status ${status}`, async () => {
         const cancel = vi.fn();
         const upstream = new Response(new ReadableStream({ cancel }), {
@@ -227,8 +247,7 @@ describe('frontend routes', () => {
             }),
             redirect: 'manual',
           });
-          const expectedStatus =
-            status === 200 ? 303 : status === 401 ? 401 : 502;
+          const expectedStatus = status === 401 ? 401 : 502;
           assert.equal(res.status, expectedStatus);
           assert.equal(cancel.mock.calls.length, 1);
           assert.equal(upstream.bodyUsed, true);
@@ -240,11 +259,12 @@ describe('frontend routes', () => {
       });
     }
 
-    it('handles a backend response without a body', async () => {
+    it('rejects a successful backend response without an authenticated user or body', async () => {
       const originalFetch = globalThis.fetch;
       const fetchMock = vi
         .spyOn(globalThis, 'fetch')
         .mockResolvedValueOnce(new Response(null, { status: 200 }));
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
       try {
         const res = await originalFetch(`${base}/login`, {
           method: 'POST',
@@ -254,11 +274,13 @@ describe('frontend routes', () => {
           }),
           redirect: 'manual',
         });
-        assert.equal(res.status, 303);
-        assert.equal(res.headers.get('location'), '/');
-        await res.text();
+        assert.equal(res.status, 502);
+        assert.equal(res.headers.get('set-cookie'), null);
+        assert.match(await res.text(), /Unable to confirm your login/);
+        assert.equal(errorLog.mock.calls.length, 1);
       } finally {
         fetchMock.mockRestore();
+        errorLog.mockRestore();
       }
     });
 
@@ -268,6 +290,7 @@ describe('frontend routes', () => {
         new ReadableStream({
           cancel: () => Promise.reject(cancellationError),
         }),
+        { status: 401 },
       );
       const originalFetch = globalThis.fetch;
       const fetchMock = vi
@@ -409,6 +432,30 @@ describe('frontend routes', () => {
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       assert.match(await res.text(), /<html/i);
+    });
+
+    it('keeps registration requests connected to the backend through the API proxy', async () => {
+      const response = await fetch(`${base}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: 'Test',
+          lastName: 'Customer',
+          email: 'registration-test@example.com',
+          password: 'Password@1',
+          confirmPassword: 'Password@1',
+        }),
+      });
+      assert.equal(response.status, 201);
+      assert.deepEqual(await response.json(), {
+        user: {
+          id: 'registered-user',
+          firstName: 'Test',
+          lastName: 'Customer',
+          email: 'registration-test@example.com',
+        },
+      });
+      assert.equal(response.headers.get('set-cookie'), null);
     });
   });
 
