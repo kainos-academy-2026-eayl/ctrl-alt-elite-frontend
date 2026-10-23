@@ -50,7 +50,25 @@ describe('frontend routes', () => {
           body.email === 'user@example.com' &&
           body.password === 'CorrectPassword@1'
         ) {
-          res.end(JSON.stringify({ user: { id: 'user-1' } }));
+          res.end(
+            JSON.stringify({ userId: 1, email: body.email, role: 'CUSTOMER' }),
+          );
+        } else if (
+          body.email === 'admin@example.com' &&
+          body.password === 'CorrectPassword@1'
+        ) {
+          res.end(
+            JSON.stringify({
+              userId: 2,
+              email: body.email,
+              role: 'ADMIN',
+              token: 'admin.jwt.token',
+            }),
+          );
+        } else if (body.email === 'unknownrole@example.com') {
+          res.end(JSON.stringify({ userId: 3, role: 'SUPERUSER' }));
+        } else if (body.email === 'norole@example.com') {
+          res.end(JSON.stringify({ userId: 4 }));
         } else {
           res.statusCode = 401;
           res.end(JSON.stringify({ message: 'Incorrect email or password.' }));
@@ -176,17 +194,19 @@ describe('frontend routes', () => {
     async function submit(email: string, password: string) {
       return fetch(`${base}/login`, {
         method: 'POST',
+        headers: { origin: base },
         body: new URLSearchParams({ email, password }),
         redirect: 'manual',
       });
     }
 
     for (const status of [200, 401, 500, 302]) {
-      it(`cancels the unused backend body for status ${status}`, async () => {
+      it(`consumes the backend body for status ${status}`, async () => {
         const cancel = vi.fn();
-        const upstream = new Response(new ReadableStream({ cancel }), {
-          status,
-        });
+        const upstream =
+          status === 200
+            ? new Response(JSON.stringify({ role: 'CUSTOMER' }), { status })
+            : new Response(new ReadableStream({ cancel }), { status });
         const originalFetch = globalThis.fetch;
         const fetchMock = vi
           .spyOn(globalThis, 'fetch')
@@ -197,6 +217,7 @@ describe('frontend routes', () => {
         try {
           const res = await originalFetch(`${base}/login`, {
             method: 'POST',
+            headers: { origin: base },
             body: new URLSearchParams({
               email: 'user@example.com',
               password: 'password',
@@ -206,7 +227,7 @@ describe('frontend routes', () => {
           const expectedStatus =
             status === 200 ? 303 : status === 401 ? 401 : 502;
           assert.equal(res.status, expectedStatus);
-          assert.equal(cancel.mock.calls.length, 1);
+          assert.equal(cancel.mock.calls.length, status === 200 ? 0 : 1);
           assert.equal(upstream.bodyUsed, true);
           await res.text();
         } finally {
@@ -216,27 +237,87 @@ describe('frontend routes', () => {
       });
     }
 
-    it('handles a backend response without a body', async () => {
+    it('renders an error for a successful response without a body', async () => {
       const originalFetch = globalThis.fetch;
       const fetchMock = vi
         .spyOn(globalThis, 'fetch')
         .mockResolvedValueOnce(new Response(null, { status: 200 }));
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
       try {
         const res = await originalFetch(`${base}/login`, {
           method: 'POST',
+          headers: { origin: base },
           body: new URLSearchParams({
             email: 'user@example.com',
             password: 'password',
           }),
           redirect: 'manual',
         });
-        assert.equal(res.status, 303);
-        assert.equal(res.headers.get('location'), '/');
-        await res.text();
+        assert.equal(res.status, 403);
+        assert.equal(res.headers.get('location'), null);
+        assert.match(await res.text(), /role is not recognised/);
       } finally {
         fetchMock.mockRestore();
+        errorLog.mockRestore();
       }
     });
+
+    it('redirects admins to the admin dashboard', async () => {
+      const res = await submit('admin@example.com', 'CorrectPassword@1');
+      assert.equal(res.status, 303);
+      assert.equal(res.headers.get('location'), '/admin');
+      assert.equal(res.headers.get('cache-control'), 'no-store');
+      const cookie = res.headers.get('set-cookie') ?? '';
+      assert.match(cookie, /^auth_token=admin\.jwt\.token;/);
+      assert.match(cookie, /HttpOnly/i);
+      assert.match(cookie, /SameSite=Lax/i);
+      await res.text();
+    });
+
+    it('clears an existing auth cookie when the backend returns no token', async () => {
+      const res = await fetch(`${base}/login`, {
+        method: 'POST',
+        headers: { origin: base, cookie: 'auth_token=admin.jwt.token' },
+        body: new URLSearchParams({
+          email: 'user@example.com',
+          password: 'CorrectPassword@1',
+        }),
+        redirect: 'manual',
+      });
+      const cookie = res.headers.get('set-cookie') ?? '';
+      assert.match(cookie, /^auth_token=;/);
+      assert.match(cookie, /Expires=Thu, 01 Jan 1970/);
+      await res.text();
+    });
+
+    it('sends the auth cookie to the backend as a bearer token via the proxy', async () => {
+      const res = await fetch(`${base}/api/echo`, {
+        headers: { cookie: 'other=1; auth_token=admin.jwt.token' },
+      });
+      assert.equal(
+        ((await res.json()) as { auth: string }).auth,
+        'Bearer admin.jwt.token',
+      );
+    });
+
+    for (const email of ['unknownrole@example.com', 'norole@example.com']) {
+      it(`shows an error and stays on login for an unknown role (${email})`, async () => {
+        const errorLog = vi
+          .spyOn(console, 'error')
+          .mockImplementation(() => {});
+        try {
+          const res = await submit(email, 'password');
+          assert.equal(res.status, 403);
+          assert.equal(res.headers.get('location'), null);
+          assert.match(
+            await res.text(),
+            /role="alert">Your account role is not recognised\./,
+          );
+        } finally {
+          errorLog.mockRestore();
+        }
+      });
+    }
 
     it('logs cancellation failures and renders the existing backend error', async () => {
       const cancellationError = new Error('Unable to cancel response');
@@ -244,6 +325,7 @@ describe('frontend routes', () => {
         new ReadableStream({
           cancel: () => Promise.reject(cancellationError),
         }),
+        { status: 500 },
       );
       const originalFetch = globalThis.fetch;
       const fetchMock = vi
@@ -253,6 +335,7 @@ describe('frontend routes', () => {
       try {
         const res = await originalFetch(`${base}/login`, {
           method: 'POST',
+          headers: { origin: base },
           body: new URLSearchParams({
             email: 'user@example.com',
             password: 'password',
@@ -328,7 +411,7 @@ describe('frontend routes', () => {
       const count = loginRequests.length;
       const res = await fetch(`${base}/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { origin: base, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: 'user@example.com',
           password: 'password',
@@ -337,6 +420,26 @@ describe('frontend routes', () => {
       assert.equal(res.status, 415);
       assert.equal(loginRequests.length, count);
       assert.match(await res.text(), /Please submit the login form\./);
+    });
+
+    it('rejects cross-origin login submissions without calling the backend', async () => {
+      const count = loginRequests.length;
+      const res = await fetch(`${base}/login`, {
+        method: 'POST',
+        headers: {
+          origin: 'https://attacker.example',
+          cookie: 'auth_token=admin.jwt.token',
+        },
+        body: new URLSearchParams({
+          email: 'user@example.com',
+          password: 'CorrectPassword@1',
+        }),
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 403);
+      assert.equal(loginRequests.length, count);
+      assert.equal(res.headers.get('set-cookie'), null);
+      await res.text();
     });
 
     it('renders a safe error when the backend fails', async () => {
@@ -363,6 +466,7 @@ describe('frontend routes', () => {
       try {
         const res = await fetch(`${origin}/login`, {
           method: 'POST',
+          headers: { origin },
           body: new URLSearchParams({
             email: 'user@example.com',
             password: 'password',

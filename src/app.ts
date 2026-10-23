@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { LoginController } from './server/controllers/login';
+import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,
   ADMIN_QUICK_ACTIONS,
@@ -11,7 +12,29 @@ import {
   findAdminModule,
 } from './util/adminPortal';
 import { createApiProxy } from './util/apiProxy';
+import { clearAuthCookie } from './util/authCookie';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
+
+function requireSameOrigin(
+  req: Request,
+  res: Response,
+  next: (error?: unknown) => void,
+): void {
+  const source = req.get('origin') ?? req.get('referer');
+  if (source) {
+    try {
+      const requestOrigin = new URL(`${req.protocol}://${req.get('host')}`)
+        .origin;
+      if (new URL(source).origin === requestOrigin) {
+        next();
+        return;
+      }
+    } catch {
+      // Reject malformed origin and referer values.
+    }
+  }
+  res.status(403).type('text').send('Forbidden');
+}
 
 const HOME_PAGE_PATH = fileURLToPath(
   new URL('../src/views/homepage.html', import.meta.url),
@@ -84,9 +107,16 @@ export function createApp(backendOrigin: string): Express {
   app.get('/login', loginController.show);
   app.post(
     '/login',
+    requireSameOrigin,
     express.urlencoded({ extended: false, limit: '16kb' }),
     loginController.submit,
   );
+
+  app.post('/logout', requireSameOrigin, (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    clearAuthCookie(res);
+    res.redirect(303, '/login');
+  });
 
   app.get('/register', async (_req: Request, res: Response) => {
     try {
@@ -97,6 +127,8 @@ export function createApp(backendOrigin: string): Express {
       res.redirect('/unavailable');
     }
   });
+
+  app.use('/admin', createAdminGuard(backendOrigin));
 
   // The server only serves page shells. Live data is loaded in the browser by the
   // matching controller in src/controllers, which calls the backend through /api.
