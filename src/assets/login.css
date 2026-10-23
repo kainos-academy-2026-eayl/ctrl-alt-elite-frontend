@@ -115,6 +115,7 @@
 }
 
 .password-toggle:focus-visible {
+  outline-color: #15803d;
   outline-offset: -4px;
 }
 
