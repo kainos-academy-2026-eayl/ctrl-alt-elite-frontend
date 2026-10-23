@@ -1,0 +1,29 @@
+Product Search
+Key details
+Priority
+
+
+Highest
+Description
+
+Allow customers to find products by typing a product name or keyword, including partial matches and products that are out of stock.
+Why are we carrying this out?
+Customers should be able to find what they want without knowing the exact product name, so they can browse and buy more easily.
+Work to complete
+Add a product search that accepts a product name or keyword.
+Match products on partial terms, for example "headphone" returning "headphones".
+Show the product name, description and image for each result.
+Show accurate availability for each result, including "Out of Stock".
+Show a clear message when no products match the search term.
+Additional Information
+Related: KAN-6 (Epic, "TC5- Browse products") covers the wider browsing area and has no description yet.
+Constraint (business): the system must detect both keywords and product names.
+Constraint (business): availability information must be accurate.
+Assumption (high risk): all products have accurate keywords. Products that are not tagged correctly will not be found.
+Assumption (low risk): searches with irrelevant keywords show the no-results message.
+Source: tickets/Day 1 search browsing.md.
+Acceptance Criteria
+Given a customer searches by product name or keyword, when matching products exist, then those products are shown with name, description and image.
+Given a customer searches with a term that matches no products, when results are returned, then a clear message is shown.
+Given a matching product is out of stock, when it appears in the results, then it is shown as unavailable.
+Given a customer enters a partial term such as "headphone", when results are returned, then all related products are shown.
