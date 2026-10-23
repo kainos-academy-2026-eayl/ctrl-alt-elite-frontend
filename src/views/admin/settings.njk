@@ -1,0 +1,105 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<div class="admin-settings-view">
+<header class="admin-page-header">
+  <h1>Settings</h1>
+  <p class="admin-subtitle">Manage your profile, appearance and dashboard, and check the system.</p>
+</header>
+
+<div class="admin-settings">
+  <section class="admin-card" aria-labelledby="profile-heading">
+    <h2 id="profile-heading">Profile</h2>
+    {% if profile %}
+    <dl class="admin-details" data-settings-profile>
+      <div>
+        <dt>Name</dt>
+        <dd>{{ profile.name }}</dd>
+      </div>
+      <div>
+        <dt>Email Address</dt>
+        <dd>{{ profile.email }}</dd>
+      </div>
+      <div>
+        <dt>Role</dt>
+        <dd>{{ profile.role }}</dd>
+      </div>
+    </dl>
+    {% else %}
+    <p class="admin-error" role="alert" data-settings-profile-error>Unable to load your profile details. Please try again later.</p>
+    {% endif %}
+  </section>
+
+  <section class="admin-card" aria-labelledby="password-heading">
+    <h2 id="password-heading">Change Password</h2>
+    <form class="admin-form" method="post" action="/admin/settings" novalidate data-password-form>
+      <div class="admin-field">
+        <label for="current-password">Current Password</label>
+        <input id="current-password" name="currentPassword" type="password" autocomplete="current-password" required />
+      </div>
+      <div class="admin-field">
+        <label for="new-password">New Password</label>
+        <input id="new-password" name="newPassword" type="password" autocomplete="new-password" required />
+      </div>
+      <div class="admin-field">
+        <label for="confirm-password">Confirm Password</label>
+        <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required />
+      </div>
+      <p class="admin-error" role="alert" data-password-error hidden></p>
+      <p class="admin-success" role="status" data-password-success hidden></p>
+      <button class="customer-button" type="submit" data-password-submit>Save Changes</button>
+    </form>
+  </section>
+
+  <section class="admin-card" aria-labelledby="appearance-heading">
+    <h2 id="appearance-heading">Appearance</h2>
+    <label class="admin-switch" for="dark-mode-toggle">
+      <span>Dark Mode</span>
+      <input id="dark-mode-toggle" type="checkbox" role="switch" data-dark-mode-toggle />
+    </label>
+  </section>
+
+  <section class="admin-card" aria-labelledby="preferences-heading">
+    <h2 id="preferences-heading">Dashboard Preferences</h2>
+    <p class="admin-empty">Choose which widgets appear on the dashboard.</p>
+    <ul class="admin-option-list">
+      {% for widget in dashboardWidgets %}
+      <li>
+        <label class="admin-switch" for="widget-{{ widget.id }}">
+          <span>{{ widget.label }}</span>
+          <input id="widget-{{ widget.id }}" type="checkbox" checked data-widget-toggle="{{ widget.id }}" />
+        </label>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="admin-card" aria-labelledby="system-heading">
+    <h2 id="system-heading">System Information</h2>
+    <ul class="admin-status-list">
+      <li>
+        <span>Application Version</span>
+        <span class="admin-status-badge" data-system-version>{{ appVersion }}</span>
+      </li>
+      <li>
+        <span>Frontend Status</span>
+        <span class="admin-status-badge is-ok" data-system-frontend>Operational</span>
+      </li>
+      <li>
+        <span>Backend Status</span>
+        <span data-system-backend><span class="admin-status-badge">Status unavailable</span></span>
+      </li>
+      <li>
+        <span>Database Status</span>
+        <span data-system-database><span class="admin-status-badge">Status unavailable</span></span>
+      </li>
+    </ul>
+    <p class="admin-error" role="alert" data-system-error hidden>Unable to load system status. The backend may be unavailable.</p>
+  </section>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminSettings.js" defer></script>
+{% endblock %}

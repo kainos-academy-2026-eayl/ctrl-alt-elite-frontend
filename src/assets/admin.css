@@ -412,19 +412,22 @@
   color: #9ca3af;
 }
 
-.customer-details {
+.customer-details,
+.admin-details {
   display: grid;
   gap: 1rem;
   margin: 0;
 }
 
-.customer-details dt {
+.customer-details dt,
+.admin-details dt {
   color: #4b5563;
   font-size: 0.9rem;
   font-weight: 700;
 }
 
-.customer-details dd {
+.customer-details dd,
+.admin-details dd {
   margin: 0.2rem 0 0;
   font-size: 1.05rem;
 }
@@ -472,4 +475,243 @@
     font-weight: 700;
     text-align: left;
   }
+}
+
+.admin-settings .admin-details {
+  gap: 0.6rem;
+}
+
+.admin-details > div {
+  min-width: 0;
+}
+
+.admin-details dd {
+  overflow-wrap: anywhere;
+}
+
+/* The global main rule centres its content, so the page fills the width itself. */
+.admin-settings-view {
+  align-self: start;
+  justify-self: start;
+  width: 100%;
+  max-width: 64rem;
+}
+
+.admin-settings {
+  column-count: 2;
+  column-gap: 1.25rem;
+}
+
+.admin-settings .admin-card {
+  margin-bottom: 1.25rem;
+  break-inside: avoid;
+}
+
+.admin-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 2.25rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-switch input {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  accent-color: #15803d;
+  cursor: pointer;
+}
+
+.admin-switch input:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.admin-error {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #fca5a5;
+  border-radius: 0.5rem;
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+.admin-error[hidden],
+.admin-success[hidden] {
+  display: none;
+}
+
+.admin-success {
+  margin: 0.75rem 0 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid #86efac;
+  border-radius: 0.5rem;
+  background: #f0fdf4;
+  color: #14532d;
+  font-weight: 700;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-form .customer-button {
+  align-self: flex-start;
+}
+
+.admin-form .customer-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-field label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.admin-field input {
+  min-height: 2.4rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #9ca3af;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+}
+
+.admin-field input:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.admin-status-badge.is-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 768px) {
+  .admin-settings {
+    column-count: 1;
+  }
+}
+
+html[data-hidden-widgets~="customerCount"] [data-widget="customerCount"],
+html[data-hidden-widgets~="recentActivity"] [data-widget="recentActivity"],
+html[data-hidden-widgets~="notifications"] [data-widget="notifications"],
+html[data-hidden-widgets~="systemStatus"] [data-widget="systemStatus"] {
+  display: none;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+html[data-theme="dark"] .admin-sidebar {
+  background: #052e16;
+}
+
+html[data-theme="dark"] .admin-page-header h1,
+html[data-theme="dark"] .admin-summary-value,
+html[data-theme="dark"] .admin-action,
+html[data-theme="dark"] .customer-table a,
+html[data-theme="dark"] .admin-card a,
+html[data-theme="dark"] .customer-table th,
+html[data-theme="dark"] .customer-pagination a,
+html[data-theme="dark"] .customer-pagination span {
+  color: #86efac;
+}
+
+html[data-theme="dark"] .admin-subtitle,
+html[data-theme="dark"] .admin-summary-label,
+html[data-theme="dark"] .admin-empty,
+html[data-theme="dark"] .customer-details dt,
+html[data-theme="dark"] .admin-details dt,
+html[data-theme="dark"] .customer-table td::before,
+html[data-theme="dark"] .customer-field label {
+  color: #9ca3af;
+}
+
+html[data-theme="dark"] .admin-card {
+  border-color: #334155;
+  background: #1e293b;
+}
+
+html[data-theme="dark"] .admin-action:hover,
+html[data-theme="dark"] .customer-pagination a:hover,
+html[data-theme="dark"] .customer-table th {
+  background: #14532d;
+}
+
+html[data-theme="dark"] .customer-table th,
+html[data-theme="dark"] .customer-table tbody tr td,
+html[data-theme="dark"] .customer-table tr {
+  border-color: #334155;
+}
+
+html[data-theme="dark"] .customer-field input,
+html[data-theme="dark"] .customer-field select,
+html[data-theme="dark"] .admin-field input {
+  border-color: #64748b;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+html[data-theme="dark"] .admin-status-badge {
+  background: #334155;
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .admin-status-badge.is-ok {
+  background: #14532d;
+  color: #bbf7d0;
+}
+
+html[data-theme="dark"] .admin-status-badge.is-error,
+html[data-theme="dark"] .admin-error {
+  border-color: #7f1d1d;
+  background: #450a0a;
+  color: #fecaca;
+}
+
+html[data-theme="dark"] .admin-status-badge.is-error {
+  border-color: transparent;
+}
+
+html[data-theme="dark"] .customer-pagination .is-current {
+  background: #15803d;
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .customer-pagination .is-disabled {
+  border-color: #475569;
+  color: #64748b;
+}
+
+html[data-theme="dark"] .admin-success {
+  border-color: #166534;
+  background: #052e16;
+  color: #bbf7d0;
 }
