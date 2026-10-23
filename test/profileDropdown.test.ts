@@ -34,6 +34,7 @@ describe('homepage profile dropdown', () => {
             email: 'user@example.com',
             firstName: ' Test ',
             lastName: ' Customer ',
+            role: 'CUSTOMER',
           },
         }),
       );
@@ -53,6 +54,7 @@ describe('homepage profile dropdown', () => {
   function login(origin = base) {
     return fetch(`${origin}/login`, {
       method: 'POST',
+      headers: { origin },
       body: new URLSearchParams({
         email: 'user@example.com',
         password: 'Password@1',
@@ -202,7 +204,7 @@ describe('homepage profile dropdown', () => {
       redirect: 'manual',
     });
     assert.equal(response.status, 303);
-    assert.equal(response.headers.get('location'), '/');
+    assert.equal(response.headers.get('location'), '/login');
     assert.match(
       response.headers.get('set-cookie') ?? '',
       /ctrl_alt_elite_login=;/,
@@ -220,12 +222,7 @@ describe('homepage profile dropdown', () => {
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
     const originalFetch = globalThis.fetch;
     try {
-      for (const body of [
-        {},
-        { user: {} },
-        { user: { id: '' } },
-        { user: { id: 42 } },
-      ]) {
+      for (const body of [{}, { user: {} }, { user: { id: '' } }]) {
         const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
           new Response(JSON.stringify(body), {
             status: 200,
@@ -235,6 +232,7 @@ describe('homepage profile dropdown', () => {
         try {
           const response = await originalFetch(`${base}/login`, {
             method: 'POST',
+            headers: { origin: base },
             body: new URLSearchParams({
               email: 'user@example.com',
               password: 'Password@1',
@@ -248,7 +246,7 @@ describe('homepage profile dropdown', () => {
           fetchMock.mockRestore();
         }
       }
-      assert.equal(errorLog.mock.calls.length, 4);
+      assert.equal(errorLog.mock.calls.length, 3);
     } finally {
       errorLog.mockRestore();
     }
@@ -272,6 +270,7 @@ describe('homepage profile dropdown', () => {
     try {
       const response = await originalFetch(`${base}/login`, {
         method: 'POST',
+        headers: { origin: base },
         body: new URLSearchParams({
           email: 'user2@example.com',
           password: 'Password@1',
@@ -295,26 +294,55 @@ describe('homepage profile dropdown', () => {
     }
   });
 
-  it('rejects cross-site logout and does not log out through GET', async () => {
-    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('accepts numeric backend user IDs for the signed-in profile', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          userId: 42,
+          email: 'user2@example.com',
+          role: 'CUSTOMER',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
+    );
     try {
-      for (const headers of [
-        { origin: 'https://another-site.example' },
-        { 'sec-fetch-site': 'cross-site' },
-      ]) {
-        const response = await fetch(`${base}/logout`, {
-          method: 'POST',
-          headers,
-          redirect: 'manual',
-        });
-        assert.equal(response.status, 403);
-        assert.equal(response.headers.get('set-cookie'), null);
-      }
-      assert.equal((await fetch(`${base}/logout`)).status, 404);
-      assert.equal(warning.mock.calls.length, 2);
+      const response = await originalFetch(`${base}/login`, {
+        method: 'POST',
+        headers: { origin: base },
+        body: new URLSearchParams({
+          email: 'user2@example.com',
+          password: 'Password@1',
+        }),
+        redirect: 'manual',
+      });
+      assert.equal(response.status, 303);
+      assert.match(
+        response.headers.get('set-cookie') ?? '',
+        /ctrl_alt_elite_login=/,
+      );
     } finally {
-      warning.mockRestore();
+      fetchMock.mockRestore();
     }
+  });
+
+  it('rejects cross-site logout and does not log out through GET', async () => {
+    for (const headers of [
+      { origin: 'https://another-site.example' },
+      { 'sec-fetch-site': 'cross-site' },
+    ]) {
+      const response = await fetch(`${base}/logout`, {
+        method: 'POST',
+        headers,
+        redirect: 'manual',
+      });
+      assert.equal(response.status, 403);
+      assert.equal(response.headers.get('set-cookie'), null);
+    }
+    assert.equal((await fetch(`${base}/logout`)).status, 404);
   });
 
   it('shows only guest options and clears invalid, expired or forged cookies', async () => {

@@ -12,11 +12,9 @@ import {
   findAdminModule,
 } from './util/adminPortal';
 import { createApiProxy } from './util/apiProxy';
-import { createApiCustomerSource } from './util/customerApi';
-import type { CustomerSource } from './util/customers';
-import { LoginSession } from './util/loginSession';
 import { clearAuthCookie } from './util/authCookie';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
+import { LoginSession } from './util/loginSession';
 
 function requireSameOrigin(
   req: Request,
@@ -56,18 +54,13 @@ const CONTROLLERS_DIRECTORY = fileURLToPath(
 );
 
 export interface AppOptions {
-  customerSource?: CustomerSource;
   jwtSecret?: string;
 }
 
 export function createApp(
   backendOrigin: string,
-  {
-    customerSource = createApiCustomerSource(backendOrigin),
-    jwtSecret = process.env.JWT_SECRET,
-  }: AppOptions = {},
+  { jwtSecret = process.env.JWT_SECRET }: AppOptions = {},
 ): Express {
-export function createApp(backendOrigin: string): Express {
   const app = express();
   app.set('views', VIEWS_DIRECTORY);
   nunjucks.configure([VIEWS_DIRECTORY], {
@@ -111,11 +104,12 @@ export function createApp(backendOrigin: string): Express {
     res.setHeader('Cache-Control', 'no-store');
     try {
       const account = await loginSession.getAccount(req, res);
-      const homepage = adminTemplates.render('homepage.html', {
-        isAuthenticated: account !== null,
-        accountName: account?.name ?? 'Account',
-      });
-      res.type('html').send(homepage);
+      res.type('html').send(
+        adminTemplates.render('homepage.html', {
+          isAuthenticated: account !== null,
+          accountName: account?.name ?? 'Account',
+        }),
+      );
     } catch (error) {
       console.error('Unable to load the homepage:', error);
       res.redirect('/unavailable');
@@ -150,22 +144,10 @@ export function createApp(backendOrigin: string): Express {
     }
   });
 
-  app.post('/logout', (req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
-    const origin = req.get('origin');
-    if (
-      req.get('sec-fetch-site') === 'cross-site' ||
-      (origin && origin !== `${req.protocol}://${req.get('host')}`)
-    ) {
-      console.warn('Cross-origin logout denied.');
-      res.status(403).type('text').send('Please log out from this website.');
-      return;
-    }
-    loginSession.clear(res);
-    res.redirect(303, '/');
   app.post('/logout', requireSameOrigin, (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     clearAuthCookie(res);
+    loginSession.clear(res);
     res.redirect(303, '/login');
   });
 

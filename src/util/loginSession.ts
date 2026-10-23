@@ -19,6 +19,10 @@ export class LoginSession {
     this.key = secret ? new TextEncoder().encode(secret) : undefined;
   }
 
+  get isConfigured(): boolean {
+    return this.key !== undefined;
+  }
+
   private async verify(token: string) {
     if (!this.key) throw new Error('JWT_SECRET is not configured.');
     if (token.length > 3800) throw new Error('Login token is too large.');

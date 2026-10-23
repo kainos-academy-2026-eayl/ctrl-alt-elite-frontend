@@ -1,22 +1,32 @@
 import type { Request, Response } from 'express';
+import {
+  clearAuthCookie,
+  readAuthCookie,
+  setAuthCookie,
+} from '../../util/authCookie';
 import type { LoginSession } from '../../util/loginSession';
-import { clearAuthCookie, setAuthCookie } from '../../util/authCookie';
 
 const ROLE_REDIRECTS: Record<string, string> = Object.assign(
   Object.create(null),
   { ADMIN: '/admin', CUSTOMER: '/' },
 );
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === 'object' && value !== null
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function accountFrom(payload: unknown): Record<string, unknown> | undefined {
+  const record = asRecord(payload);
+  return asRecord(record?.user) ?? record;
+}
+
 function extractRole(payload: unknown): string | undefined {
-  if (typeof payload !== 'object' || payload === null) return undefined;
-  const user = 'user' in payload ? payload.user : undefined;
-  for (const source of [payload, user]) {
-    if (
-      typeof source === 'object' &&
-      source !== null &&
-      'role' in source &&
-      typeof source.role === 'string'
-    ) {
+  const record = asRecord(payload);
+  const user = asRecord(record?.user);
+  for (const source of [record, user]) {
+    if (typeof source?.role === 'string') {
       return source.role.trim().toUpperCase();
     }
   }
@@ -24,13 +34,28 @@ function extractRole(payload: unknown): string | undefined {
 }
 
 function extractToken(payload: unknown): string | undefined {
-  return typeof payload === 'object' &&
-    payload !== null &&
-    'token' in payload &&
-    typeof payload.token === 'string' &&
-    payload.token.length > 0
-    ? payload.token
-    : undefined;
+  const token = asRecord(payload)?.token;
+  return typeof token === 'string' && token.length > 0 ? token : undefined;
+}
+
+function extractUserId(
+  account: Record<string, unknown> | undefined,
+): string | undefined {
+  const id = account?.id ?? account?.userId;
+  if (typeof id === 'string' && id.trim()) return id;
+  if (typeof id === 'number' && Number.isSafeInteger(id)) return String(id);
+  return undefined;
+}
+
+function extractAccountName(
+  account: Record<string, unknown> | undefined,
+): string {
+  const firstName =
+    typeof account?.firstName === 'string' ? account.firstName.trim() : '';
+  const lastName =
+    typeof account?.lastName === 'string' ? account.lastName.trim() : '';
+  const email = typeof account?.email === 'string' ? account.email.trim() : '';
+  return [firstName, lastName].filter(Boolean).join(' ') || email || 'Account';
 }
 
 export class LoginController {
@@ -90,8 +115,7 @@ export class LoginController {
     }
 
     let response: globalThis.Response;
-    let role: string | undefined;
-    let token: string | undefined;
+    let payload: unknown;
     try {
       response = await fetch(new URL('/api/auth/login', this.backendOrigin), {
         method: 'POST',
@@ -100,11 +124,8 @@ export class LoginController {
         redirect: 'manual',
         signal: AbortSignal.timeout(10_000),
       });
-      if (response.status !== 200) await response.body?.cancel();
       if (response.status === 200) {
-        const payload: unknown = await response.json().catch(() => null);
-        role = extractRole(payload);
-        token = extractToken(payload);
+        payload = await response.json().catch(() => null);
       } else {
         await response.body?.cancel();
       }
@@ -120,41 +141,47 @@ export class LoginController {
     }
 
     if (response.status === 200) {
-      try {
-        const body: unknown = await response.json();
-        let userId: unknown;
-        let accountName = 'Account';
-        if (typeof body === 'object' && body !== null) {
-          const account =
-            'user' in body &&
-            typeof body.user === 'object' &&
-            body.user !== null
-              ? body.user
-              : body;
-          userId =
-            'id' in account
-              ? account.id
-              : 'userId' in account
-                ? account.userId
-                : undefined;
-          const firstName =
-            'firstName' in account && typeof account.firstName === 'string'
-              ? account.firstName.trim()
-              : '';
-          const lastName =
-            'lastName' in account && typeof account.lastName === 'string'
-              ? account.lastName.trim()
-              : '';
-          const accountEmail =
-            'email' in account && typeof account.email === 'string'
-              ? account.email.trim()
-              : '';
-          accountName =
-            [firstName, lastName].filter(Boolean).join(' ') ||
-            accountEmail ||
-            'Account';
+      const account = accountFrom(payload);
+      const userId = extractUserId(account);
+      const role = extractRole(payload);
+      const destination = role ? ROLE_REDIRECTS[role] : undefined;
+      if (!destination) {
+        if (!role && !userId && payload !== null) {
+          console.error(
+            'Backend login did not identify an authenticated user.',
+          );
+          this.render(
+            res,
+            502,
+            email,
+            'Unable to confirm your login. Please try again.',
+          );
+          return;
         }
-        await this.loginSession.save(res, userId, accountName);
+        console.error('Backend login returned an unknown role:', role);
+        this.render(
+          res,
+          403,
+          email,
+          'Your account role is not recognised. Please contact support.',
+        );
+        return;
+      }
+
+      res.setHeader('Cache-Control', 'no-store');
+      const token = extractToken(payload);
+      try {
+        if (this.loginSession.isConfigured) {
+          if (userId) {
+            await this.loginSession.save(
+              res,
+              userId,
+              extractAccountName(account),
+            );
+          } else {
+            this.loginSession.clear(res);
+          }
+        }
       } catch (error) {
         console.error(
           'Unable to validate the login session:',
@@ -165,21 +192,12 @@ export class LoginController {
           502,
           email,
           'Unable to confirm your login. Please try again.',
-      const destination = role ? ROLE_REDIRECTS[role] : undefined;
-      if (!destination) {
-        console.error('Backend login returned an unknown role:', role);
-        this.render(
-          res,
-          403,
-          email,
-          'Your account role is not recognised. Please contact support.',
         );
         return;
       }
-      res.setHeader('Cache-Control', 'no-store');
       if (token) {
         setAuthCookie(res, token);
-      } else {
+      } else if (readAuthCookie(req.headers.cookie)) {
         clearAuthCookie(res);
       }
       res.redirect(303, destination);

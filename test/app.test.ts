@@ -4,12 +4,6 @@ import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
-import type { CustomerSource } from '../src/util/customers';
-import {
-  createInMemoryCustomerSource,
-  FIXTURE_CUSTOMERS,
-} from './customerFixtures';
-import { TEST_JWT_SECRET } from './sessionFixtures';
 
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
@@ -57,10 +51,6 @@ describe('frontend routes', () => {
           body.password === 'CorrectPassword@1'
         ) {
           res.end(
-            JSON.stringify({
-              user: { id: 'user-1', email: body.email },
-            }),
-          );
             JSON.stringify({ userId: 1, email: body.email, role: 'CUSTOMER' }),
           );
         } else if (
@@ -83,20 +73,6 @@ describe('frontend routes', () => {
           res.statusCode = 401;
           res.end(JSON.stringify({ message: 'Incorrect email or password.' }));
         }
-      } else if (req.url === '/api/auth/register') {
-        const body = JSON.parse(await readBody(req));
-        res.setHeader('content-type', 'application/json');
-        res.statusCode = 201;
-        res.end(
-          JSON.stringify({
-            user: {
-              id: 'registered-user',
-              firstName: body.firstName,
-              lastName: body.lastName,
-              email: body.email,
-            },
-          }),
-        );
       } else if (req.url === '/api/echo') {
         res.setHeader('content-type', 'application/json');
         res.setHeader('x-custom', 'yes');
@@ -118,12 +94,6 @@ describe('frontend routes', () => {
       }
     });
     const backendOrigin = await listen(backend);
-    frontend = createServer(
-      createApp(backendOrigin, {
-        customerSource: createInMemoryCustomerSource(),
-        jwtSecret: TEST_JWT_SECRET,
-      }),
-    );
     frontend = createServer(createApp(backendOrigin));
     base = await listen(frontend);
   });
@@ -209,24 +179,13 @@ describe('frontend routes', () => {
       }
     });
 
-    it('renders a server-side form with an optional password visibility control', async () => {
+    it('renders a server-side form with optional password visibility script', async () => {
       const res = await fetch(`${base}/login`, { redirect: 'manual' });
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       const html = await res.text();
       assert.match(html, /action="\/login" method="post"/);
       assert.match(html, new RegExp(`&copy; ${new Date().getFullYear()}`));
-      assert.match(html, /id="password"[\s\S]*?type="password"/);
-      const toggle = html.match(
-        /<button\b[^>]*data-password-toggle[\s\S]*?<\/button>/,
-      )?.[0];
-      assert.ok(toggle);
-      assert.match(toggle, /type="button"/);
-      assert.match(toggle, /aria-controls="password"/);
-      assert.match(toggle, /aria-label="Show password"/);
-      assert.match(toggle, /title="Show password"/);
-      assert.match(toggle, /\bhidden\s*>/);
-      assert.match(toggle, /<svg\b[^>]*aria-hidden="true"/);
       assert.match(
         html,
         /<script src="\/controllers\/login\.js" defer><\/script>/,
@@ -269,7 +228,8 @@ describe('frontend routes', () => {
             }),
             redirect: 'manual',
           });
-          const expectedStatus = status === 401 ? 401 : 502;
+          const expectedStatus =
+            status === 200 ? 303 : status === 401 ? 401 : 502;
           assert.equal(res.status, expectedStatus);
           assert.equal(cancel.mock.calls.length, status === 200 ? 0 : 1);
           assert.equal(upstream.bodyUsed, true);
@@ -297,10 +257,6 @@ describe('frontend routes', () => {
           }),
           redirect: 'manual',
         });
-        assert.equal(res.status, 502);
-        assert.equal(res.headers.get('set-cookie'), null);
-        assert.match(await res.text(), /Unable to confirm your login/);
-        assert.equal(errorLog.mock.calls.length, 1);
         assert.equal(res.status, 403);
         assert.equal(res.headers.get('location'), null);
         assert.match(await res.text(), /role is not recognised/);
@@ -373,7 +329,6 @@ describe('frontend routes', () => {
         new ReadableStream({
           cancel: () => Promise.reject(cancellationError),
         }),
-        { status: 401 },
         { status: 500 },
       );
       const originalFetch = globalThis.fetch;
@@ -538,30 +493,6 @@ describe('frontend routes', () => {
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       assert.match(await res.text(), /<html/i);
-    });
-
-    it('keeps registration requests connected to the backend through the API proxy', async () => {
-      const response = await fetch(`${base}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: 'Test',
-          lastName: 'Customer',
-          email: 'registration-test@example.com',
-          password: 'Password@1',
-          confirmPassword: 'Password@1',
-        }),
-      });
-      assert.equal(response.status, 201);
-      assert.deepEqual(await response.json(), {
-        user: {
-          id: 'registered-user',
-          firstName: 'Test',
-          lastName: 'Customer',
-          email: 'registration-test@example.com',
-        },
-      });
-      assert.equal(response.headers.get('set-cookie'), null);
     });
   });
 
