@@ -11,8 +11,9 @@ import {
   ADMIN_SYSTEM_STATUS,
   findAdminModule,
 } from './util/adminPortal';
+import { loadAdminFirstName } from './util/adminUser';
 import { createApiProxy } from './util/apiProxy';
-import { clearAuthCookie } from './util/authCookie';
+import { clearAuthCookie, readAuthCookie } from './util/authCookie';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
 
 function requireSameOrigin(
@@ -132,9 +133,14 @@ export function createApp(backendOrigin: string): Express {
 
   // The server only serves page shells. Live data is loaded in the browser by the
   // matching controller in src/controllers, which calls the backend through /api.
-  app.get('/admin', (_req: Request, res: Response) => {
+  app.get('/admin', async (req: Request, res: Response) => {
+    const firstName = await loadAdminFirstName(
+      backendOrigin,
+      readAuthCookie(req.headers.cookie),
+    );
     renderAdminPage(res, 'admin/dashboard.njk', {
       title: 'Dashboard',
+      firstName,
       activeSlug: 'dashboard',
       summaryCards: ADMIN_SUMMARY_CARDS,
       quickActions: ADMIN_QUICK_ACTIONS,
