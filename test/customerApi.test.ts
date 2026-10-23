@@ -3,11 +3,16 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import { createApp } from '../src/app';
-import { createApiCustomerSource } from '../src/util/customerApi';
+import { createApiCustomerSource as createSource } from '../src/controllers/customerApi';
 import {
   createInMemoryCustomerSource,
   FIXTURE_CUSTOMERS,
 } from './customerFixtures';
+
+// Tests pass the fake backend's origin as the base URL.
+function createApiCustomerSource(origin: string) {
+  return createSource({ baseUrl: origin });
+}
 
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
@@ -190,34 +195,38 @@ describe('customer API source', () => {
     mode = 'ok';
   });
 
-  it('powers the admin pages through createApp by default', async () => {
+  it('works through the frontend /api proxy, like the browser controllers do', async () => {
     mode = 'ok';
     const app = createServer(createApp(backendOrigin));
     const origin = await listen(app);
     try {
-      const list = await (
-        await fetch(`${origin}/admin/customers?q=ben`)
-      ).text();
-      assert.match(list, /Ben Okafor/);
-      const detail = await (
-        await fetch(`${origin}/admin/customers/c-2`)
-      ).text();
-      assert.match(detail, /ben\.okafor@example\.com/);
-      assert.equal((await fetch(`${origin}/admin/customers/nope`)).status, 404);
+      const source = createSource({ baseUrl: origin });
+      const page = await source.query({ ...baseQuery, search: 'ben' });
+      assert.equal(page.customers[0]?.lastName, 'Okafor');
+      assert.equal(page.totalCustomers, FIXTURE_CUSTOMERS.length);
+      assert.equal(
+        (await source.findById('c-2'))?.email,
+        'ben.okafor@example.com',
+      );
+      assert.equal(await source.findById('nope'), undefined);
 
       mode = 'error';
-      const originalError = console.error;
-      console.error = () => {};
-      try {
-        const failed = await fetch(`${origin}/admin/customers`);
-        assert.equal(failed.status, 503);
-        assert.match(await failed.text(), /Unable to load customers/);
-      } finally {
-        console.error = originalError;
-      }
+      await assert.rejects(source.query(baseQuery), /status 503/);
     } finally {
       mode = 'ok';
       await close(app);
+    }
+  });
+
+  it('rejects when the request times out', async () => {
+    const slow = createServer(() => {});
+    const slowOrigin = await listen(slow);
+    try {
+      const source = createSource({ baseUrl: slowOrigin, timeoutMs: 50 });
+      await assert.rejects(source.query(baseQuery));
+    } finally {
+      slow.closeAllConnections();
+      await close(slow);
     }
   });
 });

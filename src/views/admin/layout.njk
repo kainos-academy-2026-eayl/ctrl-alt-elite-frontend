@@ -31,12 +31,16 @@
         </ul>
       </nav>
       <a class="admin-home-link" href="/">&larr; Back to homepage</a>
+      <form class="admin-logout-form" action="/logout" method="post">
+        <button class="admin-logout-btn" type="submit">Log out</button>
+      </form>
     </aside>
 
     <main class="admin-main">
       {% block content %}{% endblock %}
     </main>
   </div>
+  {% block scripts %}{% endblock %}
 </body>
 
 </html>

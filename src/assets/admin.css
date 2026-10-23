@@ -75,6 +75,35 @@
   outline-offset: 2px;
 }
 
+.admin-logout-form {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid #15803d;
+}
+
+.admin-logout-btn {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #dcfce7;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-logout-btn:hover {
+  background: #15803d;
+  color: #ffffff;
+}
+
+.admin-logout-btn:focus-visible {
+  outline: 3px solid #bbf7d0;
+  outline-offset: 2px;
+}
+
 .admin-main {
   flex: 1;
   min-width: 0;
