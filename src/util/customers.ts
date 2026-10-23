@@ -84,3 +84,15 @@ export function buildCustomersUrl(params: {
   const queryString = query.toString();
   return `/admin/customers${queryString ? `?${queryString}` : ''}`;
 }
+
+export function readCustomerQuery(searchParams: URLSearchParams) {
+  return {
+    search: parseSearch(searchParams.get('q'), MAX_NAME_SEARCH_LENGTH),
+    email: parseSearch(searchParams.get('email'), MAX_EMAIL_SEARCH_LENGTH),
+    sort: parseCustomerSort(searchParams.get('sort')),
+    page: parsePage(searchParams.get('page')),
+  };
+}
+
+// Ids are UUIDs from the backend; reject anything else before building a URL.
+export const CUSTOMER_ID_PATTERN = /^[A-Za-z0-9-]{1,64}$/;

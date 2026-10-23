@@ -3,9 +3,7 @@ import type {
   CustomerPage,
   CustomerQuery,
   CustomerSource,
-} from './customers';
-
-type Fetch = typeof fetch;
+} from '../util/customers';
 
 interface ListResponse {
   customers: Customer[];
@@ -14,6 +12,15 @@ interface ListResponse {
   total: number;
   totalPages: number;
 }
+
+export interface CustomerApiOptions {
+  // Same-origin by default: requests go through the frontend's /api proxy.
+  baseUrl?: string;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+}
+
+const DEFAULT_TIMEOUT_MS = 10_000;
 
 function isCustomer(value: unknown): value is Customer {
   if (typeof value !== 'object' || value === null) return false;
@@ -39,16 +46,16 @@ function isListResponse(value: unknown): value is ListResponse {
   );
 }
 
-export function createApiCustomerSource(
-  backendOrigin: string,
-  fetchImpl: Fetch = fetch,
-): CustomerSource {
-  const origin = new URL(backendOrigin).origin;
-
+export function createApiCustomerSource({
+  baseUrl = '',
+  fetchImpl = (input, init) => fetch(input, init),
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+}: CustomerApiOptions = {}): CustomerSource {
   async function request(path: string, params?: URLSearchParams) {
     const query = params?.toString();
-    return fetchImpl(`${origin}${path}${query ? `?${query}` : ''}`, {
+    return fetchImpl(`${baseUrl}${path}${query ? `?${query}` : ''}`, {
       headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(timeoutMs),
     });
   }
 
@@ -90,6 +97,7 @@ export function createApiCustomerSource(
         result = await list(toParams(query, result.totalPages));
       }
 
+      // The backend's total is the filtered count, so fetch the overall total separately.
       const isFiltered = Boolean(query.search || query.email);
       const totalCustomers = isFiltered
         ? (
