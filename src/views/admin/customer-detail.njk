@@ -1,7 +1,7 @@
 {% extends "admin/layout.njk" %}
 
 {% block content %}
-<p><a href="/admin/customers">&larr; Back to customers</a></p>
+<a class="admin-back-link" href="/admin/customers"><span aria-hidden="true">&larr;</span> Back to customers</a>
 
 <div data-customer-detail aria-live="polite">
   <p class="admin-empty">Loading customer&hellip;</p>

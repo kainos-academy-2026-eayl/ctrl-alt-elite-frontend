@@ -11,7 +11,8 @@ import {
   ADMIN_SYSTEM_STATUS,
   findAdminModule,
 } from './util/adminPortal';
-import { loadAdminFirstName } from './util/adminUser';
+import { DASHBOARD_WIDGETS } from './util/adminSettings';
+import { loadAdminFirstName, loadAdminProfile } from './util/adminUser';
 import { createApiProxy } from './util/apiProxy';
 import { clearAuthCookie, readAuthCookie } from './util/authCookie';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
@@ -46,6 +47,9 @@ const VIEWS_DIRECTORY = fileURLToPath(
 const REGISTER_PAGE_PATH = fileURLToPath(
   new URL('../src/views/register.html', import.meta.url),
 );
+const PACKAGE_JSON_PATH = fileURLToPath(
+  new URL('../package.json', import.meta.url),
+);
 const UNAVAILABLE_PAGE_PATH = fileURLToPath(
   new URL('../src/views/unavailable.html', import.meta.url),
 );
@@ -55,6 +59,25 @@ const ASSETS_DIRECTORY = fileURLToPath(
 const CONTROLLERS_DIRECTORY = fileURLToPath(
   new URL('../dist/public/controllers/', import.meta.url),
 );
+
+async function readAppVersion(): Promise<string> {
+  try {
+    const manifest: unknown = JSON.parse(
+      await readFile(PACKAGE_JSON_PATH, 'utf8'),
+    );
+    if (
+      typeof manifest === 'object' &&
+      manifest !== null &&
+      'version' in manifest &&
+      typeof manifest.version === 'string'
+    ) {
+      return manifest.version;
+    }
+  } catch (error) {
+    console.error('Unable to read the application version:', error);
+  }
+  return 'Unknown';
+}
 
 export function createApp(backendOrigin: string): Express {
   const app = express();
@@ -67,9 +90,12 @@ export function createApp(backendOrigin: string): Express {
   app.set('view engine', 'njk');
   const loginController = new LoginController(backendOrigin);
 
+  // noCache is a loader option, so it must be set on the loader to take effect.
   const adminTemplates = new nunjucks.Environment(
-    new nunjucks.FileSystemLoader(VIEWS_DIRECTORY),
-    { autoescape: true, noCache: process.env.NODE_ENV !== 'production' },
+    new nunjucks.FileSystemLoader(VIEWS_DIRECTORY, {
+      noCache: process.env.NODE_ENV !== 'production',
+    }),
+    { autoescape: true },
   );
 
   function renderAdminPage(
@@ -160,6 +186,20 @@ export function createApp(backendOrigin: string): Express {
     renderAdminPage(res, 'admin/customer-detail.njk', {
       title: 'Customer details',
       activeSlug: 'customers',
+    });
+  });
+
+  app.get('/admin/settings', async (req: Request, res: Response) => {
+    const [profile, appVersion] = await Promise.all([
+      loadAdminProfile(backendOrigin, readAuthCookie(req.headers.cookie)),
+      readAppVersion(),
+    ]);
+    renderAdminPage(res, 'admin/settings.njk', {
+      title: 'Settings',
+      activeSlug: 'settings',
+      profile,
+      appVersion,
+      dashboardWidgets: DASHBOARD_WIDGETS,
     });
   });
 

@@ -232,7 +232,7 @@ describe('admin portal pages', () => {
       assert.equal((await get('/admin/unknown')).status, 404);
     });
 
-    for (const section of ['orders', 'inventory', 'reports', 'settings']) {
+    for (const section of ['orders', 'inventory', 'reports']) {
       it(`serves a placeholder page for /admin/${section}`, async () => {
         const { status, html } = await get(`/admin/${section}`);
         assert.equal(status, 200);
