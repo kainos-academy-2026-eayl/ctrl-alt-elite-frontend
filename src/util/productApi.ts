@@ -1,4 +1,4 @@
-import type { Product } from '../data/sampleProducts';
+import type { Product } from '../models/product';
 import type { ProductSearchResult } from './productSearch';
 
 const SEARCH_TIMEOUT_MS = 5000;

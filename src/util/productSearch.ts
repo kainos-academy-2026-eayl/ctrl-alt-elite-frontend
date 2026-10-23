@@ -1,4 +1,4 @@
-import type { Product } from '../data/sampleProducts';
+import type { Product } from '../models/product';
 
 /** Matches the backend, which owns the search rules (GET /api/products/search). */
 export const MAX_SEARCH_TERM_LENGTH = 100;
