@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
+import { registerProductApp } from './product_app';
 import { LoginController } from './server/controllers/login';
 import { createAdminGuard } from './util/adminGuard';
 import {
@@ -94,6 +95,7 @@ export function createApp(backendOrigin: string): Express {
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
+  registerProductApp(app, backendOrigin);
 
   app.get('/', async (_req: Request, res: Response) => {
     try {
