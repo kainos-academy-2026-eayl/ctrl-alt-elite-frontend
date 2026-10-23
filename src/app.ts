@@ -3,7 +3,6 @@ import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { registerProductApp } from './product_app';
-import { createApiProxy } from './util/apiProxy';
 import { LoginController } from './server/controllers/login';
 import { createAdminGuard } from './util/adminGuard';
 import {
@@ -42,8 +41,6 @@ function requireSameOrigin(
 const HOME_PAGE_PATH = fileURLToPath(
   new URL('../src/views/homepage.html', import.meta.url),
 );
-const LOGIN_PAGE_PATH = fileURLToPath(
-  new URL('../src/views/Login.njk', import.meta.url),
 const VIEWS_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
 );
