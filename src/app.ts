@@ -90,9 +90,12 @@ export function createApp(backendOrigin: string): Express {
   app.set('view engine', 'njk');
   const loginController = new LoginController(backendOrigin);
 
+  // noCache is a loader option, so it must be set on the loader to take effect.
   const adminTemplates = new nunjucks.Environment(
-    new nunjucks.FileSystemLoader(VIEWS_DIRECTORY),
-    { autoescape: true, noCache: process.env.NODE_ENV !== 'production' },
+    new nunjucks.FileSystemLoader(VIEWS_DIRECTORY, {
+      noCache: process.env.NODE_ENV !== 'production',
+    }),
+    { autoescape: true },
   );
 
   function renderAdminPage(

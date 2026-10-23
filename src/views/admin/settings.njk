@@ -62,6 +62,10 @@
   <section class="admin-card" aria-labelledby="preferences-heading">
     <h2 id="preferences-heading">Dashboard Preferences</h2>
     <p class="admin-empty">Choose which widgets appear on the dashboard.</p>
+    <div class="admin-bulk-actions" role="group" aria-label="Bulk widget actions">
+      <button class="admin-link-button" type="button" data-widgets-show-all>Show all</button>
+      <button class="admin-link-button" type="button" data-widgets-hide-all>Hide all</button>
+    </div>
     <ul class="admin-option-list">
       {% for widget in dashboardWidgets %}
       <li>

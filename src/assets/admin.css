@@ -104,10 +104,13 @@
   outline-offset: 2px;
 }
 
+/* Overrides the site-wide centred grid on main so content fills the width. */
 .admin-main {
+  display: block;
   flex: 1;
   min-width: 0;
   padding: 2rem;
+  place-items: normal;
 }
 
 .admin-page-header h1 {
@@ -141,7 +144,7 @@
 
 .admin-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 1.25rem;
   margin: 0;
   padding: 0;
@@ -228,12 +231,6 @@
 .admin-empty {
   margin: 0;
   color: #4b5563;
-}
-
-@media (max-width: 1024px) {
-  .admin-summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 768px) {
@@ -489,11 +486,7 @@
   overflow-wrap: anywhere;
 }
 
-/* The global main rule centres its content, so the page fills the width itself. */
 .admin-settings-view {
-  align-self: start;
-  justify-self: start;
-  width: 100%;
   max-width: 64rem;
 }
 
@@ -514,6 +507,35 @@
   margin: 0.5rem 0 0;
   padding: 0;
   list-style: none;
+}
+
+.admin-bulk-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.admin-link-button {
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  color: #14532d;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.admin-link-button:disabled {
+  color: #9ca3af;
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+.admin-link-button:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
 }
 
 .admin-switch {
@@ -714,4 +736,12 @@ html[data-theme="dark"] .admin-success {
   border-color: #166534;
   background: #052e16;
   color: #bbf7d0;
+}
+
+html[data-theme="dark"] .admin-link-button {
+  color: #86efac;
+}
+
+html[data-theme="dark"] .admin-link-button:disabled {
+  color: #64748b;
 }

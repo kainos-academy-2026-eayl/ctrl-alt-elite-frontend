@@ -246,6 +246,8 @@ describe('admin settings page', () => {
     ]) {
       assert.ok(html.includes(label), `missing "${label}"`);
     }
+    assert.match(html, /<button[^>]*data-widgets-show-all>Show all<\/button>/);
+    assert.match(html, /<button[^>]*data-widgets-hide-all>Hide all<\/button>/);
     assert.match(html, /data-system-version>\d+\.\d+\.\d+/);
     assert.match(html, /data-system-error hidden/);
     assert.match(html, /<script src="\/controllers\/adminSettings\.js" defer>/);

@@ -47,23 +47,48 @@ function setUpDarkMode(): void {
 }
 
 function setUpWidgetPreferences(): void {
-  const inputs = document.querySelectorAll<HTMLInputElement>(
-    '[data-widget-toggle]',
+  const inputs = [
+    ...document.querySelectorAll<HTMLInputElement>('[data-widget-toggle]'),
+  ];
+  const showAll = document.querySelector<HTMLButtonElement>(
+    '[data-widgets-show-all]',
   );
+  const hideAll = document.querySelector<HTMLButtonElement>(
+    '[data-widgets-hide-all]',
+  );
+
+  function widgetId(input: HTMLInputElement): DashboardWidgetId {
+    return input.dataset.widgetToggle as DashboardWidgetId;
+  }
+
+  // Each bulk button is disabled once it would change nothing.
+  function syncBulkButtons(): void {
+    if (showAll) showAll.disabled = inputs.every((input) => input.checked);
+    if (hideAll) hideAll.disabled = inputs.every((input) => !input.checked);
+  }
+
+  function save(): void {
+    const hidden = DASHBOARD_WIDGETS.map((widget) => widget.id).filter((id) =>
+      inputs.some((input) => widgetId(input) === id && !input.checked),
+    );
+    saveHiddenWidgets(storage, hidden);
+    applyHiddenWidgets(root, hidden);
+    syncBulkButtons();
+  }
+
+  function setAll(visible: boolean): void {
+    for (const input of inputs) input.checked = visible;
+    save();
+  }
+
   const hidden = new Set(readHiddenWidgets(storage));
   for (const input of inputs) {
-    const id = input.dataset.widgetToggle as DashboardWidgetId;
-    input.checked = !hidden.has(id);
-    input.addEventListener('change', () => {
-      if (input.checked) hidden.delete(id);
-      else hidden.add(id);
-      const next = DASHBOARD_WIDGETS.map((widget) => widget.id).filter((key) =>
-        hidden.has(key),
-      );
-      saveHiddenWidgets(storage, next);
-      applyHiddenWidgets(root, next);
-    });
+    input.checked = !hidden.has(widgetId(input));
+    input.addEventListener('change', save);
   }
+  showAll?.addEventListener('click', () => setAll(true));
+  hideAll?.addEventListener('click', () => setAll(false));
+  syncBulkButtons();
 }
 
 async function showSystemStatus(): Promise<void> {
