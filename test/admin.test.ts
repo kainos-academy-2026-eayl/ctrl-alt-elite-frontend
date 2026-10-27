@@ -91,7 +91,7 @@ describe('admin portal pages', () => {
     });
 
     it('redirects to the unavailable page when the check fails', async () => {
-      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => { });
       try {
         const { status, res } = await get('/admin', 'broken-token');
         assert.equal(status, 302);
@@ -220,6 +220,25 @@ describe('admin portal pages', () => {
     it('links back to the homepage', async () => {
       const { html } = await get('/admin');
       assert.match(html, /<a[^>]*href="\/"[^>]*>[^<]*Back to homepage/);
+    });
+
+    it('keeps section navigation visible beside the profile dropdown', async () => {
+      const { html } = await get('/admin');
+      const menu = html.match(
+        /<details class="admin-profile"[\s\S]*?<\/details>/,
+      )?.[0];
+      assert.ok(menu, 'missing profile dropdown');
+      assert.match(menu, /<summary class="admin-profile-toggle">/);
+      assert.match(menu, /admin-profile-name">Admin</);
+      assert.match(menu, /admin-profile-role">Administrator</);
+      assert.doesNotMatch(menu, /admin-nav-link/);
+      assert.match(
+        html,
+        /<nav class="admin-nav"[\s\S]*?Orders[\s\S]*?Customers/,
+      );
+      for (const text of ['Back to homepage', 'Log out']) {
+        assert.ok(menu.includes(text), `dropdown missing "${text}"`);
+      }
     });
 
     it('has no Products navigation entry', async () => {

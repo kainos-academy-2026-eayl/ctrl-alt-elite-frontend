@@ -98,15 +98,24 @@ export function createApp(backendOrigin: string): Express {
     { autoescape: true },
   );
 
-  function renderAdminPage(
+  async function renderAdminPage(
+    req: Request,
     res: Response,
     template: string,
     context: Record<string, unknown>,
-  ): void {
+  ): Promise<void> {
+    const profile =
+      'profile' in context
+        ? context.profile
+        : await loadAdminProfile(
+            backendOrigin,
+            readAuthCookie(req.headers.cookie),
+          );
     try {
       res.type('html').send(
         adminTemplates.render(template, {
           navItems: ADMIN_NAV_ITEMS,
+          profile,
           ...context,
         }),
       );
@@ -164,7 +173,7 @@ export function createApp(backendOrigin: string): Express {
       backendOrigin,
       readAuthCookie(req.headers.cookie),
     );
-    renderAdminPage(res, 'admin/dashboard.njk', {
+    await renderAdminPage(req, res, 'admin/dashboard.njk', {
       title: 'Dashboard',
       firstName,
       activeSlug: 'dashboard',
@@ -174,16 +183,16 @@ export function createApp(backendOrigin: string): Express {
     });
   });
 
-  app.get('/admin/customers', (_req: Request, res: Response) => {
-    renderAdminPage(res, 'admin/customers.njk', {
+  app.get('/admin/customers', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/customers.njk', {
       title: 'Customers',
       activeSlug: 'customers',
       sortOptions: CUSTOMER_SORT_OPTIONS,
     });
   });
 
-  app.get('/admin/customers/:id', (_req: Request, res: Response) => {
-    renderAdminPage(res, 'admin/customer-detail.njk', {
+  app.get('/admin/customers/:id', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/customer-detail.njk', {
       title: 'Customer details',
       activeSlug: 'customers',
     });
@@ -194,7 +203,7 @@ export function createApp(backendOrigin: string): Express {
       loadAdminProfile(backendOrigin, readAuthCookie(req.headers.cookie)),
       readAppVersion(),
     ]);
-    renderAdminPage(res, 'admin/settings.njk', {
+    await renderAdminPage(req, res, 'admin/settings.njk', {
       title: 'Settings',
       activeSlug: 'settings',
       profile,
@@ -203,13 +212,13 @@ export function createApp(backendOrigin: string): Express {
     });
   });
 
-  app.get('/admin/:section', (req: Request, res: Response, next) => {
+  app.get('/admin/:section', async (req: Request, res: Response, next) => {
     const adminModule = findAdminModule(String(req.params.section));
     if (!adminModule) {
       next();
       return;
     }
-    renderAdminPage(res, 'admin/module.njk', {
+    await renderAdminPage(req, res, 'admin/module.njk', {
       title: adminModule.label,
       activeSlug: adminModule.slug,
     });
