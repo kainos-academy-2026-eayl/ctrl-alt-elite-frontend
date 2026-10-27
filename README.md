@@ -4,9 +4,9 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 
 | Route | What it does |
 | --- | --- |
-| `GET /` | Homepage ([src/views/homepage.html](src/views/homepage.html)) |
+| `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)) |
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
-| `GET /register` | Registration page ([src/views/register.html](src/views/register.html)) |
+| `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
 | `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)). [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
 | `GET /admin/customers/:id` | Customer details shell. [adminCustomerDetail.ts](src/controllers/adminCustomerDetail.ts) loads the customer from the backend. |
@@ -113,7 +113,7 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 ├── src/
 │   ├── index.ts          # entry point: config, server startup, shutdown
 │   ├── app.ts            # builds the Express app: routes, static folders, API proxy
-│   ├── views/            # HTML pages (homepage, register, unavailable) and admin/ Nunjucks shells
+│   ├── views/            # Nunjucks page templates and admin/ shells
 │   ├── assets/           # CSS served at /assets
 │   ├── server/
 │   │   └── controllers/  # server-side controllers (login)
@@ -149,7 +149,7 @@ Generated folders — `node_modules/` and `dist/` — are ignored by git and saf
 
 Say you want a `/about` page.
 
-**1. Create the view** at `src/views/about.html`. File names are lowercase, because Linux filesystems are case-sensitive. Reference assets and scripts with absolute paths, so they resolve whatever the page URL is:
+**1. Create the view** at `src/views/about.njk`. File names are lowercase, because Linux filesystems are case-sensitive. Reference assets and scripts with absolute paths, so they resolve whatever the page URL is:
 
 ```html
 <link rel="stylesheet" href="/assets/styles.css" />
@@ -161,12 +161,10 @@ Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/`
 **2. Register the route** in [src/app.ts](src/app.ts), following the existing pages:
 
 ```ts
-const ABOUT_PAGE_PATH = fileURLToPath(new URL('about.html', VIEWS_DIRECTORY));
-
 // inside createApp()
-app.get('/about', async (_req: Request, res: Response) => {
+app.get('/about', (_req: Request, res: Response) => {
   try {
-    res.type('html').send(await readFile(ABOUT_PAGE_PATH, 'utf8'));
+    res.type('html').send(adminTemplates.render('about.njk'));
   } catch (error) {
     console.error('Unable to load the about page:', error);
     res.redirect('/unavailable');
@@ -174,7 +172,7 @@ app.get('/about', async (_req: Request, res: Response) => {
 });
 ```
 
-Link to it with `href="/about"`, not `./about.html`. Views are only served through their routes.
+Link to it with `href="/about"`, not `./about.njk`. Views are only served through their routes.
 
 Paths in `app.ts` use `../src/...` so they resolve both when running from source (`src/app.ts`) and from the production bundle (`dist/index.js`). Imports of TypeScript modules do not need a `.js` extension, as this project uses bundler-style module resolution.
 

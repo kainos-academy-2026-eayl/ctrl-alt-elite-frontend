@@ -23,7 +23,11 @@ try {
   throw new Error(`Invalid BACKEND_ORIGIN: ${process.env.BACKEND_ORIGIN}`);
 }
 
-const app = createApp(BACKEND_ORIGIN);
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set');
+}
+
+const app = createApp(BACKEND_ORIGIN, { jwtSecret: process.env.JWT_SECRET });
 
 // Register new controllers / middleware here!
 
