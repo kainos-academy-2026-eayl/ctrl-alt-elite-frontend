@@ -9,7 +9,7 @@
   <title>Ctrl-Alt-Elite | Home</title>
 </head>
 
-<body>
+<body class="home-page">
   <header class="site-header">
     <div class="page-width header-content">
       <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
@@ -18,10 +18,26 @@
       </a>
       <nav class="primary-nav" aria-label="Main navigation">
         <details class="account-menu" data-account-menu>
-          <summary>Account</summary>
+          <summary aria-label="{{ accountName }} options">
+            <svg class="account-avatar" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
+              <circle cx="32" cy="32" r="32" fill="#dcfce7" />
+              <circle cx="32" cy="24" r="11" fill="#14532d" />
+              <path d="M12 57a20 20 0 0 1 40 0" fill="#14532d" />
+            </svg>
+            <span class="account-label{% if isAuthenticated %} account-name{% endif %}">{{ accountName }}</span>
+          </summary>
           <ul class="account-menu-list">
-            <li><a class="account-menu-link" href="/login">Log in</a></li>
+            {% if isAuthenticated %}
+            <li><a class="account-menu-link" href="/profile">My Profile</a></li>
+            <li>
+              <form action="/logout" method="post">
+                <button class="account-menu-link account-menu-button" type="submit">Logout</button>
+              </form>
+            </li>
+            {% else %}
+            <li><a class="account-menu-link" href="/login">Login</a></li>
             <li><a class="account-menu-link" href="/register">Register</a></li>
+            {% endif %}
             <li><a class="account-menu-link" href="/account/support">Support</a></li>
           </ul>
         </details>
