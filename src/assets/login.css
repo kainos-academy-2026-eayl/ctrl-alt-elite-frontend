@@ -1,0 +1,135 @@
+.login-container {
+  width: min(100% - 2rem, 440px);
+  padding: 2rem;
+  border: 1px solid #14532d;
+  border-radius: 0.7rem;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(20, 83, 45, 0.12);
+}
+
+.login-container .eyebrow,
+.login-container h1,
+.login-container h2 {
+  text-align: center;
+}
+
+.login-container h1 {
+  font-size: clamp(1.75rem, 6vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.login-container h2 {
+  margin: 0.5rem 0 1.5rem;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.login-form-group {
+  margin-bottom: 1rem;
+}
+
+.login-form-group label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #14532d;
+  font-weight: 700;
+}
+
+.login-form-group input {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #14532d;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  color: #111827;
+  font: inherit;
+}
+
+.login-form-group input:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+  border-color: #15803d;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  min-height: 46px;
+  padding-right: 3.25rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 44px;
+  height: calc(100% - 2px);
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #14532d;
+  cursor: pointer;
+}
+
+.password-toggle:not([hidden]) {
+  display: grid;
+  place-items: center;
+}
+
+.password-eye-slash {
+  display: none;
+}
+
+.password-toggle[aria-label="Hide password"] .password-eye-slash {
+  display: block;
+}
+
+.password-toggle:hover {
+  background: #f0fdf4;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #15803d;
+  color: #f8fafc;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: #14532d;
+}
+
+.login-btn:focus-visible,
+.password-toggle:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 3px;
+}
+
+.password-toggle:focus-visible {
+  outline-color: #15803d;
+  outline-offset: -4px;
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-message {
+  margin: 0 0 1rem;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.login-message:empty {
+  display: none;
+}
