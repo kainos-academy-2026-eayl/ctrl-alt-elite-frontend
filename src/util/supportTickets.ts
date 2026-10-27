@@ -83,8 +83,14 @@ export function categoryLabel(category: string): string {
   );
 }
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Display only: UUIDs are shortened to their first segment, while links and
+// API calls keep using the full ID.
 export function formatTicketId(id: string): string {
-  return `#${id}`;
+  const display = UUID_PATTERN.test(id) ? id.slice(0, 8).toUpperCase() : id;
+  return `#${display}`;
 }
 
 export function formatTicketDate(isoDate: string): string {

@@ -109,6 +109,18 @@ describe('ticket search and filters', () => {
     assert.deepEqual(ids({ search: '#1003' }), ['1003']);
   });
 
+  it('finds a UUID ticket by its shortened display ID', () => {
+    const uuid = '0b5b6d1b-e5fe-4700-b678-bbc05799b194';
+    const ticket = parseAdminTicket({ ...RAW_TICKETS[0], id: uuid });
+    assert.ok(ticket);
+    const found = filterTickets([ticket], {
+      search: '#0B5B6D1B',
+      status: '',
+      category: '',
+    });
+    assert.equal(found.length, 1);
+  });
+
   it('searches by customer name and subject, ignoring case', () => {
     assert.deepEqual(ids({ search: 'lovelace' }), ['1001']);
     assert.deepEqual(ids({ search: 'REFUND' }), ['1002']);

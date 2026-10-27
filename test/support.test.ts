@@ -7,6 +7,7 @@ import {
   categoryLabel,
   createTicket,
   findTicket,
+  formatTicketId,
   listTickets,
   MAX_DESCRIPTION_LENGTH,
   MAX_SUBJECT_LENGTH,
@@ -143,6 +144,17 @@ describe('ticket views', () => {
     assert.match(html, /ticket-status-resolved">Resolved</);
     assert.match(html, /href="\/account\/support\/1001"/);
     assert.match(html, /1 Oct 2026/);
+  });
+
+  it('shortens UUID ticket ids for display but links to the full id', () => {
+    const uuid = '0b5b6d1b-e5fe-4700-b678-bbc05799b194';
+    assert.equal(formatTicketId(uuid), '#0B5B6D1B');
+    assert.equal(formatTicketId('1001'), '#1001');
+    const ticket = parseTicket({ ...TICKETS[0], id: uuid });
+    assert.ok(ticket);
+    const html = renderTicketList([ticket]);
+    assert.match(html, />#0B5B6D1B</);
+    assert.match(html, new RegExp(`href="/account/support/${uuid}"`));
   });
 
   it('shows an empty state with a way to create a ticket', () => {
