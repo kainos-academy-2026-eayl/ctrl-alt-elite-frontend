@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { clearAuthCookie, setAuthCookie } from '../../util/authCookie';
+import type { LoginSession } from '../../util/loginSession';
 
 const ROLE_REDIRECTS: Record<string, string> = Object.assign(
   Object.create(null),
@@ -32,8 +33,77 @@ function extractToken(payload: unknown): string | undefined {
     : undefined;
 }
 
+function extractAccount(payload: unknown): { userId: string; name: string } {
+  if (typeof payload !== 'object' || payload === null) {
+    throw new Error('Backend login did not return an account.');
+  }
+  const account =
+    'user' in payload &&
+    typeof payload.user === 'object' &&
+    payload.user !== null
+      ? payload.user
+      : payload;
+  const id =
+    'id' in account
+      ? account.id
+      : 'userId' in account
+        ? account.userId
+        : undefined;
+  const userId =
+    typeof id === 'string'
+      ? id
+      : typeof id === 'number' && Number.isSafeInteger(id)
+        ? String(id)
+        : undefined;
+  if (!userId?.trim() || userId.length > 128) {
+    throw new Error('Backend login did not identify an authenticated user.');
+  }
+  const firstName =
+    'firstName' in account && typeof account.firstName === 'string'
+      ? account.firstName.trim()
+      : '';
+  const lastName =
+    'lastName' in account && typeof account.lastName === 'string'
+      ? account.lastName.trim()
+      : '';
+  const email =
+    'email' in account && typeof account.email === 'string'
+      ? account.email.trim()
+      : '';
+  return {
+    userId,
+    name: [firstName, lastName].filter(Boolean).join(' ') || email || 'Account',
+  };
+}
+
+function isLegacyCustomer(payload: unknown): boolean {
+  if (
+    typeof payload !== 'object' ||
+    payload === null ||
+    'role' in payload ||
+    'token' in payload ||
+    !('user' in payload) ||
+    typeof payload.user !== 'object' ||
+    payload.user === null
+  ) {
+    return false;
+  }
+  const account = payload.user;
+  return (
+    !('role' in account) &&
+    'id' in account &&
+    typeof account.id === 'string' &&
+    'email' in account &&
+    typeof account.email === 'string' &&
+    account.email.trim().length > 0
+  );
+}
+
 export class LoginController {
-  constructor(private readonly backendOrigin: string) {}
+  constructor(
+    private readonly backendOrigin: string,
+    private readonly loginSession: LoginSession,
+  ) {}
 
   private render(
     res: Response,
@@ -86,6 +156,7 @@ export class LoginController {
     }
 
     let response: globalThis.Response;
+    let payload: unknown;
     let role: string | undefined;
     let token: string | undefined;
     try {
@@ -97,8 +168,10 @@ export class LoginController {
         signal: AbortSignal.timeout(10_000),
       });
       if (response.status === 200) {
-        const payload: unknown = await response.json().catch(() => null);
-        role = extractRole(payload);
+        payload = await response.json().catch(() => null);
+        role =
+          extractRole(payload) ??
+          (isLegacyCustomer(payload) ? 'CUSTOMER' : undefined);
         token = extractToken(payload);
       } else {
         await response.body?.cancel();
@@ -127,6 +200,22 @@ export class LoginController {
         return;
       }
       res.setHeader('Cache-Control', 'no-store');
+      try {
+        const account = extractAccount(payload);
+        await this.loginSession.save(res, account.userId, account.name);
+      } catch (error) {
+        console.error(
+          'Unable to validate the login session:',
+          error instanceof Error ? error.name : 'Unknown error',
+        );
+        this.render(
+          res,
+          502,
+          email,
+          'Unable to confirm your login. Please try again.',
+        );
+        return;
+      }
       if (token) {
         setAuthCookie(res, token);
       } else {

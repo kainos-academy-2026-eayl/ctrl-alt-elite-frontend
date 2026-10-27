@@ -1,0 +1,29 @@
+{% extends "layout.njk" %}
+
+{% block title %}My Profile | Ctrl-Alt-Elite{% endblock %}
+{% block description %}A preview of your Ctrl-Alt-Elite profile.{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/assets/profile.css" />
+{% endblock %}
+
+{% block navigation %}
+<nav class="primary-nav" aria-label="Main navigation">
+    <a class="nav-link" href="/">Back to home</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="page-width profile-card" aria-labelledby="profile-heading">
+    <p class="eyebrow">Your account</p>
+    <h1 id="profile-heading">My Profile</h1>
+    <svg class="profile-preview-avatar" viewBox="0 0 64 64" width="80" height="80" aria-hidden="true" focusable="false">
+        <circle cx="32" cy="32" r="32" fill="#dcfce7" />
+        <circle cx="32" cy="24" r="11" fill="#14532d" />
+        <path d="M12 57a20 20 0 0 1 40 0" fill="#14532d" />
+    </svg>
+    <h2>{{ account.name }}</h2>
+    <p class="profile-copy">Welcome to your profile. This is a small preview of your account page.</p>
+    <p class="profile-placeholder">More account details and profile features are coming soon.</p>
+</section>
+{% endblock %}
