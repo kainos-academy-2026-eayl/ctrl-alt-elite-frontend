@@ -33,7 +33,7 @@ function extractToken(payload: unknown): string | undefined {
 }
 
 export class LoginController {
-  constructor(private readonly backendOrigin: string) { }
+  constructor(private readonly backendOrigin: string) {}
 
   private render(
     res: Response,

@@ -42,14 +42,8 @@ function requireSameOrigin(
 const VIEWS_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
 );
-const REGISTER_PAGE_PATH = fileURLToPath(
-  new URL('../src/views/register.html', import.meta.url),
-);
 const PACKAGE_JSON_PATH = fileURLToPath(
   new URL('../package.json', import.meta.url),
-);
-const UNAVAILABLE_PAGE_PATH = fileURLToPath(
-  new URL('../src/views/unavailable.html', import.meta.url),
 );
 const ASSETS_DIRECTORY = fileURLToPath(
   new URL('../src/assets/', import.meta.url),
@@ -132,7 +126,7 @@ export function createApp(
     try {
       const account = await loginSession.getAccount(req, res);
       res.type('html').send(
-        adminTemplates.render('homepage.html', {
+        adminTemplates.render('homepage.njk', {
           isAuthenticated: account !== null,
           accountName: account?.name ?? 'Account',
         }),
@@ -180,7 +174,7 @@ export function createApp(
 
   app.get('/register', async (_req: Request, res: Response) => {
     try {
-      const register = await readFile(REGISTER_PAGE_PATH, 'utf8');
+      const register = adminTemplates.render('register.njk');
       res.type('html').send(register);
     } catch (error) {
       console.error('Unable to load the register page:', error);
@@ -250,7 +244,7 @@ export function createApp(
 
   app.get('/unavailable', async (_req: Request, res: Response) => {
     try {
-      const unavailablePage = await readFile(UNAVAILABLE_PAGE_PATH, 'utf8');
+      const unavailablePage = adminTemplates.render('unavailable.njk');
       res.status(503).type('html').send(unavailablePage);
     } catch (error) {
       console.error('Unable to load the unavailable page:', error);
