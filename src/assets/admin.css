@@ -861,6 +861,10 @@ html[data-theme="dark"] {
   color: #e5e7eb;
 }
 
+html[data-theme="dark"] .admin-page {
+  background: #0f172a;
+}
+
 html[data-theme="dark"] .admin-sidebar {
   background: #052e16;
 }
