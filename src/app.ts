@@ -2,9 +2,9 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
-import { CatalogeController } from './server/controllers/cataloge.controller';
+import { CatalogeController } from './server/controllers/cataloge-controller';
 import { LoginController } from './server/controllers/login';
-import { CatalogeService } from './server/services/cataloge.service';
+import { CatalogeService } from './server/services/cataloge-service';
 import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,
