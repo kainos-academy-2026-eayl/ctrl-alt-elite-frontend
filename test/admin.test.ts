@@ -91,7 +91,7 @@ describe('admin portal pages', () => {
     });
 
     it('redirects to the unavailable page when the check fails', async () => {
-      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => { });
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
       try {
         const { status, res } = await get('/admin', 'broken-token');
         assert.equal(status, 302);

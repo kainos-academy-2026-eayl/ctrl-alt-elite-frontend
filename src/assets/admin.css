@@ -571,7 +571,6 @@
 }
 
 @media (max-width: 768px) {
-
   .customer-field,
   .customer-field-search {
     flex: 1 1 100%;
@@ -620,7 +619,7 @@
   gap: 0.6rem;
 }
 
-.admin-details>div {
+.admin-details > div {
   min-width: 0;
 }
 
@@ -797,7 +796,7 @@
   gap: 0.75rem;
 }
 
-.admin-empty+.admin-form {
+.admin-empty + .admin-form {
   margin-top: 0.75rem;
 }
 
