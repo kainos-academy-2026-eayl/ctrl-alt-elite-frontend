@@ -170,7 +170,7 @@ describe('customer detail rendering', () => {
     const customer = await createInMemoryCustomerSource().findById('c-2');
     assert.ok(customer);
     const html = renderCustomerDetail(customer);
-    assert.match(html, /<h1>Ben Okafor<\/h1>/);
+    assert.match(html, /<h1[^>]*>Ben Okafor<\/h1>/);
     assert.match(html, /ben\.okafor@example\.com/);
     assert.match(html, /19 Jan 2026/);
     for (const label of [

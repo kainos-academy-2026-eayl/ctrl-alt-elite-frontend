@@ -10,7 +10,7 @@
   <h2 id="summary-heading" class="visually-hidden">Summary</h2>
   <ul class="admin-summary-grid">
     {% for card in summaryCards %}
-    <li class="admin-card admin-summary-card">
+    <li class="admin-card admin-summary-card"{% if card.label == "Customers" %} data-widget="customerCount"{% endif %}>
       <span class="admin-summary-label">{{ card.label }}</span>
       <span class="admin-summary-value" data-summary-card="{{ card.label }}">{{ card.value }}</span>
     </li>
@@ -28,21 +28,21 @@
     </ul>
   </section>
 
-  <section class="admin-card" aria-labelledby="notifications-heading">
+  <section class="admin-card" aria-labelledby="notifications-heading" data-widget="notifications">
     <h2 id="notifications-heading">Notifications</h2>
     <div data-dashboard-notifications>
       <p class="admin-empty">No active notifications</p>
     </div>
   </section>
 
-  <section class="admin-card" aria-labelledby="activity-heading">
+  <section class="admin-card" aria-labelledby="activity-heading" data-widget="recentActivity">
     <h2 id="activity-heading">Recent Activity</h2>
     <div data-dashboard-activity>
       <p class="admin-empty">No recent activity available</p>
     </div>
   </section>
 
-  <section class="admin-card" aria-labelledby="status-heading">
+  <section class="admin-card" aria-labelledby="status-heading" data-widget="systemStatus">
     <h2 id="status-heading">System Status</h2>
     <ul class="admin-status-list" data-dashboard-status>
       {% for service in systemStatus %}
