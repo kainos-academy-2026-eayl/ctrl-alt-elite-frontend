@@ -1,0 +1,43 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<header class="admin-page-header">
+  <h1>Support Tickets</h1>
+  <p class="admin-subtitle" data-total-tickets hidden></p>
+</header>
+
+<form class="customer-toolbar" action="/admin/support" method="get" role="search">
+  <div class="customer-field customer-field-search">
+    <label for="ticket-search">Search by ticket ID, customer or subject</label>
+    <input id="ticket-search" name="q" type="search" maxlength="200" autocomplete="off" />
+  </div>
+  <div class="customer-field">
+    <label for="ticket-status-filter">Status</label>
+    <select id="ticket-status-filter" name="status">
+      <option value="">All statuses</option>
+      {% for status in statuses %}
+      <option value="{{ status.value }}">{{ status.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="customer-field">
+    <label for="ticket-category-filter">Category</label>
+    <select id="ticket-category-filter" name="category">
+      <option value="">All categories</option>
+      {% for category in categories %}
+      <option value="{{ category.value }}">{{ category.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="customer-button" type="submit">Apply</button>
+</form>
+
+<div data-tickets-results aria-live="polite">
+  <p class="admin-empty">Loading tickets&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to load tickets.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminSupport.js" defer></script>
+{% endblock %}

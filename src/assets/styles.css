@@ -172,6 +172,51 @@ h1 {
   line-height: 1.65;
 }
 
+.ticket-status {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #1f2937;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ticket-status-open {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.ticket-status-in-progress {
+  background: #fef3c7;
+  color: #78350f;
+}
+
+.ticket-status-resolved {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.ticket-status-closed {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.ticket-description {
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .site-footer {
   padding-block: 1.25rem;
   background: #14532d;

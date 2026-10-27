@@ -1,0 +1,14 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<a class="admin-back-link" href="/admin/support"><span aria-hidden="true">&larr;</span> Back to support tickets</a>
+
+<div data-ticket-detail aria-live="polite">
+  <p class="admin-empty">Loading ticket&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to load this ticket.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminSupportDetail.js" defer></script>
+{% endblock %}

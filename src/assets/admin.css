@@ -820,7 +820,8 @@
   font-weight: 700;
 }
 
-.admin-field input {
+.admin-field input,
+.admin-field select {
   min-height: 2.4rem;
   padding: 0.5rem 0.75rem;
   border: 1px solid #9ca3af;
@@ -830,7 +831,8 @@
   font: inherit;
 }
 
-.admin-field input:focus-visible {
+.admin-field input:focus-visible,
+.admin-field select:focus-visible {
   outline: 3px solid #22c55e;
   outline-offset: 2px;
 }
@@ -903,7 +905,8 @@ html[data-theme="dark"] .customer-table tr {
 
 html[data-theme="dark"] .customer-field input,
 html[data-theme="dark"] .customer-field select,
-html[data-theme="dark"] .admin-field input {
+html[data-theme="dark"] .admin-field input,
+html[data-theme="dark"] .admin-field select {
   border-color: #64748b;
   background: #0f172a;
   color: #e5e7eb;
