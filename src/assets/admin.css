@@ -11,6 +11,10 @@
   background: #f3f6f4;
 }
 
+html[data-theme="dark"] .admin-page {
+  background: #0f172a;
+}
+
 .admin-shell {
   display: flex;
   flex: 1;
