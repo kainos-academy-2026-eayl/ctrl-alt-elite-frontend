@@ -2,8 +2,9 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
-import { registerProductApp } from './product_app';
+import { CatalogeController } from './server/controllers/cataloge.controller';
 import { LoginController } from './server/controllers/login';
+import { CatalogeService } from './server/services/cataloge.service';
 import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,
@@ -95,7 +96,17 @@ export function createApp(backendOrigin: string): Express {
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
-  registerProductApp(app, backendOrigin);
+  app.use(
+    '/product-catalog',
+    express.static(
+      fileURLToPath(new URL('../product_catalog/', import.meta.url)),
+      { index: false },
+    ),
+  );
+  const catalogeController = new CatalogeController(
+    new CatalogeService(backendOrigin),
+  );
+  app.get('/products', catalogeController.showProducts);
 
   app.get('/', async (_req: Request, res: Response) => {
     try {
