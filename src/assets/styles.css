@@ -205,6 +205,121 @@ h1 {
   line-height: 1.65;
 }
 
+.ticket-status {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #1f2937;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ticket-status-open {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.ticket-status-in-progress {
+  background: #fef3c7;
+  color: #78350f;
+}
+
+.ticket-status-resolved {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.ticket-status-closed {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.ticket-description {
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.ticket-comments {
+  margin-top: 1.25rem;
+  max-width: 64rem;
+}
+
+.ticket-comment-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.ticket-comment {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.ticket-comment-staff {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.ticket-comment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.ticket-comment-meta time {
+  margin-left: auto;
+  color: #4b5563;
+}
+
+.ticket-comment-badge {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #14532d;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.ticket-comment-body {
+  margin: 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.ticket-comment-empty {
+  margin: 0 0 1.25rem;
+  color: #4b5563;
+}
+
+.ticket-comment-closed {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px dashed #9ca3af;
+  border-radius: 0.5rem;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .site-footer {
   padding-block: 1.25rem;
   background: #14532d;

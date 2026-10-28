@@ -15,8 +15,15 @@ import { DASHBOARD_WIDGETS } from './util/adminSettings';
 import { loadAdminFirstName, loadAdminProfile } from './util/adminUser';
 import { createApiProxy } from './util/apiProxy';
 import { clearAuthCookie, readAuthCookie } from './util/authCookie';
+import { createCustomerGuard } from './util/customerGuard';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
 import { LoginSession } from './util/loginSession';
+import {
+  MAX_DESCRIPTION_LENGTH,
+  MAX_SUBJECT_LENGTH,
+  TICKET_CATEGORIES,
+  TICKET_STATUSES,
+} from './util/supportTickets';
 
 function requireSameOrigin(
   req: Request,
@@ -191,6 +198,48 @@ export function createApp(
     }
   });
 
+  // Like the admin pages, these are page shells: src/controllers/support.ts
+  // loads and submits tickets through /api/support/tickets in the browser.
+  app.use('/account', createCustomerGuard());
+
+  function renderSupportPage(
+    res: Response,
+    page: 'list' | 'new' | 'detail',
+    title: string,
+  ): void {
+    res.render(
+      'support',
+      {
+        page,
+        title,
+        categories: TICKET_CATEGORIES,
+        maxSubjectLength: MAX_SUBJECT_LENGTH,
+        maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
+        currentYear: new Date().getFullYear(),
+      },
+      (error: Error | null, html: string) => {
+        if (error) {
+          console.error('Unable to load the support page:', error);
+          res.redirect('/unavailable');
+          return;
+        }
+        res.type('html').send(html);
+      },
+    );
+  }
+
+  app.get('/account/support', (_req: Request, res: Response) => {
+    renderSupportPage(res, 'list', 'My support tickets');
+  });
+
+  app.get('/account/support/new', (_req: Request, res: Response) => {
+    renderSupportPage(res, 'new', 'Create a ticket');
+  });
+
+  app.get('/account/support/:id', (_req: Request, res: Response) => {
+    renderSupportPage(res, 'detail', 'Ticket details');
+  });
+
   app.use('/admin', createAdminGuard(backendOrigin));
 
   // The server only serves page shells. Live data is loaded in the browser by the
@@ -222,6 +271,22 @@ export function createApp(
     await renderAdminPage(req, res, 'admin/customer-detail.njk', {
       title: 'Customer details',
       activeSlug: 'customers',
+    });
+  });
+
+  app.get('/admin/support', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/support.njk', {
+      title: 'Support Tickets',
+      activeSlug: 'support',
+      statuses: TICKET_STATUSES,
+      categories: TICKET_CATEGORIES,
+    });
+  });
+
+  app.get('/admin/support/:id', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/support-detail.njk', {
+      title: 'Ticket details',
+      activeSlug: 'support',
     });
   });
 
