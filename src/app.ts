@@ -4,7 +4,7 @@ import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { CatalogController } from './server/controllers/catalog-controller';
 import { LoginController } from './server/controllers/login';
-import { CatalogService } from './server/services/catalog-service';
+import { CatalogService } from './server/services/cataloge-service';
 import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,

@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import type { CatalogService } from '../services/catalog-service';
+import type { CatalogService } from '../services/cataloge-service';
 
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}

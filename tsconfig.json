@@ -25,6 +25,10 @@
     "incremental": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
   },
-  "include": ["src/**/*", "test/**/*", "product_catalog/product_catalog_nunjuck_file.ts"],
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "product_catalog/product_catalog_nunjuck_file.ts"
+  ],
   "exclude": ["node_modules", "dist", "src/controllers"]
 }
