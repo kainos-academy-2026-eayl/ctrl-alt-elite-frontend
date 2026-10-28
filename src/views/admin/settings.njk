@@ -1,0 +1,130 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<div class="admin-settings-view">
+<header class="admin-page-header">
+  <h1>Settings</h1>
+  <p class="admin-subtitle">Manage your profile, appearance and dashboard, and check the system.</p>
+</header>
+
+<div class="admin-settings">
+  <section class="admin-card" aria-labelledby="profile-heading">
+    <div class="admin-card-header">
+      <h2 id="profile-heading">Profile</h2>
+      {% if profile %}
+      <button class="admin-link-button" type="button" hidden data-profile-edit>Edit</button>
+      {% endif %}
+    </div>
+    {% if profile %}
+    <dl class="admin-details" data-settings-profile>
+      <div>
+        <dt>Name</dt>
+        <dd data-profile-name>{{ profile.name }}</dd>
+      </div>
+      <div>
+        <dt>Email Address</dt>
+        <dd data-profile-email>{{ profile.email }}</dd>
+      </div>
+      <div>
+        <dt>Role</dt>
+        <dd>{{ profile.role }}</dd>
+      </div>
+    </dl>
+    <form class="admin-form" method="post" action="/admin/settings" novalidate hidden data-profile-form>
+      <div class="admin-field">
+        <label for="profile-name">Name</label>
+        <input id="profile-name" name="name" type="text" autocomplete="name" maxlength="100" value="{{ profile.name }}" required />
+      </div>
+      <div class="admin-field">
+        <label for="profile-email">Email Address</label>
+        <input id="profile-email" name="email" type="email" autocomplete="email" maxlength="254" value="{{ profile.email }}" required />
+      </div>
+      <p class="admin-error" role="alert" data-profile-error hidden></p>
+      <div class="admin-form-actions">
+        <button class="customer-button" type="submit" data-profile-save>Save Changes</button>
+        <button class="admin-secondary-button" type="button" data-profile-cancel>Cancel</button>
+      </div>
+    </form>
+    <p class="admin-success" role="status" data-profile-success hidden></p>
+    {% else %}
+    <p class="admin-error" role="alert" data-settings-profile-error>Unable to load your profile details. Please try again later.</p>
+    {% endif %}
+  </section>
+
+  <section class="admin-card" aria-labelledby="password-heading">
+    <h2 id="password-heading">Change Password</h2>
+    <form class="admin-form" method="post" action="/admin/settings" novalidate data-password-form>
+      <div class="admin-field">
+        <label for="current-password">Current Password</label>
+        <input id="current-password" name="currentPassword" type="password" autocomplete="current-password" required />
+      </div>
+      <div class="admin-field">
+        <label for="new-password">New Password</label>
+        <input id="new-password" name="newPassword" type="password" autocomplete="new-password" required />
+      </div>
+      <div class="admin-field">
+        <label for="confirm-password">Confirm Password</label>
+        <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required />
+      </div>
+      <p class="admin-error" role="alert" data-password-error hidden></p>
+      <p class="admin-success" role="status" data-password-success hidden></p>
+      <button class="customer-button" type="submit" data-password-submit>Save Changes</button>
+    </form>
+  </section>
+
+  <section class="admin-card" aria-labelledby="appearance-heading">
+    <h2 id="appearance-heading">Appearance</h2>
+    <label class="admin-switch" for="dark-mode-toggle">
+      <span>Dark Mode</span>
+      <input id="dark-mode-toggle" type="checkbox" role="switch" data-dark-mode-toggle />
+    </label>
+  </section>
+
+  <section class="admin-card" aria-labelledby="preferences-heading">
+    <h2 id="preferences-heading">Dashboard Preferences</h2>
+    <p class="admin-empty">Choose which widgets appear on the dashboard.</p>
+    <div class="admin-bulk-actions" role="group" aria-label="Bulk widget actions">
+      <button class="admin-link-button" type="button" data-widgets-show-all>Show all</button>
+      <button class="admin-link-button" type="button" data-widgets-hide-all>Hide all</button>
+    </div>
+    <ul class="admin-option-list">
+      {% for widget in dashboardWidgets %}
+      <li>
+        <label class="admin-switch" for="widget-{{ widget.id }}">
+          <span>{{ widget.label }}</span>
+          <input id="widget-{{ widget.id }}" type="checkbox" checked data-widget-toggle="{{ widget.id }}" />
+        </label>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="admin-card" aria-labelledby="system-heading">
+    <h2 id="system-heading">System Information</h2>
+    <ul class="admin-status-list">
+      <li>
+        <span>Application Version</span>
+        <span class="admin-status-badge" data-system-version>{{ appVersion }}</span>
+      </li>
+      <li>
+        <span>Frontend Status</span>
+        <span class="admin-status-badge is-ok" data-system-frontend>Operational</span>
+      </li>
+      <li>
+        <span>Backend Status</span>
+        <span data-system-backend><span class="admin-status-badge">Status unavailable</span></span>
+      </li>
+      <li>
+        <span>Database Status</span>
+        <span data-system-database><span class="admin-status-badge">Status unavailable</span></span>
+      </li>
+    </ul>
+    <p class="admin-error" role="alert" data-system-error hidden>Unable to load system status. The backend may be unavailable.</p>
+  </section>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminSettings.js" defer></script>
+{% endblock %}

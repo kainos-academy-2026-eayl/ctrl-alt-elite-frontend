@@ -5,6 +5,8 @@ import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
 
+const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
+
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => {
@@ -124,7 +126,9 @@ describe('frontend routes', () => {
       }
     });
     const backendOrigin = await listen(backend);
-    frontend = createServer(createApp(backendOrigin));
+    frontend = createServer(
+      createApp(backendOrigin, { jwtSecret: TEST_JWT_SECRET }),
+    );
     base = await listen(frontend);
   });
 
@@ -250,7 +254,9 @@ describe('frontend routes', () => {
         const cancel = vi.fn();
         const upstream =
           status === 200
-            ? new Response(JSON.stringify({ role: 'CUSTOMER' }), { status })
+            ? new Response(JSON.stringify({ userId: 1, role: 'CUSTOMER' }), {
+                status,
+              })
             : new Response(new ReadableStream({ cancel }), { status });
         const originalFetch = globalThis.fetch;
         const fetchMock = vi
@@ -312,10 +318,18 @@ describe('frontend routes', () => {
       assert.equal(res.status, 303);
       assert.equal(res.headers.get('location'), '/admin');
       assert.equal(res.headers.get('cache-control'), 'no-store');
-      const cookie = res.headers.get('set-cookie') ?? '';
+      const cookie =
+        res.headers
+          .getSetCookie()
+          .find((value) => value.startsWith('auth_token=')) ?? '';
       assert.match(cookie, /^auth_token=admin\.jwt\.token;/);
       assert.match(cookie, /HttpOnly/i);
       assert.match(cookie, /SameSite=Lax/i);
+      assert.ok(
+        res.headers
+          .getSetCookie()
+          .some((value) => value.startsWith('ctrl_alt_elite_login=')),
+      );
       await res.text();
     });
 
@@ -329,7 +343,10 @@ describe('frontend routes', () => {
         }),
         redirect: 'manual',
       });
-      const cookie = res.headers.get('set-cookie') ?? '';
+      const cookie =
+        res.headers
+          .getSetCookie()
+          .find((value) => value.startsWith('auth_token=')) ?? '';
       assert.match(cookie, /^auth_token=;/);
       assert.match(cookie, /Expires=Thu, 01 Jan 1970/);
       await res.text();

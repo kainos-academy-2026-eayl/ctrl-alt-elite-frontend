@@ -1,3 +1,16 @@
+const DEFAULT_ADMIN_ROLE = 'Administrator';
+
+export interface AdminProfile {
+  name: string;
+  email: string;
+  role: string;
+}
+
+function readText(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 // The login response and the token carry no name, so the name is looked up by
 // the token's subject (user id). The token was already authorised by the admin
 // guard, so it is only decoded here, never trusted for access decisions.
@@ -63,4 +76,41 @@ export async function loadAdminFirstName(
     console.error('Unable to load the admin name:', error);
   }
   return null;
+}
+
+const ADMIN_PROFILE_PATH = '/api/admin/profile';
+
+function formatRole(role: string): string {
+  return role.toLowerCase() === 'admin' ? DEFAULT_ADMIN_ROLE : role;
+}
+
+// Never throws: the settings page shows an error message when this returns null.
+export async function loadAdminProfile(
+  backendOrigin: string,
+  token: string | null,
+): Promise<AdminProfile | null> {
+  if (!token) return null;
+
+  try {
+    const response = await fetch(new URL(ADMIN_PROFILE_PATH, backendOrigin), {
+      headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(3000),
+    });
+    if (response.status !== 200) {
+      await response.body?.cancel();
+      return null;
+    }
+    const body: unknown = await response.json();
+    if (typeof body !== 'object' || body === null) return null;
+    const record = body as Record<string, unknown>;
+    const name = readText(record, 'name');
+    const email = readText(record, 'email');
+    const role = readText(record, 'role');
+    if (!name || !email || !role) return null;
+    return { name, email, role: formatRole(role) };
+  } catch (error) {
+    console.error('Unable to load the admin profile:', error);
+    return null;
+  }
 }
