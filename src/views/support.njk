@@ -1,0 +1,74 @@
+{% extends "layout.njk" %}
+
+{% block title %}{{ title }} | Support | Ctrl-Alt-Elite{% endblock %}
+{% block description %}Create and manage your Ctrl-Alt-Elite support tickets.{% endblock %}
+{% block bodyClass %}support-page{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="/assets/support.css" />
+{% endblock %}
+
+{% block navigation %}
+      <nav class="primary-nav" aria-label="Main navigation">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/account/support">My tickets</a>
+        <form action="/logout" method="post">
+          <button class="support-link-button" type="submit">Log out</button>
+        </form>
+      </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="support-container" data-support-page="{{ page }}">
+      <header class="support-header">
+        <div>
+          <p class="eyebrow">Support</p>
+          <h1>{{ title }}</h1>
+        </div>
+        {% if page == "list" %}
+        <a class="support-button" href="/account/support/new">Create ticket</a>
+        {% else %}
+        <a class="support-link" href="/account/support">Back to my tickets</a>
+        {% endif %}
+      </header>
+
+      {% if page == "list" %}
+      <div data-support-list aria-live="polite">
+        <p class="support-muted">Loading your tickets&hellip;</p>
+      </div>
+      {% elif page == "detail" %}
+      <div data-support-detail aria-live="polite">
+        <p class="support-muted">Loading ticket&hellip;</p>
+      </div>
+      {% else %}
+      <section class="support-card" aria-labelledby="new-ticket-heading">
+        <h2 id="new-ticket-heading">Tell us what went wrong</h2>
+        <form class="support-form" novalidate data-ticket-form>
+          <div class="support-field">
+            <label for="ticket-subject">Subject</label>
+            <input id="ticket-subject" name="subject" type="text" maxlength="{{ maxSubjectLength }}" required />
+          </div>
+          <div class="support-field">
+            <label for="ticket-category">Issue category</label>
+            <select id="ticket-category" name="category" required>
+              <option value="" selected disabled>Select a category</option>
+              {% for category in categories %}
+              <option value="{{ category.value }}">{{ category.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="support-field">
+            <label for="ticket-description">Description</label>
+            <textarea id="ticket-description" name="description" rows="7" maxlength="{{ maxDescriptionLength }}" required></textarea>
+          </div>
+          <p class="support-error" role="alert" hidden data-ticket-error></p>
+          <button class="support-button" type="submit" data-ticket-submit>Submit ticket</button>
+        </form>
+      </section>
+      {% endif %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/controllers/support.js" defer></script>
+{% endblock %}

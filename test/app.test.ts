@@ -641,6 +641,8 @@ describe('frontend routes', () => {
       ['/controllers/adminDashboard.js', /javascript/],
       ['/controllers/adminCustomers.js', /javascript/],
       ['/controllers/adminCustomerDetail.js', /javascript/],
+      ['/assets/support.css', /text\/css/],
+      ['/controllers/support.js', /javascript/],
     ] as const) {
       it(`serves ${path}`, async () => {
         const res = await fetch(`${base}${path}`);
@@ -675,8 +677,13 @@ describe('frontend routes', () => {
           const res = await fetch(new URL(ref, `${base}${page}`), {
             redirect: 'manual',
           });
+          // Protected pages redirect to the login page when logged out.
+          const resolves =
+            res.status === 200 ||
+            res.status === 503 ||
+            (res.status === 303 && res.headers.get('location') === '/login');
           assert.ok(
-            res.status === 200 || res.status === 503,
+            resolves,
             `${page} references ${ref} which returned ${res.status}`,
           );
         }
