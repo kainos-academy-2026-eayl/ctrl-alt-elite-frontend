@@ -42,7 +42,7 @@ function getProducts(payload: unknown): BackendProduct[] {
   throw new Error('The products API returned an unexpected response.');
 }
 
-export class CatalogeService {
+export class CatalogService {
   constructor(private readonly backendOrigin: string) {}
 
   async getProducts(): Promise<{

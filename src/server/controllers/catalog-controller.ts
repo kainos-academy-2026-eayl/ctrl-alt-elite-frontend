@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express';
-import type { CatalogeService } from '../services/cataloge-service';
+import type { CatalogService } from '../services/catalog-service';
 
-export class CatalogeController {
-  constructor(private readonly catalogeService: CatalogeService) {}
+export class CatalogController {
+  constructor(private readonly catalogService: CatalogService) {}
 
   showProducts = async (_req: Request, res: Response): Promise<void> => {
     try {
-      const { products, categories } = await this.catalogeService.getProducts();
+      const { products, categories } = await this.catalogService.getProducts();
       res.render('product.njk', { products, categories });
     } catch (error) {
       console.error('Unable to load products from the backend:', error);

@@ -2,9 +2,9 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
-import { CatalogeController } from './server/controllers/cataloge-controller';
+import { CatalogController } from './server/controllers/catalog-controller';
 import { LoginController } from './server/controllers/login';
-import { CatalogeService } from './server/services/cataloge-service';
+import { CatalogService } from './server/services/catalog-service';
 import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,
@@ -145,10 +145,10 @@ export function createApp(
       { index: false },
     ),
   );
-  const catalogeController = new CatalogeController(
-    new CatalogeService(backendOrigin),
+  const catalogController = new CatalogController(
+    new CatalogService(backendOrigin),
   );
-  app.get('/products', catalogeController.showProducts);
+  app.get('/products', catalogController.showProducts);
 
   app.get('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
