@@ -39,7 +39,7 @@ export function renderTicketDetail(ticket: Ticket): string {
   const category = ticket.category
     ? `<div><dt>Category</dt><dd>${escapeHtml(categoryLabel(ticket.category))}</dd></div>`
     : '';
-  return `<section class="support-card" aria-labelledby="ticket-heading"><h2 id="ticket-heading">${escapeHtml(ticket.subject)}</h2><dl class="ticket-details"><div><dt>Ticket ID</dt><dd>${escapeHtml(formatTicketId(ticket.id))}</dd></div><div><dt>Status</dt><dd>${renderStatus(ticket.status)}</dd></div><div><dt>Created</dt><dd>${dateHtml(ticket)}</dd></div>${category}<div><dt>Description</dt><dd class="ticket-description">${escapeHtml(ticket.description)}</dd></div></dl></section>`;
+  return `<section class="support-card" aria-labelledby="ticket-heading"><h2 id="ticket-heading">${escapeHtml(ticket.subject)}</h2><dl class="ticket-details"><div><dt>Ticket ID</dt><dd>${escapeHtml(formatTicketId(ticket.id))}</dd></div><div><dt>Status</dt><dd data-ticket-status>${renderStatus(ticket.status)}</dd></div><div><dt>Created</dt><dd>${dateHtml(ticket)}</dd></div>${category}<div><dt>Description</dt><dd class="ticket-description">${escapeHtml(ticket.description)}</dd></div></dl></section>`;
 }
 
 export function renderSupportMessage(title: string, message: string): string {

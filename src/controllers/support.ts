@@ -7,11 +7,13 @@ import {
   validateTicketForm,
 } from '../util/supportTickets';
 import {
+  renderStatus,
   renderSupportMessage,
   renderTicketDetail,
   renderTicketList,
   SUPPORT_PATH,
 } from '../util/supportViews';
+import { mountComments } from './ticketCommentsUi';
 
 function redirectToLogin(): void {
   window.location.assign('/login');
@@ -53,6 +55,21 @@ async function showDetail(): Promise<void> {
   try {
     const ticket = await findTicket(id);
     container.innerHTML = ticket ? renderTicketDetail(ticket) : notFound;
+    if (ticket) {
+      const host = document.createElement('div');
+      container.append(host);
+      void mountComments(host, {
+        ticketId: ticket.id,
+        audience: 'customer',
+        status: ticket.status,
+        onUnauthorised: redirectToLogin,
+        fetchStatus: async () => (await findTicket(ticket.id))?.status,
+        onStatusChange: (status) => {
+          const display = container.querySelector('[data-ticket-status]');
+          if (display) display.innerHTML = renderStatus(status);
+        },
+      });
+    }
   } catch (error) {
     if (error instanceof UnauthorisedError) return redirectToLogin();
     console.error('Unable to load ticket:', error);

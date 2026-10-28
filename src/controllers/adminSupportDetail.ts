@@ -4,11 +4,13 @@ import {
   renderAdminTicketMessage,
 } from '../util/adminSupportViews';
 import {
+  statusKey,
   TICKET_ID_PATTERN,
   UnauthorisedError,
   validateTicketStatus,
 } from '../util/supportTickets';
 import { renderStatus } from '../util/supportViews';
+import { type CommentsController, mountComments } from './ticketCommentsUi';
 
 const container = document.querySelector<HTMLElement>('[data-ticket-detail]');
 if (!container) {
@@ -26,13 +28,22 @@ function redirectToLogin(): void {
   window.location.assign('/login');
 }
 
+let commentsController: CommentsController | undefined;
+
+// Reflects a status change in the details card and the status dropdown.
+function showStatus(status: string): void {
+  const display = detail.querySelector<HTMLElement>('[data-ticket-status]');
+  if (display) display.innerHTML = renderStatus(status);
+  const select = detail.querySelector<HTMLSelectElement>('#ticket-status');
+  if (select) select.value = statusKey(status);
+}
+
 function setUpStatusForm(ticketId: string): void {
   const form = getElement<HTMLFormElement>('[data-ticket-status-form]');
   const select = getElement<HTMLSelectElement>('#ticket-status');
   const save = getElement<HTMLButtonElement>('[data-ticket-status-save]');
   const error = getElement<HTMLElement>('[data-ticket-status-error]');
   const success = getElement<HTMLElement>('[data-ticket-status-success]');
-  const display = getElement<HTMLElement>('[data-ticket-status]');
 
   function show(element: HTMLElement, message: string): void {
     error.hidden = true;
@@ -55,7 +66,9 @@ function setUpStatusForm(ticketId: string): void {
     save.disabled = false;
 
     if (result.ok) {
-      display.innerHTML = renderStatus(result.ticket?.status ?? status);
+      const saved = result.ticket?.status ?? status;
+      showStatus(saved);
+      commentsController?.setStatus(saved);
       show(success, result.message);
     } else if (result.unauthorised) {
       redirectToLogin();
@@ -88,6 +101,16 @@ async function loadTicket(): Promise<void> {
     }
     detail.innerHTML = renderAdminTicketDetail(ticket);
     setUpStatusForm(ticket.id);
+    const host = document.createElement('div');
+    detail.append(host);
+    commentsController = await mountComments(host, {
+      ticketId: ticket.id,
+      audience: 'admin',
+      status: ticket.status,
+      onUnauthorised: redirectToLogin,
+      fetchStatus: async () => (await findAdminTicket(ticket.id))?.status,
+      onStatusChange: showStatus,
+    });
   } catch (error) {
     if (error instanceof UnauthorisedError) return redirectToLogin();
     console.error('Unable to load ticket:', error);
