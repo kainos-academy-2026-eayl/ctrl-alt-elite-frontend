@@ -191,34 +191,30 @@
   font-size: 1.25rem;
 }
 
-.basket-toast {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 10;
-  max-width: min(100% - 2rem, 360px);
-  padding: 0.9rem 1.25rem;
+.basket-notice {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
   border-left: 0.35rem solid #22c55e;
   border-radius: 0.5rem;
-  background: #14532d;
-  color: #f8fafc;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(17 24 39 / 0.12);
+  color: #14532d;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgb(17 24 39 / 0.25);
-  opacity: 0;
-  transform: translateY(0.5rem);
-  transition:
-    opacity 0.2s ease-in-out,
-    transform 0.2s ease-in-out;
-  pointer-events: none;
+  line-height: 1.5;
 }
 
-.basket-toast--visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.basket-toast--error {
+.basket-notice--error {
   border-left-color: #ef4444;
+  color: #111827;
+}
+
+.basket-checkout-note {
+  margin: 0;
+  color: #475569;
+}
+
+.basket-table form {
+  margin: 0;
 }
 
 /* Small screens: show each basket line as a stacked card. */

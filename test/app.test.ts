@@ -1,12 +1,101 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { createServer, type IncomingMessage, type Server } from 'node:http';
+import {
+  createServer,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
 import { SAMPLE_PRODUCTS } from '../src/data/sampleProducts';
 
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
+
+/** In-memory stand-in for the backend basket API (/api/baskets). */
+const fakeBaskets = new Map<string, Map<string, number>>();
+
+function sendJson(res: ServerResponse, status: number, body: unknown): void {
+  res.statusCode = status;
+  res.setHeader('content-type', 'application/json');
+  res.end(JSON.stringify(body));
+}
+
+function basketBody(id: string, quantities: Map<string, number>) {
+  const items = [...quantities].map(([productId, quantity]) => {
+    const product = SAMPLE_PRODUCTS.find((p) => p.id === productId);
+    const unitPricePence = Math.round(Number(product?.price) * 100);
+    return {
+      id: productId,
+      name: product?.name ?? productId,
+      unitPricePence,
+      quantity,
+      lineTotalPence: unitPricePence * quantity,
+    };
+  });
+  return {
+    id,
+    items,
+    itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+    totalPence: items.reduce((sum, item) => sum + item.lineTotalPence, 0),
+    maxQuantity: 99,
+  };
+}
+
+async function handleFakeBasketApi(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  const [, , , basketId, , productId] = (req.url ?? '').split('/');
+  if (req.method === 'POST' && basketId === undefined) {
+    const id = randomUUID();
+    fakeBaskets.set(id, new Map());
+    sendJson(res, 201, basketBody(id, new Map()));
+    return;
+  }
+  const quantities = fakeBaskets.get(basketId ?? '');
+  if (!basketId || !quantities) {
+    sendJson(res, 404, { message: 'Basket not found.' });
+    return;
+  }
+  if (req.method === 'POST') {
+    const { productId: added } = JSON.parse(await readBody(req));
+    if (!SAMPLE_PRODUCTS.some((product) => product.id === added)) {
+      sendJson(res, 400, { message: 'That product is not available.' });
+      return;
+    }
+    quantities.set(added, (quantities.get(added) ?? 0) + 1);
+  } else if (req.method === 'PATCH' && productId) {
+    const { change } = JSON.parse(await readBody(req));
+    const id = decodeURIComponent(productId);
+    quantities.set(id, (quantities.get(id) ?? 0) + change);
+  } else if (req.method === 'DELETE' && productId) {
+    quantities.delete(decodeURIComponent(productId));
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+  sendJson(res, 200, basketBody(basketId, quantities));
+}
+
+/** Keeps the cookies a browser would send back, like a tiny cookie jar. */
+function updateCookies(cookies: string, res: Response): string {
+  const jar = new Map(
+    cookies
+      .split('; ')
+      .filter(Boolean)
+      .map((pair) => [pair.slice(0, pair.indexOf('=')), pair] as const),
+  );
+  for (const setCookie of res.headers.getSetCookie()) {
+    const pair = setCookie.split(';')[0] ?? '';
+    const name = pair.slice(0, pair.indexOf('='));
+    if (pair.endsWith('=')) jar.delete(name);
+    else jar.set(name, pair);
+  }
+  return [...jar.values()].join('; ');
+}
 
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
@@ -91,6 +180,8 @@ describe('frontend routes', () => {
       } else if (req.url === '/api/missing') {
         res.statusCode = 404;
         res.end('nope');
+      } else if (req.url?.startsWith('/api/baskets')) {
+        await handleFakeBasketApi(req, res);
       } else {
         res.statusCode = 500;
         res.end();
@@ -116,13 +207,22 @@ describe('frontend routes', () => {
       assert.match(await res.text(), /<html/i);
     });
 
-    it('renders an Add to Basket button for each product', async () => {
+    it('renders an Add to Basket form for each product without JavaScript', async () => {
       const html = await (await fetch(`${base}/`)).text();
-      const buttons = html.match(/data-add-to-basket /g) ?? [];
-      assert.equal(buttons.length, SAMPLE_PRODUCTS.length);
+      const forms = html.match(
+        /<form action="\/basket\/items" method="post">/g,
+      );
+      assert.equal(forms?.length, SAMPLE_PRODUCTS.length);
       assert.match(
         html,
-        new RegExp(`data-product-id="${SAMPLE_PRODUCTS[0]?.id}"`),
+        new RegExp(
+          `<input type="hidden" name="productId" value="${SAMPLE_PRODUCTS[0]?.id}" />`,
+        ),
+      );
+      assert.doesNotMatch(html, /basket\.js/);
+      assert.match(
+        html,
+        /<span class="basket-badge" aria-hidden="true">0<\/span>/,
       );
     });
   });
@@ -535,14 +635,113 @@ describe('frontend routes', () => {
     });
   });
 
-  describe('GET /basket', () => {
-    it('renders the basket page as html', async () => {
-      const res = await fetch(`${base}/basket`);
+  describe('basket (server-rendered, no JavaScript)', () => {
+    const product = SAMPLE_PRODUCTS[0] as (typeof SAMPLE_PRODUCTS)[number];
+    const productPath = `/basket/items/${encodeURIComponent(product.id)}`;
+
+    function post(
+      path: string,
+      cookies: string,
+      form: Record<string, string> = {},
+    ) {
+      return fetch(`${base}${path}`, {
+        method: 'POST',
+        redirect: 'manual',
+        headers: {
+          origin: base,
+          cookie: cookies,
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(form),
+      });
+    }
+
+    async function getBasketPage(cookies: string) {
+      const res = await fetch(`${base}/basket`, {
+        headers: { cookie: cookies },
+      });
+      return { res, html: await res.text() };
+    }
+
+    it('renders an empty basket page with no scripts', async () => {
+      const { res, html } = await getBasketPage('');
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
-      const html = await res.text();
       assert.match(html, /<h1 id="basket-heading">Your basket<\/h1>/);
-      assert.match(html, /data-basket-checkout/);
+      assert.match(html, /Your basket is empty\./);
+      assert.doesNotMatch(html, /<script/);
+    });
+
+    it('adds, updates and removes items with form posts and redirects', async () => {
+      let cookies = '';
+
+      const added = await post('/basket/items', cookies, {
+        productId: product.id,
+      });
+      assert.equal(added.status, 303);
+      assert.equal(added.headers.get('location'), '/basket');
+      cookies = updateCookies(cookies, added);
+      assert.match(cookies, /basket_id=/);
+
+      let page = await getBasketPage(cookies);
+      cookies = updateCookies(cookies, page.res);
+      assert.match(
+        page.html,
+        new RegExp(`${product.name} added to your basket`),
+      );
+      assert.match(page.html, /<span class="basket-quantity__value">1<\/span>/);
+      assert.match(page.html, /Checkout is coming soon\./);
+
+      const increased = await post(productPath, cookies, { change: '1' });
+      assert.equal(increased.status, 303);
+      page = await getBasketPage(cookies);
+      assert.match(page.html, /<span class="basket-quantity__value">2<\/span>/);
+      assert.match(page.html, /Total \(2 items\)/);
+
+      const home = await (
+        await fetch(`${base}/`, { headers: { cookie: cookies } })
+      ).text();
+      assert.match(
+        home,
+        /<span class="basket-badge" aria-hidden="true">2<\/span>/,
+      );
+
+      const removed = await post(`${productPath}/remove`, cookies);
+      assert.equal(removed.status, 303);
+      cookies = updateCookies(cookies, removed);
+      page = await getBasketPage(cookies);
+      assert.match(
+        page.html,
+        new RegExp(`${product.name} removed from your basket`),
+      );
+      assert.match(page.html, /Your basket is empty\./);
+    });
+
+    it('shows the backend message when a product cannot be added', async () => {
+      const res = await post('/basket/items', '', {
+        productId: 'not-a-product',
+      });
+      assert.equal(res.status, 303);
+      const { html } = await getBasketPage(updateCookies('', res));
+      assert.match(html, /That product is not available\./);
+    });
+
+    it('starts again when the saved basket no longer exists', async () => {
+      const { res, html } = await getBasketPage(`basket_id=${randomUUID()}`);
+      assert.match(html, /We could not find your previous basket/);
+      assert.match(res.headers.getSetCookie().join(), /basket_id=;/);
+    });
+
+    it('rejects form posts from other sites', async () => {
+      const res = await fetch(`${base}/basket/items`, {
+        method: 'POST',
+        headers: {
+          origin: 'https://evil.example',
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ productId: product.id }),
+      });
+      assert.equal(res.status, 403);
     });
   });
 
@@ -573,7 +772,6 @@ describe('frontend routes', () => {
       ['/assets/register.css', /text\/css/],
       ['/controllers/register.js', /javascript/],
       ['/assets/basket.css', /text\/css/],
-      ['/controllers/basket.js', /javascript/],
       ['/assets/admin.css', /text\/css/],
       ['/controllers/adminDashboard.js', /javascript/],
       ['/controllers/adminCustomers.js', /javascript/],

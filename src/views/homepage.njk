@@ -46,8 +46,8 @@
           <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
           </svg>
-          <span class="basket-visually-hidden" data-basket-link-label>Basket, 0 items</span>
-          <span class="basket-badge" data-basket-count aria-hidden="true">0</span>
+          <span class="basket-visually-hidden">Basket, {{ basketSummary.itemCountText }}</span>
+          <span class="basket-badge" aria-hidden="true">{{ basketSummary.itemCount }}</span>
         </a>
       </nav>
     </div>
@@ -69,9 +69,11 @@
         {% for product in products %}
         <li class="product-card">
           <h3>{{ product.name }}</h3>
-          <p class="product-price">£{{ product.price }}</p>
-          <button type="button" class="basket-button" data-add-to-basket data-product-id="{{ product.id }}"
-            data-product-name="{{ product.name }}" data-product-price="{{ product.price }}">Add to Basket</button>
+          <p class="product-price">{{ product.price }}</p>
+          <form action="{{ addToBasketUrl }}" method="post">
+            <input type="hidden" name="productId" value="{{ product.id }}" />
+            <button type="submit" class="basket-button">Add to Basket</button>
+          </form>
         </li>
         {% endfor %}
       </ul>
@@ -85,7 +87,6 @@
     </div>
   </footer>
   <script src="/controllers/script.js" defer></script>
-  <script src="/controllers/basket.js" defer></script>
 </body>
 
 </html>

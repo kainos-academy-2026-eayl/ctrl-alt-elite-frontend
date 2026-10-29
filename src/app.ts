@@ -3,7 +3,12 @@ import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { SAMPLE_PRODUCTS } from './data/sampleProducts';
+import { errorHandler, renderErrorPage } from './middleware/errorHandler';
+import { requireSameOrigin } from './middleware/requireSameOrigin';
+import { createBasketRouter } from './routes/basketRouter';
+import { BasketController } from './server/controllers/basketController';
 import { LoginController } from './server/controllers/login';
+import { BasketService } from './services/basketService';
 import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,
@@ -25,27 +30,7 @@ import {
   TICKET_CATEGORIES,
   TICKET_STATUSES,
 } from './util/supportTickets';
-
-function requireSameOrigin(
-  req: Request,
-  res: Response,
-  next: (error?: unknown) => void,
-): void {
-  const source = req.get('origin') ?? req.get('referer');
-  if (source) {
-    try {
-      const requestOrigin = new URL(`${req.protocol}://${req.get('host')}`)
-        .origin;
-      if (new URL(source).origin === requestOrigin) {
-        next();
-        return;
-      }
-    } catch {
-      // Reject malformed origin and referer values.
-    }
-  }
-  res.status(403).type('text').send('Forbidden');
-}
+import { buildHomepage } from './views/homepage.page';
 
 const VIEWS_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
@@ -97,6 +82,9 @@ export function createApp(
   app.set('view engine', 'njk');
   const loginSession = new LoginSession(jwtSecret);
   const loginController = new LoginController(backendOrigin, loginSession);
+  const basketController = new BasketController(
+    new BasketService(backendOrigin),
+  );
 
   // noCache is a loader option, so it must be set on the loader to take effect.
   const adminTemplates = new nunjucks.Environment(
@@ -141,14 +129,18 @@ export function createApp(
   app.get('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
-      const account = await loginSession.getAccount(req, res);
-      res.type('html').send(
-        adminTemplates.render('homepage.njk', {
-          isAuthenticated: account !== null,
-          accountName: account?.name ?? 'Account',
-          products: SAMPLE_PRODUCTS,
-        }),
-      );
+      const [account, basket] = await Promise.all([
+        loginSession.getAccount(req, res),
+        basketController.getHeaderBasket(req),
+      ]);
+      res
+        .type('html')
+        .send(
+          adminTemplates.render(
+            'homepage.njk',
+            buildHomepage({ account, products: SAMPLE_PRODUCTS, basket }),
+          ),
+        );
     } catch (error) {
       console.error('Unable to load the homepage:', error);
       res.redirect('/unavailable');
@@ -200,20 +192,7 @@ export function createApp(
     }
   });
 
-  app.get('/basket', (_req: Request, res: Response) => {
-    res.render(
-      'basket',
-      { browseProductsUrl: '/' },
-      (error: Error | null, html?: string) => {
-        if (error || html === undefined) {
-          console.error('Unable to load the basket page:', error);
-          res.redirect('/unavailable');
-          return;
-        }
-        res.type('html').send(html);
-      },
-    );
-  });
+  app.use('/basket', createBasketRouter(basketController));
 
   // Like the admin pages, these are page shells: src/controllers/support.ts
   // loads and submits tickets through /api/support/tickets in the browser.
@@ -237,7 +216,7 @@ export function createApp(
       (error: Error | null, html: string) => {
         if (error) {
           console.error('Unable to load the support page:', error);
-          res.redirect('/unavailable');
+          renderErrorPage(res);
           return;
         }
         res.type('html').send(html);
@@ -349,6 +328,9 @@ export function createApp(
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', uptime: process.uptime() });
   });
+
+  // Must be registered after every route so it catches their errors.
+  app.use(errorHandler);
 
   return app;
 }
