@@ -25,6 +25,10 @@
     "incremental": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "product_catalog/product_catalog_content.ts"
+  ],
   "exclude": ["node_modules", "dist", "src/controllers"]
 }
