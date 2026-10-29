@@ -16,7 +16,15 @@ import { DASHBOARD_WIDGETS } from './util/adminSettings';
 import { loadAdminFirstName, loadAdminProfile } from './util/adminUser';
 import { createApiProxy } from './util/apiProxy';
 import { clearAuthCookie, readAuthCookie } from './util/authCookie';
+import { createCustomerGuard } from './util/customerGuard';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
+import { LoginSession } from './util/loginSession';
+import {
+  MAX_DESCRIPTION_LENGTH,
+  MAX_SUBJECT_LENGTH,
+  TICKET_CATEGORIES,
+  TICKET_STATUSES,
+} from './util/supportTickets';
 
 function requireSameOrigin(
   req: Request,
@@ -42,14 +50,8 @@ function requireSameOrigin(
 const VIEWS_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
 );
-const REGISTER_PAGE_PATH = fileURLToPath(
-  new URL('../src/views/register.html', import.meta.url),
-);
 const PACKAGE_JSON_PATH = fileURLToPath(
   new URL('../package.json', import.meta.url),
-);
-const UNAVAILABLE_PAGE_PATH = fileURLToPath(
-  new URL('../src/views/unavailable.html', import.meta.url),
 );
 const ASSETS_DIRECTORY = fileURLToPath(
   new URL('../src/assets/', import.meta.url),
@@ -77,7 +79,14 @@ async function readAppVersion(): Promise<string> {
   return 'Unknown';
 }
 
-export function createApp(backendOrigin: string): Express {
+export interface AppOptions {
+  jwtSecret?: string;
+}
+
+export function createApp(
+  backendOrigin: string,
+  { jwtSecret = process.env.JWT_SECRET }: AppOptions = {},
+): Express {
   const app = express();
   app.set('views', VIEWS_DIRECTORY);
   nunjucks.configure([VIEWS_DIRECTORY], {
@@ -86,7 +95,8 @@ export function createApp(backendOrigin: string): Express {
     noCache: process.env.NODE_ENV !== 'production',
   });
   app.set('view engine', 'njk');
-  const loginController = new LoginController(backendOrigin);
+  const loginSession = new LoginSession(jwtSecret);
+  const loginController = new LoginController(backendOrigin, loginSession);
 
   // noCache is a loader option, so it must be set on the loader to take effect.
   const adminTemplates = new nunjucks.Environment(
@@ -96,15 +106,24 @@ export function createApp(backendOrigin: string): Express {
     { autoescape: true },
   );
 
-  function renderAdminPage(
+  async function renderAdminPage(
+    req: Request,
     res: Response,
     template: string,
     context: Record<string, unknown>,
-  ): void {
+  ): Promise<void> {
+    const profile =
+      'profile' in context
+        ? context.profile
+        : await loadAdminProfile(
+            backendOrigin,
+            readAuthCookie(req.headers.cookie),
+          );
     try {
       res.type('html').send(
         adminTemplates.render(template, {
           navItems: ADMIN_NAV_ITEMS,
+          profile,
           ...context,
         }),
       );
@@ -119,19 +138,21 @@ export function createApp(backendOrigin: string): Express {
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
 
-  app.get('/', (_req: Request, res: Response) => {
-    res.render(
-      'homepage',
-      { products: SAMPLE_PRODUCTS },
-      (error: Error | null, html?: string) => {
-        if (error || html === undefined) {
-          console.error('Unable to load the homepage:', error);
-          res.redirect('/unavailable');
-          return;
-        }
-        res.type('html').send(html);
-      },
-    );
+  app.get('/', async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      const account = await loginSession.getAccount(req, res);
+      res.type('html').send(
+        adminTemplates.render('homepage.njk', {
+          isAuthenticated: account !== null,
+          accountName: account?.name ?? 'Account',
+          products: SAMPLE_PRODUCTS,
+        }),
+      );
+    } catch (error) {
+      console.error('Unable to load the homepage:', error);
+      res.redirect('/unavailable');
+    }
   });
 
   app.get('/login', loginController.show);
@@ -142,15 +163,36 @@ export function createApp(backendOrigin: string): Express {
     loginController.submit,
   );
 
+  app.get('/profile', async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      const account = await loginSession.getAccount(req, res);
+      if (!account) {
+        res.redirect('/login');
+        return;
+      }
+      res.type('html').send(
+        adminTemplates.render('profile.njk', {
+          account,
+          currentYear: new Date().getFullYear(),
+        }),
+      );
+    } catch (error) {
+      console.error('Unable to load the profile page:', error);
+      res.redirect('/unavailable');
+    }
+  });
+
   app.post('/logout', requireSameOrigin, (_req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     clearAuthCookie(res);
+    loginSession.clear(res);
     res.redirect(303, '/login');
   });
 
   app.get('/register', async (_req: Request, res: Response) => {
     try {
-      const register = await readFile(REGISTER_PAGE_PATH, 'utf8');
+      const register = adminTemplates.render('register.njk');
       res.type('html').send(register);
     } catch (error) {
       console.error('Unable to load the register page:', error);
@@ -173,6 +215,48 @@ export function createApp(backendOrigin: string): Express {
     );
   });
 
+  // Like the admin pages, these are page shells: src/controllers/support.ts
+  // loads and submits tickets through /api/support/tickets in the browser.
+  app.use('/account', createCustomerGuard());
+
+  function renderSupportPage(
+    res: Response,
+    page: 'list' | 'new' | 'detail',
+    title: string,
+  ): void {
+    res.render(
+      'support',
+      {
+        page,
+        title,
+        categories: TICKET_CATEGORIES,
+        maxSubjectLength: MAX_SUBJECT_LENGTH,
+        maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
+        currentYear: new Date().getFullYear(),
+      },
+      (error: Error | null, html: string) => {
+        if (error) {
+          console.error('Unable to load the support page:', error);
+          res.redirect('/unavailable');
+          return;
+        }
+        res.type('html').send(html);
+      },
+    );
+  }
+
+  app.get('/account/support', (_req: Request, res: Response) => {
+    renderSupportPage(res, 'list', 'My support tickets');
+  });
+
+  app.get('/account/support/new', (_req: Request, res: Response) => {
+    renderSupportPage(res, 'new', 'Create a ticket');
+  });
+
+  app.get('/account/support/:id', (_req: Request, res: Response) => {
+    renderSupportPage(res, 'detail', 'Ticket details');
+  });
+
   app.use('/admin', createAdminGuard(backendOrigin));
 
   // The server only serves page shells. Live data is loaded in the browser by the
@@ -182,7 +266,7 @@ export function createApp(backendOrigin: string): Express {
       backendOrigin,
       readAuthCookie(req.headers.cookie),
     );
-    renderAdminPage(res, 'admin/dashboard.njk', {
+    await renderAdminPage(req, res, 'admin/dashboard.njk', {
       title: 'Dashboard',
       firstName,
       activeSlug: 'dashboard',
@@ -192,18 +276,34 @@ export function createApp(backendOrigin: string): Express {
     });
   });
 
-  app.get('/admin/customers', (_req: Request, res: Response) => {
-    renderAdminPage(res, 'admin/customers.njk', {
+  app.get('/admin/customers', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/customers.njk', {
       title: 'Customers',
       activeSlug: 'customers',
       sortOptions: CUSTOMER_SORT_OPTIONS,
     });
   });
 
-  app.get('/admin/customers/:id', (_req: Request, res: Response) => {
-    renderAdminPage(res, 'admin/customer-detail.njk', {
+  app.get('/admin/customers/:id', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/customer-detail.njk', {
       title: 'Customer details',
       activeSlug: 'customers',
+    });
+  });
+
+  app.get('/admin/support', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/support.njk', {
+      title: 'Support Tickets',
+      activeSlug: 'support',
+      statuses: TICKET_STATUSES,
+      categories: TICKET_CATEGORIES,
+    });
+  });
+
+  app.get('/admin/support/:id', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/support-detail.njk', {
+      title: 'Ticket details',
+      activeSlug: 'support',
     });
   });
 
@@ -212,7 +312,7 @@ export function createApp(backendOrigin: string): Express {
       loadAdminProfile(backendOrigin, readAuthCookie(req.headers.cookie)),
       readAppVersion(),
     ]);
-    renderAdminPage(res, 'admin/settings.njk', {
+    await renderAdminPage(req, res, 'admin/settings.njk', {
       title: 'Settings',
       activeSlug: 'settings',
       profile,
@@ -221,13 +321,13 @@ export function createApp(backendOrigin: string): Express {
     });
   });
 
-  app.get('/admin/:section', (req: Request, res: Response, next) => {
+  app.get('/admin/:section', async (req: Request, res: Response, next) => {
     const adminModule = findAdminModule(String(req.params.section));
     if (!adminModule) {
       next();
       return;
     }
-    renderAdminPage(res, 'admin/module.njk', {
+    await renderAdminPage(req, res, 'admin/module.njk', {
       title: adminModule.label,
       activeSlug: adminModule.slug,
     });
@@ -235,7 +335,7 @@ export function createApp(backendOrigin: string): Express {
 
   app.get('/unavailable', async (_req: Request, res: Response) => {
     try {
-      const unavailablePage = await readFile(UNAVAILABLE_PAGE_PATH, 'utf8');
+      const unavailablePage = adminTemplates.render('unavailable.njk');
       res.status(503).type('html').send(unavailablePage);
     } catch (error) {
       console.error('Unable to load the unavailable page:', error);
