@@ -317,6 +317,25 @@ export function createApp(
     });
   });
 
+  for (const [path, title] of [
+    ['/admin/inventory/new', 'Add product'],
+    ['/admin/inventory/:id', 'Edit product'],
+  ] as const) {
+    app.get(path, async (req: Request, res: Response) => {
+      await renderAdminPage(req, res, 'admin/inventory-form.njk', {
+        title,
+        activeSlug: 'inventory',
+      });
+    });
+  }
+
+  app.get('/admin/inventory', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/inventory.njk', {
+      title: 'Inventory',
+      activeSlug: 'inventory',
+    });
+  });
+
   app.get('/admin/:section', async (req: Request, res: Response, next) => {
     const adminModule = findAdminModule(String(req.params.section));
     if (!adminModule) {
