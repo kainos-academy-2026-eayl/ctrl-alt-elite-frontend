@@ -17,6 +17,8 @@ const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 const BACKEND_ORIGIN = 'https://backend.example.test';
 const fetch = globalThis.fetch;
 
+//mwhahahahahahahahahahaha i will always spy on you
+
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
     server.listen(0, '127.0.0.1', () => {
@@ -27,6 +29,12 @@ function listen(server: Server): Promise<string> {
 
 function close(server: Server): Promise<void> {
   return new Promise((resolve) => server.close(() => resolve()));
+}
+
+function mockConsoleError() {
+  const errorLog = vi.fn();
+  vi.stubGlobal('console', { ...console, error: errorLog });
+  return errorLog;
 }
 
 describe('frontend routes', () => {
@@ -40,101 +48,109 @@ describe('frontend routes', () => {
 
   beforeEach(() => {
     loginRequests.length = 0;
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-      const req = new Request(input, init);
-      assert.equal(new URL(req.url).origin, BACKEND_ORIGIN);
-      const path = new URL(req.url).pathname;
-      if (path === '/api/auth/login') {
-        const body = (await req.json()) as { email: string; password: string };
-        loginRequests.push({
-          method: req.method,
-          body,
-          contentType: req.headers.get('content-type') ?? undefined,
-        });
-        if (body.email === 'unavailable@example.com') {
-          return Response.json(
-            { message: 'Private backend error' },
-            { status: 500 },
-          );
-        } else if (
-          body.email === 'user@example.com' &&
-          body.password === 'CorrectPassword@1'
-        ) {
-          return Response.json({
-            userId: 1,
-            email: body.email,
-            role: 'CUSTOMER',
-          });
-        } else if (
-          body.email === 'admin@example.com' &&
-          body.password === 'CorrectPassword@1'
-        ) {
-          return Response.json({
-            userId: 2,
-            email: body.email,
-            role: 'ADMIN',
-            token: 'admin.jwt.token',
-          });
-        } else if (body.email === 'unknownrole@example.com') {
-          return Response.json({ userId: 3, role: 'SUPERUSER' });
-        } else if (body.email === 'norole@example.com') {
-          return Response.json({ userId: 4 });
-        } else {
-          return Response.json(
-            { message: 'Incorrect email or password.' },
-            { status: 401 },
-          );
-        }
-      } else if (path === '/api/echo') {
-        return Response.json(
-          {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input, init) => {
+        const req = new Request(input, init);
+        assert.equal(new URL(req.url).origin, BACKEND_ORIGIN);
+        const path = new URL(req.url).pathname;
+        if (path === '/api/auth/login') {
+          const body = (await req.json()) as {
+            email: string;
+            password: string;
+          };
+          loginRequests.push({
             method: req.method,
-            body: await req.text(),
-            auth: req.headers.get('authorization'),
-          },
-          {
-            status: 201,
-            headers: [
-              ['x-custom', 'yes'],
-              ['set-cookie', 'a=1; Path=/'],
-              ['set-cookie', 'b=2; Path=/'],
-            ],
-          },
-        );
-      } else if (path === '/api/missing') {
-        return new Response('nope', { status: 404 });
-      } else if (path === '/api/products') {
-        return Response.json({
-          products: [
+            body,
+            contentType: req.headers.get('content-type') ?? undefined,
+          });
+          if (body.email === 'unavailable@example.com') {
+            return Response.json(
+              { message: 'Private backend error' },
+              { status: 500 },
+            );
+          } else if (
+            body.email === 'user@example.com' &&
+            body.password === 'CorrectPassword@1'
+          ) {
+            return Response.json({
+              userId: 1,
+              email: body.email,
+              role: 'CUSTOMER',
+            });
+          } else if (
+            body.email === 'admin@example.com' &&
+            body.password === 'CorrectPassword@1'
+          ) {
+            return Response.json({
+              userId: 2,
+              email: body.email,
+              role: 'ADMIN',
+              token: 'admin.jwt.token',
+            });
+          } else if (body.email === 'unknownrole@example.com') {
+            return Response.json({ userId: 3, role: 'SUPERUSER' });
+          } else if (body.email === 'norole@example.com') {
+            return Response.json({ userId: 4 });
+          } else {
+            return Response.json(
+              { message: 'Incorrect email or password.' },
+              { status: 401 },
+            );
+          }
+        } else if (path === '/api/echo') {
+          return Response.json(
             {
-              id: 'database-product',
-              name: 'Backend Product',
-              category: 'Test category',
-              price: 25,
-              image: 'https://example.com/product.jpg',
-              description: 'Loaded from the mocked backend response.',
-              stock: 12,
+              method: req.method,
+              body: await req.text(),
+              auth: req.headers.get('authorization'),
             },
-            ...[0, '7', undefined, null, '', ' ', 'invalid', -1, 1.5].map(
-              (stock, index) => ({
-                id: `stock-${index}`,
-                name: `Stock fixture ${index}`,
-                category: ['Audio', 'Photography', 'Test category'][index % 3],
-                price: 10,
+            {
+              status: 201,
+              headers: [
+                ['x-custom', 'yes'],
+                ['set-cookie', 'a=1; Path=/'],
+                ['set-cookie', 'b=2; Path=/'],
+              ],
+            },
+          );
+        } else if (path === '/api/missing') {
+          return new Response('nope', { status: 404 });
+        } else if (path === '/api/products') {
+          return Response.json({
+            products: [
+              {
+                id: 'database-product',
+                name: 'Backend Product',
+                category: 'Test category',
+                price: 25,
                 image: 'https://example.com/product.jpg',
-                description: 'Stock test product.',
-                stock,
-              }),
-            ),
-          ],
-        });
-      }
-      throw new Error(`Unexpected backend request: ${req.method} ${req.url}`);
-    });
+                description: 'Loaded from the mocked backend response.',
+                stock: 12,
+              },
+              ...[0, '7', undefined, null, '', ' ', 'invalid', -1, 1.5].map(
+                (stock, index) => ({
+                  id: `stock-${index}`,
+                  name: `Stock fixture ${index}`,
+                  category: ['Audio', 'Photography', 'Test category'][
+                    index % 3
+                  ],
+                  price: 10,
+                  image: 'https://example.com/product.jpg',
+                  description: 'Stock test product.',
+                  stock,
+                }),
+              ),
+            ],
+          });
+        }
+        throw new Error(`Unexpected backend request: ${req.method} ${req.url}`);
+      }),
+    );
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   beforeAll(async () => {
@@ -196,30 +212,26 @@ describe('frontend routes', () => {
 
     it('redirects to the unavailable page if rendering fails', async () => {
       const app = createApp('http://127.0.0.1:3001');
-      vi.spyOn(app, 'render').mockImplementationOnce(
-        (
-          _name: string,
-          optionsOrCallback?: object | ((error: Error, html: string) => void),
-          callback?: (error: Error, html: string) => void,
-        ) => {
-          const onRendered =
-            typeof optionsOrCallback === 'function'
-              ? optionsOrCallback
-              : callback;
-          assert.ok(onRendered);
-          onRendered(new Error('Template rendering failed'), '');
+      app.set(
+        'view',
+        class FailingView {
+          path = 'login.njk';
+
+          render(_options: object, callback: (error: Error) => void) {
+            callback(new Error('Template rendering failed'));
+          }
         },
       );
       const server = createServer(app);
       const origin = await listen(server);
-      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const errorLog = mockConsoleError();
       try {
         const res = await fetch(`${origin}/login`, { redirect: 'manual' });
         assert.equal(res.status, 302);
         assert.equal(res.headers.get('location'), '/unavailable');
         assert.equal(errorLog.mock.calls.length, 1);
       } finally {
-        errorLog.mockRestore();
+        vi.unstubAllGlobals();
         await close(server);
       }
     });
@@ -270,12 +282,8 @@ describe('frontend routes', () => {
               })
             : new Response(new ReadableStream({ cancel }), { status });
         const originalFetch = fetch;
-        const fetchMock = vi
-          .spyOn(globalThis, 'fetch')
-          .mockResolvedValueOnce(upstream);
-        const errorLog = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {});
+        vi.mocked(globalThis.fetch).mockResolvedValueOnce(upstream);
+        mockConsoleError();
         try {
           const res = await originalFetch(`${base}/login`, {
             method: 'POST',
@@ -293,18 +301,17 @@ describe('frontend routes', () => {
           assert.equal(upstream.bodyUsed, true);
           await res.text();
         } finally {
-          fetchMock.mockRestore();
-          errorLog.mockRestore();
+          vi.unstubAllGlobals();
         }
       });
     }
 
     it('renders an error for a successful response without a body', async () => {
       const originalFetch = fetch;
-      const fetchMock = vi
-        .spyOn(globalThis, 'fetch')
-        .mockResolvedValueOnce(new Response(null, { status: 200 }));
-      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+        new Response(null, { status: 200 }),
+      );
+      mockConsoleError();
       try {
         const res = await originalFetch(`${base}/login`, {
           method: 'POST',
@@ -319,8 +326,7 @@ describe('frontend routes', () => {
         assert.equal(res.headers.get('location'), null);
         assert.match(await res.text(), /role is not recognised/);
       } finally {
-        fetchMock.mockRestore();
-        errorLog.mockRestore();
+        vi.unstubAllGlobals();
       }
     });
 
@@ -375,9 +381,7 @@ describe('frontend routes', () => {
 
     for (const email of ['unknownrole@example.com', 'norole@example.com']) {
       it(`shows an error and stays on login for an unknown role (${email})`, async () => {
-        const errorLog = vi
-          .spyOn(console, 'error')
-          .mockImplementation(() => {});
+        mockConsoleError();
         try {
           const res = await submit(email, 'password');
           assert.equal(res.status, 403);
@@ -387,7 +391,7 @@ describe('frontend routes', () => {
             /role="alert">Your account role is not recognised\./,
           );
         } finally {
-          errorLog.mockRestore();
+          vi.unstubAllGlobals();
         }
       });
     }
@@ -401,10 +405,8 @@ describe('frontend routes', () => {
         { status: 500 },
       );
       const originalFetch = fetch;
-      const fetchMock = vi
-        .spyOn(globalThis, 'fetch')
-        .mockResolvedValueOnce(upstream);
-      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce(upstream);
+      const errorLog = mockConsoleError();
       try {
         const res = await originalFetch(`${base}/login`, {
           method: 'POST',
@@ -421,8 +423,7 @@ describe('frontend routes', () => {
           ['Unable to reach the backend login API:', cancellationError],
         ]);
       } finally {
-        fetchMock.mockRestore();
-        errorLog.mockRestore();
+        vi.unstubAllGlobals();
       }
     });
 
@@ -516,7 +517,7 @@ describe('frontend routes', () => {
     });
 
     it('renders a safe error when the backend fails', async () => {
-      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const errorLog = mockConsoleError();
       try {
         const res = await submit('unavailable@example.com', 'password');
         assert.equal(res.status, 502);
@@ -525,14 +526,14 @@ describe('frontend routes', () => {
         assert.doesNotMatch(html, /Private backend error/);
         assert.equal(errorLog.mock.calls.length, 1);
       } finally {
-        errorLog.mockRestore();
+        vi.unstubAllGlobals();
       }
     });
 
     it('renders an error when the backend cannot be reached', async () => {
       const connectionError = new TypeError('fetch failed');
       vi.mocked(globalThis.fetch).mockRejectedValueOnce(connectionError);
-      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const errorLog = mockConsoleError();
       try {
         const res = await fetch(`${base}/login`, {
           method: 'POST',
@@ -549,7 +550,7 @@ describe('frontend routes', () => {
           ['Unable to reach the backend login API:', connectionError],
         ]);
       } finally {
-        errorLog.mockRestore();
+        vi.unstubAllGlobals();
       }
     });
   });
@@ -738,7 +739,7 @@ describe('frontend routes', () => {
     it('returns 502 when the backend is unreachable', async () => {
       const connectionError = new TypeError('fetch failed');
       vi.mocked(globalThis.fetch).mockRejectedValueOnce(connectionError);
-      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const errorLog = mockConsoleError();
       try {
         const res = await fetch(`${base}/api/anything`);
         assert.equal(res.status, 502);
@@ -749,7 +750,7 @@ describe('frontend routes', () => {
           ['Unable to reach the backend API:', connectionError],
         ]);
       } finally {
-        errorLog.mockRestore();
+        vi.unstubAllGlobals();
       }
     });
   });
