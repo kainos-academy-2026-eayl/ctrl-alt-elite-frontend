@@ -22,6 +22,7 @@ const UPDATE_FAILED_MESSAGE =
   'Sorry, we could not update your basket. Please try again.';
 const LOAD_FAILED_MESSAGE =
   "We couldn't load your basket. Please try again in a little while.";
+const EMPTY_CHECKOUT_MESSAGE = 'Your basket is empty.';
 const BASKET_RESET_MESSAGE =
   'We could not find your previous basket, so a new one has been started. Please check your basket before continuing.';
 
@@ -82,6 +83,7 @@ export class BasketController {
       basket,
       notice,
       loadErrorMessage,
+      focusTarget: typeof req.query.focus === 'string' ? req.query.focus : null,
       now: new Date(),
     });
     res.render('basket', page, (error: Error | null, html: string) => {
@@ -92,6 +94,68 @@ export class BasketController {
       }
       res.type('html').send(html);
     });
+  };
+
+  showCheckout = async (req: Request, res: Response): Promise<void> => {
+    res.setHeader('Cache-Control', 'no-store');
+    const basketId = readBasketCookie(req.headers.cookie);
+    if (basketId === null) {
+      res.redirect(303, '/basket');
+      return;
+    }
+
+    let basket: BasketResponseDto;
+    try {
+      basket = await this.basketService.getBasket(basketId);
+    } catch (error) {
+      this.redirectAfterFailedUpdate(res, error);
+      return;
+    }
+    if (basket.items.length === 0) {
+      res.redirect(303, '/basket');
+      return;
+    }
+
+    const page = buildBasketPage({
+      basket,
+      notice: null,
+      loadErrorMessage: '',
+      now: new Date(),
+    });
+    res.render('checkout', page, (error: Error | null, html: string) => {
+      if (error) {
+        console.error('Unable to load the checkout page:', error);
+        this.renderUnavailablePage(res);
+        return;
+      }
+      res.type('html').send(html);
+    });
+  };
+
+  startCheckout = async (req: Request, res: Response): Promise<void> => {
+    res.setHeader('Cache-Control', 'no-store');
+    const basketId = readBasketCookie(req.headers.cookie);
+    if (basketId === null) {
+      this.redirectToBasket(res, {
+        isError: true,
+        message: EMPTY_CHECKOUT_MESSAGE,
+      });
+      return;
+    }
+
+    try {
+      const basket = await this.basketService.getBasket(basketId);
+      if (basket.items.length === 0) {
+        this.redirectToBasket(res, {
+          isError: true,
+          message: EMPTY_CHECKOUT_MESSAGE,
+        });
+        return;
+      }
+      res.redirect(303, '/checkout');
+    } catch (error) {
+      this.redirectAfterFailedUpdate(res, error);
+    }
   };
 
   addItem = async (req: Request, res: Response): Promise<void> => {
@@ -138,8 +202,27 @@ export class BasketController {
     }
 
     try {
-      await this.basketService.changeItemQuantity(basketId, productId, change);
-      this.redirectToBasket(res);
+      const basket = await this.basketService.changeItemQuantity(
+        basketId,
+        productId,
+        change,
+      );
+      const item = basket.items.find((line) => line.id === productId);
+      const focusDirection =
+        item === undefined
+          ? null
+          : change === 1
+            ? item.quantity < basket.maxQuantity
+              ? 'increase'
+              : 'decrease'
+            : item.quantity > 1
+              ? 'decrease'
+              : 'increase';
+      this.redirectToBasket(
+        res,
+        undefined,
+        focusDirection === null ? 'heading' : `${productId}:${focusDirection}`,
+      );
     } catch (error) {
       this.redirectAfterFailedUpdate(res, error);
     }
@@ -158,10 +241,14 @@ export class BasketController {
 
     try {
       const name = await this.basketService.removeItem(basketId, productId);
-      this.redirectToBasket(res, {
-        isError: false,
-        message: `${name ?? 'Item'} removed from your basket`,
-      });
+      this.redirectToBasket(
+        res,
+        {
+          isError: false,
+          message: `${name ?? 'Item'} removed from your basket`,
+        },
+        'heading',
+      );
     } catch (error) {
       this.redirectAfterFailedUpdate(res, error);
     }
@@ -200,11 +287,18 @@ export class BasketController {
   }
 
   /** Post/Redirect/Get: every form post ends with a redirect to the basket. */
-  private redirectToBasket(res: Response, notice?: BasketNotice): void {
+  private redirectToBasket(
+    res: Response,
+    notice?: BasketNotice,
+    focusTarget?: string,
+  ): void {
     if (notice) {
       setBasketNotice(res, notice);
     }
-    res.redirect(303, '/basket');
+    const url = focusTarget
+      ? `/basket?focus=${encodeURIComponent(focusTarget)}`
+      : '/basket';
+    res.redirect(303, url);
   }
 
   private renderUnavailablePage(res: Response): void {

@@ -12,12 +12,15 @@ export interface BasketSummary {
 }
 
 export interface BasketLineView {
+  id: string;
   name: string;
   quantity: number;
   unitPrice: string;
   lineTotal: string;
   canDecrease: boolean;
   canIncrease: boolean;
+  focusDecrease: boolean;
+  focusIncrease: boolean;
   updateUrl: string;
   removeUrl: string;
 }
@@ -30,6 +33,7 @@ export interface BasketPage {
   total: string;
   notice: BasketNotice | null;
   loadErrorMessage: string;
+  focusTarget: string | null;
   currentYear: number;
 }
 
@@ -38,6 +42,7 @@ export interface BasketPageInput {
   basket: BasketResponseDto | null;
   notice: BasketNotice | null;
   loadErrorMessage: string;
+  focusTarget?: string | null;
   now: Date;
 }
 
@@ -65,15 +70,19 @@ export function toBasketSummary(
 function toLineView(
   line: BasketResponseDto['items'][number],
   maxQuantity: number,
+  focusTarget: string | null,
 ): BasketLineView {
   const itemUrl = `/basket/items/${encodeURIComponent(line.id)}`;
   return {
+    id: line.id,
     name: line.name,
     quantity: line.quantity,
     unitPrice: formatPrice(line.unitPricePence),
     lineTotal: formatPrice(line.lineTotalPence),
     canDecrease: line.quantity > 1,
     canIncrease: line.quantity < maxQuantity,
+    focusDecrease: focusTarget === `${line.id}:decrease`,
+    focusIncrease: focusTarget === `${line.id}:increase`,
     updateUrl: itemUrl,
     removeUrl: `${itemUrl}/remove`,
   };
@@ -83,10 +92,11 @@ export function buildBasketPage({
   basket,
   notice,
   loadErrorMessage,
+  focusTarget = null,
   now,
 }: BasketPageInput): BasketPage {
   const lines = (basket?.items ?? []).map((line) =>
-    toLineView(line, basket?.maxQuantity ?? 0),
+    toLineView(line, basket?.maxQuantity ?? 0, focusTarget),
   );
   return {
     basketSummary: toBasketSummary(basket),
@@ -96,6 +106,7 @@ export function buildBasketPage({
     total: formatPrice(basket?.totalPence ?? 0),
     notice,
     loadErrorMessage,
+    focusTarget,
     currentYear: now.getFullYear(),
   };
 }

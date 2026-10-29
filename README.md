@@ -11,6 +11,8 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `POST /basket/items` | "Add to Basket" form (`productId`), then redirects to `/basket` |
 | `POST /basket/items/:productId` | Quantity +/− form (`change` = `1` or `-1`), then redirects to `/basket` |
 | `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
+| `POST /basket/checkout` | Verifies the saved basket and redirects to `/checkout` |
+| `GET /checkout` | Server-rendered review of the saved basket items and total |
 | `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)). [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
 | `GET /admin/customers/:id` | Customer details shell. [adminCustomerDetail.ts](src/controllers/adminCustomerDetail.ts) loads the customer from the backend. |

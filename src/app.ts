@@ -192,6 +192,7 @@ export function createApp(
     }
   });
 
+  app.get('/checkout', basketController.showCheckout);
   app.use('/basket', createBasketRouter(basketController));
 
   // Like the admin pages, these are page shells: src/controllers/support.ts

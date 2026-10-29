@@ -38,7 +38,7 @@ export function isBasketId(value: unknown): value is string {
 }
 
 function isWholeNumber(value: unknown, minimum: number): value is number {
-  return Number.isInteger(value) && (value as number) >= minimum;
+  return Number.isSafeInteger(value) && (value as number) >= minimum;
 }
 
 function isBasketLineDto(
@@ -49,6 +49,8 @@ function isBasketLineDto(
     return false;
   }
   const line = value as Record<string, unknown>;
+  const expectedLineTotal =
+    (line.unitPricePence as number) * (line.quantity as number);
   return (
     typeof line.id === 'string' &&
     line.id !== '' &&
@@ -56,8 +58,8 @@ function isBasketLineDto(
     isWholeNumber(line.unitPricePence, 0) &&
     isWholeNumber(line.quantity, 1) &&
     (line.quantity as number) <= maxQuantity &&
-    line.lineTotalPence ===
-      (line.unitPricePence as number) * (line.quantity as number)
+    Number.isSafeInteger(expectedLineTotal) &&
+    line.lineTotalPence === expectedLineTotal
   );
 }
 
@@ -84,9 +86,12 @@ export function isBasketResponseDto(
     return false;
   }
   const lines = basket.items as BasketLineDto[];
+  const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const totalPence = lines.reduce((sum, line) => sum + line.lineTotalPence, 0);
   return (
-    basket.itemCount === lines.reduce((sum, line) => sum + line.quantity, 0) &&
-    basket.totalPence ===
-      lines.reduce((sum, line) => sum + line.lineTotalPence, 0)
+    Number.isSafeInteger(itemCount) &&
+    Number.isSafeInteger(totalPence) &&
+    basket.itemCount === itemCount &&
+    basket.totalPence === totalPence
   );
 }

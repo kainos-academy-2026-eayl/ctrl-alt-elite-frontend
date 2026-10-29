@@ -26,7 +26,7 @@
 
 {% block content %}
 <section class="page-width basket" aria-labelledby="basket-heading">
-  <h1 id="basket-heading">Your basket</h1>
+  <h1 id="basket-heading" tabindex="-1"{% if focusTarget == "heading" %} autofocus{% endif %}>Your basket</h1>
 
   {% if notice %}
   <p class="basket-notice{% if notice.isError %} basket-notice--error{% endif %}" role="{% if notice.isError %}alert{% else %}status{% endif %}">{{ notice.message }}</p>
@@ -60,12 +60,12 @@
           <div class="basket-quantity">
             <form action="{{ line.updateUrl }}" method="post">
               <input type="hidden" name="change" value="-1" />
-              <button type="submit" aria-label="Decrease quantity of {{ line.name }}"{% if not line.canDecrease %} disabled{% endif %}>−</button>
+              <button type="submit" aria-label="Decrease quantity of {{ line.name }}"{% if not line.canDecrease %} disabled{% endif %}{% if line.focusDecrease %} autofocus{% endif %}>−</button>
             </form>
             <span class="basket-quantity__value">{{ line.quantity }}</span>
             <form action="{{ line.updateUrl }}" method="post">
               <input type="hidden" name="change" value="1" />
-              <button type="submit" aria-label="Increase quantity of {{ line.name }}"{% if not line.canIncrease %} disabled{% endif %}>+</button>
+              <button type="submit" aria-label="Increase quantity of {{ line.name }}"{% if not line.canIncrease %} disabled{% endif %}{% if line.focusIncrease %} autofocus{% endif %}>+</button>
             </form>
           </div>
         </td>
@@ -85,8 +85,9 @@
       Total ({{ basketSummary.itemCountText }}):
       <strong>{{ total }}</strong>
     </p>
-    <button type="button" class="basket-button" disabled>Checkout</button>
-    <p class="basket-checkout-note">Checkout is coming soon.</p>
+    <form action="/basket/checkout" method="post">
+      <button type="submit" class="basket-button">Checkout</button>
+    </form>
   </div>
   {% endif %}
 </section>

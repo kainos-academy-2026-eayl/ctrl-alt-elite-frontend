@@ -19,6 +19,7 @@ export function createBasketRouter(controller: BasketController): Router {
     requireSameOrigin,
     controller.removeItem,
   );
+  router.post('/checkout', requireSameOrigin, controller.startCheckout);
 
   return router;
 }

@@ -656,8 +656,8 @@ describe('frontend routes', () => {
       });
     }
 
-    async function getBasketPage(cookies: string) {
-      const res = await fetch(`${base}/basket`, {
+    async function getBasketPage(cookies: string, path = '/basket') {
+      const res = await fetch(`${base}${path}`, {
         headers: { cookie: cookies },
       });
       return { res, html: await res.text() };
@@ -667,7 +667,10 @@ describe('frontend routes', () => {
       const { res, html } = await getBasketPage('');
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
-      assert.match(html, /<h1 id="basket-heading">Your basket<\/h1>/);
+      assert.match(
+        html,
+        /<h1 id="basket-heading" tabindex="-1">Your basket<\/h1>/,
+      );
       assert.match(html, /Your basket is empty\./);
       assert.doesNotMatch(html, /<script/);
     });
@@ -690,12 +693,22 @@ describe('frontend routes', () => {
         new RegExp(`${product.name} added to your basket`),
       );
       assert.match(page.html, /<span class="basket-quantity__value">1<\/span>/);
-      assert.match(page.html, /Checkout is coming soon\./);
 
       const increased = await post(productPath, cookies, { change: '1' });
       assert.equal(increased.status, 303);
-      page = await getBasketPage(cookies);
+      assert.equal(
+        increased.headers.get('location'),
+        `/basket?focus=${encodeURIComponent(`${product.id}:increase`)}`,
+      );
+      page = await getBasketPage(
+        cookies,
+        increased.headers.get('location') ?? '/basket',
+      );
       assert.match(page.html, /<span class="basket-quantity__value">2<\/span>/);
+      assert.match(
+        page.html,
+        /aria-label="Increase quantity of Swaggy Jeans" autofocus/,
+      );
       assert.match(page.html, /Total \(2 items\)/);
 
       const home = await (
@@ -706,15 +719,47 @@ describe('frontend routes', () => {
         /<span class="basket-badge" aria-hidden="true">2<\/span>/,
       );
 
+      const checkout = await post('/basket/checkout', cookies);
+      assert.equal(checkout.status, 303);
+      assert.equal(checkout.headers.get('location'), '/checkout');
+      const checkoutPage = await fetch(`${base}/checkout`, {
+        headers: { cookie: cookies },
+      });
+      const checkoutHtml = await checkoutPage.text();
+      assert.equal(checkoutPage.status, 200);
+      assert.match(checkoutHtml, /<h1 id="checkout-heading">Checkout<\/h1>/);
+      assert.match(checkoutHtml, new RegExp(product.name));
+      assert.match(checkoutHtml, /Total \(2 items\)/);
+      assert.doesNotMatch(checkoutHtml, /<script/);
+
       const removed = await post(`${productPath}/remove`, cookies);
       assert.equal(removed.status, 303);
       cookies = updateCookies(cookies, removed);
-      page = await getBasketPage(cookies);
+      page = await getBasketPage(
+        cookies,
+        removed.headers.get('location') ?? '/basket',
+      );
       assert.match(
         page.html,
         new RegExp(`${product.name} removed from your basket`),
       );
       assert.match(page.html, /Your basket is empty\./);
+      assert.match(
+        page.html,
+        /<h1 id="basket-heading" tabindex="-1" autofocus>/,
+      );
+    });
+
+    it('does not open checkout for an empty basket', async () => {
+      const added = await post('/basket/items', '', { productId: product.id });
+      const cookies = updateCookies('', added);
+      const removed = await post(`${productPath}/remove`, cookies);
+      assert.equal(removed.status, 303);
+      const checkout = await post('/basket/checkout', cookies);
+      assert.equal(checkout.status, 303);
+      assert.equal(checkout.headers.get('location'), '/basket');
+      const { html } = await getBasketPage(updateCookies(cookies, checkout));
+      assert.match(html, /Your basket is empty\./);
     });
 
     it('shows the backend message when a product cannot be added', async () => {

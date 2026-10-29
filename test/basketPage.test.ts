@@ -80,6 +80,41 @@ describe('basket DTO checks', () => {
       assert.equal(isBasketResponseDto(value), false);
     });
   }
+
+  it('rejects monetary values outside the safe integer range', () => {
+    const unsafePrice = Number.MAX_SAFE_INTEGER + 1;
+    assert.equal(
+      isBasketResponseDto({
+        ...basketResponse,
+        items: [
+          {
+            ...basketResponse.items[0],
+            unitPricePence: unsafePrice,
+            lineTotalPence: unsafePrice * 2,
+          },
+        ],
+        itemCount: 2,
+        totalPence: unsafePrice * 2,
+      }),
+      false,
+    );
+    assert.equal(
+      isBasketResponseDto({
+        ...basketResponse,
+        items: [
+          {
+            ...basketResponse.items[0],
+            unitPricePence: Number.MAX_SAFE_INTEGER,
+            quantity: 2,
+            lineTotalPence: Number.MAX_SAFE_INTEGER * 2,
+          },
+        ],
+        itemCount: 2,
+        totalPence: Number.MAX_SAFE_INTEGER * 2,
+      }),
+      false,
+    );
+  });
 });
 
 describe('buildBasketPage', () => {
@@ -99,11 +134,14 @@ describe('buildBasketPage', () => {
     assert.equal(page.currentYear, 2026);
     assert.deepEqual(page.lines[0], {
       name: 'Swaggy Jeans',
+      id: 'jeans',
       quantity: 2,
       unitPrice: '£24.99',
       lineTotal: '£49.98',
       canDecrease: true,
       canIncrease: true,
+      focusDecrease: false,
+      focusIncrease: false,
       updateUrl: '/basket/items/jeans',
       removeUrl: '/basket/items/jeans/remove',
     });
