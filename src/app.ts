@@ -3,21 +3,34 @@ import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
 import { LoginController } from './server/controllers/login';
-import { createAdminGuard } from './util/adminGuard';
 import {
-  ADMIN_NAV_ITEMS,
+  createAdminGuard,
+  getStaffContext,
+  requireDashboardRole,
+  requirePermission,
+  sendAccessDenied,
+} from './util/adminGuard';
+import {
   ADMIN_QUICK_ACTIONS,
   ADMIN_SUMMARY_CARDS,
   ADMIN_SYSTEM_STATUS,
+  CUSTOMER_SERVICE_SHORTCUTS,
   findAdminModule,
+  navItemsForRole,
 } from './util/adminPortal';
 import { DASHBOARD_WIDGETS } from './util/adminSettings';
-import { loadAdminFirstName, loadAdminProfile } from './util/adminUser';
+import { loadAdminFirstName, loadStaffAccount } from './util/adminUser';
 import { createApiProxy } from './util/apiProxy';
 import { clearAuthCookie, readAuthCookie } from './util/authCookie';
 import { createCustomerGuard } from './util/customerGuard';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
 import { LoginSession } from './util/loginSession';
+import {
+  CUSTOMER_ROLE_KEY,
+  findStaffRole,
+  hasPermission,
+  normaliseRole,
+} from './util/staffRoles';
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_SUBJECT_LENGTH,
@@ -105,23 +118,16 @@ export function createApp(
     { autoescape: true },
   );
 
-  async function renderAdminPage(
-    req: Request,
+  function renderAdminPage(
     res: Response,
     template: string,
     context: Record<string, unknown>,
-  ): Promise<void> {
-    const profile =
-      'profile' in context
-        ? context.profile
-        : await loadAdminProfile(
-            backendOrigin,
-            readAuthCookie(req.headers.cookie),
-          );
+  ): void {
+    const { profile, role } = getStaffContext(res);
     try {
       res.type('html').send(
         adminTemplates.render(template, {
-          navItems: ADMIN_NAV_ITEMS,
+          navItems: navItemsForRole(role),
           profile,
           ...context,
         }),
@@ -141,9 +147,22 @@ export function createApp(
     res.setHeader('Cache-Control', 'no-store');
     try {
       const account = await loginSession.getAccount(req, res);
+      // Sessions created before roles were stored have no role to read.
+      const role = account
+        ? (findStaffRole(account.role) ??
+          (account.role
+            ? undefined
+            : (
+                await loadStaffAccount(
+                  backendOrigin,
+                  readAuthCookie(req.headers.cookie),
+                )
+              )?.role))
+        : undefined;
       res.type('html').send(
         adminTemplates.render('homepage.njk', {
           isAuthenticated: account !== null,
+          isStaff: role !== undefined,
           accountName: account?.name ?? 'Account',
         }),
       );
@@ -151,6 +170,24 @@ export function createApp(
       console.error('Unable to load the homepage:', error);
       res.redirect('/unavailable');
     }
+  });
+
+  // Sends staff to the dashboard of their role from any page's Account menu.
+  app.get('/dashboard', async (req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const account = await loginSession.getAccount(req, res);
+    const sessionRole = normaliseRole(account?.role);
+    if (sessionRole === CUSTOMER_ROLE_KEY) {
+      res.redirect(303, '/');
+      return;
+    }
+    let role = findStaffRole(sessionRole);
+    if (!role) {
+      const token = readAuthCookie(req.headers.cookie);
+      role = (await loadStaffAccount(backendOrigin, token))?.role;
+    }
+    // The admin guard re-checks the role on the dashboard itself.
+    res.redirect(303, role ? role.dashboardPath : '/login');
   });
 
   app.get('/login', loginController.show);
@@ -244,73 +281,110 @@ export function createApp(
 
   // The server only serves page shells. Live data is loaded in the browser by the
   // matching controller in src/controllers, which calls the backend through /api.
-  app.get('/admin', async (req: Request, res: Response) => {
-    const firstName = await loadAdminFirstName(
-      backendOrigin,
-      readAuthCookie(req.headers.cookie),
-    );
-    await renderAdminPage(req, res, 'admin/dashboard.njk', {
-      title: 'Dashboard',
-      firstName,
-      activeSlug: 'dashboard',
-      summaryCards: ADMIN_SUMMARY_CARDS,
-      quickActions: ADMIN_QUICK_ACTIONS,
-      systemStatus: ADMIN_SYSTEM_STATUS,
-    });
-  });
+  app.get(
+    '/admin',
+    requireDashboardRole('ADMIN'),
+    async (req: Request, res: Response) => {
+      const firstName = await loadAdminFirstName(
+        backendOrigin,
+        readAuthCookie(req.headers.cookie),
+      );
+      renderAdminPage(res, 'admin/dashboard.njk', {
+        title: 'Dashboard',
+        firstName,
+        activeSlug: 'dashboard',
+        summaryCards: ADMIN_SUMMARY_CARDS,
+        quickActions: ADMIN_QUICK_ACTIONS,
+        systemStatus: ADMIN_SYSTEM_STATUS,
+      });
+    },
+  );
 
-  app.get('/admin/customers', async (req: Request, res: Response) => {
-    await renderAdminPage(req, res, 'admin/customers.njk', {
-      title: 'Customers',
-      activeSlug: 'customers',
-      sortOptions: CUSTOMER_SORT_OPTIONS,
-    });
-  });
+  app.get(
+    '/admin/customer-service',
+    requireDashboardRole('CUSTOMER_SERVICE'),
+    (_req: Request, res: Response) => {
+      const firstName = getStaffContext(res).profile.name.split(/\s+/)[0];
+      renderAdminPage(res, 'admin/customer-service-dashboard.njk', {
+        title: 'Customer Service Dashboard',
+        firstName,
+        activeSlug: 'dashboard',
+        shortcuts: CUSTOMER_SERVICE_SHORTCUTS,
+      });
+    },
+  );
 
-  app.get('/admin/customers/:id', async (req: Request, res: Response) => {
-    await renderAdminPage(req, res, 'admin/customer-detail.njk', {
-      title: 'Customer details',
-      activeSlug: 'customers',
-    });
-  });
+  app.get(
+    '/admin/customers',
+    requirePermission('customers'),
+    (_req: Request, res: Response) => {
+      renderAdminPage(res, 'admin/customers.njk', {
+        title: 'Customers',
+        activeSlug: 'customers',
+        sortOptions: CUSTOMER_SORT_OPTIONS,
+      });
+    },
+  );
 
-  app.get('/admin/support', async (req: Request, res: Response) => {
-    await renderAdminPage(req, res, 'admin/support.njk', {
-      title: 'Support Tickets',
-      activeSlug: 'support',
-      statuses: TICKET_STATUSES,
-      categories: TICKET_CATEGORIES,
-    });
-  });
+  app.get(
+    '/admin/customers/:id',
+    requirePermission('customers'),
+    (_req: Request, res: Response) => {
+      renderAdminPage(res, 'admin/customer-detail.njk', {
+        title: 'Customer details',
+        activeSlug: 'customers',
+      });
+    },
+  );
 
-  app.get('/admin/support/:id', async (req: Request, res: Response) => {
-    await renderAdminPage(req, res, 'admin/support-detail.njk', {
-      title: 'Ticket details',
-      activeSlug: 'support',
-    });
-  });
+  app.get(
+    '/admin/support',
+    requirePermission('support'),
+    (_req: Request, res: Response) => {
+      renderAdminPage(res, 'admin/support.njk', {
+        title: 'Support Tickets',
+        activeSlug: 'support',
+        statuses: TICKET_STATUSES,
+        categories: TICKET_CATEGORIES,
+      });
+    },
+  );
 
-  app.get('/admin/settings', async (req: Request, res: Response) => {
-    const [profile, appVersion] = await Promise.all([
-      loadAdminProfile(backendOrigin, readAuthCookie(req.headers.cookie)),
-      readAppVersion(),
-    ]);
-    await renderAdminPage(req, res, 'admin/settings.njk', {
-      title: 'Settings',
-      activeSlug: 'settings',
-      profile,
-      appVersion,
-      dashboardWidgets: DASHBOARD_WIDGETS,
-    });
-  });
+  app.get(
+    '/admin/support/:id',
+    requirePermission('support'),
+    (_req: Request, res: Response) => {
+      renderAdminPage(res, 'admin/support-detail.njk', {
+        title: 'Ticket details',
+        activeSlug: 'support',
+      });
+    },
+  );
 
-  app.get('/admin/:section', async (req: Request, res: Response, next) => {
+  app.get(
+    '/admin/settings',
+    requirePermission('settings'),
+    async (_req: Request, res: Response) => {
+      renderAdminPage(res, 'admin/settings.njk', {
+        title: 'Settings',
+        activeSlug: 'settings',
+        appVersion: await readAppVersion(),
+        dashboardWidgets: DASHBOARD_WIDGETS,
+      });
+    },
+  );
+
+  app.get('/admin/:section', (req: Request, res: Response, next) => {
     const adminModule = findAdminModule(String(req.params.section));
     if (!adminModule) {
       next();
       return;
     }
-    await renderAdminPage(req, res, 'admin/module.njk', {
+    if (!hasPermission(getStaffContext(res).role, adminModule.slug)) {
+      sendAccessDenied(res, 'You do not have permission to view this page.');
+      return;
+    }
+    renderAdminPage(res, 'admin/module.njk', {
       title: adminModule.label,
       activeSlug: adminModule.slug,
     });

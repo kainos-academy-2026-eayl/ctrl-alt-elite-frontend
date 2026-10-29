@@ -2,10 +2,7 @@ import type { Request, Response } from 'express';
 import { clearAuthCookie, setAuthCookie } from '../../util/authCookie';
 import type { LoginSession } from '../../util/loginSession';
 
-const ROLE_REDIRECTS: Record<string, string> = Object.assign(
-  Object.create(null),
-  { ADMIN: '/admin', CUSTOMER: '/' },
-);
+import { landingPathForRole, normaliseRole } from '../../util/staffRoles';
 
 function extractRole(payload: unknown): string | undefined {
   if (typeof payload !== 'object' || payload === null) return undefined;
@@ -17,7 +14,7 @@ function extractRole(payload: unknown): string | undefined {
       'role' in source &&
       typeof source.role === 'string'
     ) {
-      return source.role.trim().toUpperCase();
+      return normaliseRole(source.role);
     }
   }
   return undefined;
@@ -188,7 +185,7 @@ export class LoginController {
     }
 
     if (response.status === 200) {
-      const destination = role ? ROLE_REDIRECTS[role] : undefined;
+      const destination = landingPathForRole(role);
       if (!destination) {
         console.error('Backend login returned an unknown role:', role);
         this.render(
@@ -202,7 +199,7 @@ export class LoginController {
       res.setHeader('Cache-Control', 'no-store');
       try {
         const account = extractAccount(payload);
-        await this.loginSession.save(res, account.userId, account.name);
+        await this.loginSession.save(res, account.userId, account.name, role);
       } catch (error) {
         console.error(
           'Unable to validate the login session:',

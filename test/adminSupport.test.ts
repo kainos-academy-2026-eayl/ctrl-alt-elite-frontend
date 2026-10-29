@@ -359,6 +359,18 @@ describe('admin support pages', () => {
 
   beforeAll(async () => {
     backend = createServer((req, res) => {
+      if (req.url === '/api/admin/profile') {
+        const allowed = req.headers.authorization?.endsWith('admin-token');
+        res.statusCode = allowed ? 200 : 401;
+        res.end(
+          JSON.stringify({
+            name: 'Ada Lovelace',
+            email: 'ada@example.com',
+            role: 'ADMIN',
+          }),
+        );
+        return;
+      }
       const allowed =
         req.url === '/api/admin/customers?pageSize=1' &&
         req.headers.authorization?.endsWith('admin-token');

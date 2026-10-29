@@ -39,13 +39,18 @@ export class LoginSession {
     return payload;
   }
 
-  async save(res: Response, userId: string, name: string): Promise<void> {
+  async save(
+    res: Response,
+    userId: string,
+    name: string,
+    role?: string,
+  ): Promise<void> {
     if (!userId.trim() || userId.length > 128) {
       throw new Error('Backend login did not identify an authenticated user.');
     }
     if (!this.key) throw new Error('JWT_SECRET is not configured.');
     const expiresAt = Math.floor(Date.now() / 1000) + 3600;
-    const token = await new SignJWT({ name })
+    const token = await new SignJWT(role ? { name, role } : { name })
       .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
       .setSubject(userId)
       .setIssuer('ctrl-alt-elite-frontend')
@@ -62,7 +67,7 @@ export class LoginSession {
   async getAccount(
     req: Request,
     res: Response,
-  ): Promise<{ name: string } | null> {
+  ): Promise<{ name: string; role?: string } | null> {
     const cookies = (req.headers.cookie ?? '')
       .split(';')
       .map((cookie) => cookie.trim())
@@ -78,6 +83,9 @@ export class LoginSession {
           typeof payload.name === 'string' && payload.name.trim()
             ? payload.name
             : 'Account',
+        ...(typeof payload.role === 'string' && payload.role
+          ? { role: payload.role }
+          : {}),
       };
     } catch (error) {
       console.warn(

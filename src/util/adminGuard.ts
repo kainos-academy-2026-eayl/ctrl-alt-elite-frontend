@@ -1,5 +1,29 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { type AdminProfile, loadStaffAccount } from './adminUser';
 import { readAuthCookie } from './authCookie';
+import {
+  hasPermission,
+  type StaffPermission,
+  type StaffRole,
+} from './staffRoles';
+
+export interface StaffContext {
+  profile: AdminProfile;
+  role: StaffRole;
+}
+
+export function sendAccessDenied(res: Response, message: string): void {
+  res
+    .status(403)
+    .type('html')
+    .send(
+      '<!doctype html><html lang="en"><head><meta charset="utf-8" />' +
+        '<title>Access denied | Ctrl-Alt-Elite</title></head><body>' +
+        '<h1>Access denied</h1>' +
+        `<p>${message}</p>` +
+        '<p><a href="/">Return to the homepage</a></p></body></html>',
+    );
+}
 
 // The backend is the source of truth for roles, so the guard asks it to
 // authorise the caller against an admin-only endpoint instead of trusting
@@ -34,23 +58,58 @@ export function createAdminGuard(backendOrigin: string): RequestHandler {
     }
 
     if (status === 200) {
+      const account = await loadStaffAccount(backendOrigin, token);
+      if (!account) {
+        res.redirect('/unavailable');
+        return;
+      }
+      if (!account.role) {
+        console.error('Staff account has an unrecognised role.');
+        sendAccessDenied(
+          res,
+          'You do not have permission to view the admin area.',
+        );
+        return;
+      }
+      res.locals.staff = { profile: account.profile, role: account.role };
       next();
     } else if (status === 401) {
       res.redirect(303, '/login');
     } else if (status === 403) {
-      res
-        .status(403)
-        .type('html')
-        .send(
-          '<!doctype html><html lang="en"><head><meta charset="utf-8" />' +
-            '<title>Access denied | Ctrl-Alt-Elite</title></head><body>' +
-            '<h1>Access denied</h1>' +
-            '<p>You do not have permission to view the admin area.</p>' +
-            '<p><a href="/">Return to the homepage</a></p></body></html>',
-        );
+      sendAccessDenied(
+        res,
+        'You do not have permission to view the admin area.',
+      );
     } else {
       console.error('Backend admin check failed with status:', status);
       res.redirect('/unavailable');
     }
+  };
+}
+
+// Set by createAdminGuard for every request that reaches an admin route.
+export function getStaffContext(res: Response): StaffContext {
+  return res.locals.staff as StaffContext;
+}
+
+export function requirePermission(permission: StaffPermission): RequestHandler {
+  return (_req: Request, res: Response, next: NextFunction) => {
+    if (hasPermission(getStaffContext(res).role, permission)) {
+      next();
+      return;
+    }
+    sendAccessDenied(res, 'You do not have permission to view this page.');
+  };
+}
+
+// Role dashboards are only for their own role; everyone else is sent to theirs.
+export function requireDashboardRole(roleKey: string): RequestHandler {
+  return (_req: Request, res: Response, next: NextFunction) => {
+    const { role } = getStaffContext(res);
+    if (role.key === roleKey) {
+      next();
+      return;
+    }
+    res.redirect(303, role.dashboardPath);
   };
 }

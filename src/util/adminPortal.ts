@@ -1,5 +1,11 @@
+import {
+  hasPermission,
+  type StaffPermission,
+  type StaffRole,
+} from './staffRoles';
+
 export interface AdminNavItem {
-  slug: string;
+  slug: StaffPermission;
   label: string;
   href: string;
 }
@@ -14,6 +20,14 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   { slug: 'settings', label: 'Settings', href: '/admin/settings' },
 ];
 
+// The Dashboard entry points at the dashboard of the signed-in role.
+export function navItemsForRole(role: StaffRole): AdminNavItem[] {
+  return ADMIN_NAV_ITEMS.filter((item) => hasPermission(role, item.slug)).map(
+    (item) =>
+      item.slug === 'dashboard' ? { ...item, href: role.dashboardPath } : item,
+  );
+}
+
 export const ADMIN_SUMMARY_CARDS = [
   { label: 'Products', value: 0 },
   { label: 'Orders', value: 0 },
@@ -26,6 +40,29 @@ export const ADMIN_QUICK_ACTIONS = [
   { label: 'View Orders', href: '/admin/orders' },
   { label: 'Manage Customers', href: '/admin/customers' },
   { label: 'Inventory Management', href: '/admin/inventory' },
+] as const;
+
+export const CUSTOMER_SERVICE_SHORTCUTS = [
+  {
+    label: 'Customers',
+    href: '/admin/customers',
+    description: 'Look up customer accounts and their details.',
+  },
+  {
+    label: 'Orders',
+    href: '/admin/orders',
+    description: 'Review customer orders.',
+  },
+  {
+    label: 'Support Tickets',
+    href: '/admin/support',
+    description: 'Respond to and manage support requests.',
+  },
+  {
+    label: 'Settings',
+    href: '/admin/settings',
+    description: 'Manage your profile and display preferences.',
+  },
 ] as const;
 
 export const ADMIN_SYSTEM_STATUS = [
