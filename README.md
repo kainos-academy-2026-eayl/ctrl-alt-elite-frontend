@@ -7,6 +7,7 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)) |
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
 | `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
+| `GET /profile` | Signed-in profile design preview ([src/views/profile.njk](src/views/profile.njk)) with a picture picker, username, first and second names, pronouns and a short description. Cosmetic only: no controller, profile API calls, picture upload/preview or saving. |
 | `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)). [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
 | `GET /admin/customers/:id` | Customer details shell. [adminCustomerDetail.ts](src/controllers/adminCustomerDetail.ts) loads the customer from the backend. |

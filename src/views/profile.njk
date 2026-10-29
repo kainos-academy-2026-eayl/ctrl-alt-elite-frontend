@@ -1,7 +1,7 @@
 {% extends "layout.njk" %}
 
 {% block title %}My Profile | Ctrl-Alt-Elite{% endblock %}
-{% block description %}A preview of your Ctrl-Alt-Elite profile.{% endblock %}
+{% block description %}Personalise your Ctrl-Alt-Elite profile.{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="/assets/profile.css" />
@@ -14,16 +14,79 @@
 {% endblock %}
 
 {% block content %}
-<section class="page-width profile-card" aria-labelledby="profile-heading">
-    <p class="eyebrow">Your account</p>
-    <h1 id="profile-heading">My Profile</h1>
-    <svg class="profile-preview-avatar" viewBox="0 0 64 64" width="80" height="80" aria-hidden="true" focusable="false">
-        <circle cx="32" cy="32" r="32" fill="#dcfce7" />
-        <circle cx="32" cy="24" r="11" fill="#14532d" />
-        <path d="M12 57a20 20 0 0 1 40 0" fill="#14532d" />
-    </svg>
-    <h2>{{ account.name }}</h2>
-    <p class="profile-copy">Welcome to your profile. This is a small preview of your account page.</p>
-    <p class="profile-placeholder">More account details and profile features are coming soon.</p>
+<section class="page-width profile-page" aria-labelledby="profile-heading">
+    <header class="profile-header">
+        <p class="eyebrow">Your account</p>
+        <h1 id="profile-heading">My Profile</h1>
+        <p class="profile-copy">A little about you. Make your profile feel like your own.</p>
+    </header>
+
+    <p class="profile-notice" id="profile-preview-notice">
+        <strong>Design preview only.</strong> You can try the fields below, but changes are not saved and pictures are not uploaded or previewed.
+    </p>
+
+    <div class="profile-layout">
+        <aside class="profile-card profile-summary" aria-label="Current profile">
+            <svg class="profile-preview-avatar" viewBox="0 0 64 64" width="112" height="112" aria-hidden="true" focusable="false">
+                <circle cx="32" cy="32" r="32" fill="#dcfce7" />
+                <circle cx="32" cy="24" r="11" fill="#14532d" />
+                <path d="M12 57a20 20 0 0 1 40 0" fill="#14532d" />
+            </svg>
+            <h2>{{ account.name }}</h2>
+            <p class="profile-copy">Your personal space on Ctrl-Alt-Elite.</p>
+            <span class="profile-preview-badge">Profile preview</span>
+        </aside>
+
+        <section class="profile-card profile-editor" aria-labelledby="profile-details-heading" aria-describedby="profile-preview-notice">
+            <h2 id="profile-details-heading">Profile details</h2>
+            <p class="profile-copy">The details that make you, you.</p>
+
+            <div class="profile-picture-field">
+                <label for="profile-picture">Profile picture</label>
+                <p class="profile-hint" id="profile-picture-hint">Choose a JPG, PNG or WebP image. This preview will only show the file name.</p>
+                <input type="file" id="profile-picture" name="profilePicture" accept="image/jpeg,image/png,image/webp" aria-describedby="profile-picture-hint profile-preview-notice" />
+            </div>
+
+            <div class="profile-fields">
+                <div class="profile-field profile-field-wide">
+                    <label for="profile-username">Username</label>
+                    <input type="text" id="profile-username" name="username" autocomplete="username" maxlength="30" placeholder="Your username" aria-describedby="profile-username-hint" />
+                    <p class="profile-hint" id="profile-username-hint">The name you would like others to see.</p>
+                </div>
+
+                <div class="profile-field">
+                    <label for="profile-first-name">First name</label>
+                    <input type="text" id="profile-first-name" name="firstName" autocomplete="given-name" maxlength="80" placeholder="Your first name" />
+                </div>
+
+                <div class="profile-field">
+                    <label for="profile-second-name">Second name</label>
+                    <input type="text" id="profile-second-name" name="lastName" autocomplete="family-name" maxlength="80" placeholder="Your second name" />
+                </div>
+
+                <div class="profile-field profile-field-wide">
+                    <label for="profile-pronouns">Pronouns</label>
+                    <select id="profile-pronouns" name="pronouns">
+                        <option value="">Prefer not to say</option>
+                        <option value="he/him">he/him</option>
+                        <option value="she/her">she/her</option>
+                        <option value="they/them">they/them</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="profile-field profile-field-wide">
+                    <label for="profile-description">About you</label>
+                    <textarea id="profile-description" name="description" rows="4" maxlength="200" placeholder="Share a little about yourself..." aria-describedby="profile-description-hint"></textarea>
+                    <p class="profile-hint" id="profile-description-hint">A short description, up to 200 characters.</p>
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <p class="profile-hint" id="profile-save-hint">Saving is unavailable in this design preview.</p>
+                <button class="profile-save-button" type="button" disabled aria-describedby="profile-save-hint">Save changes</button>
+            </div>
+        </section>
+    </div>
 </section>
 {% endblock %}
