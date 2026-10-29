@@ -14,14 +14,34 @@ export interface Product {
 }
 
 export const SAMPLE_PRODUCTS: readonly Product[] = [
-  { id: 'sample-lamp', name: 'Desk Lamp', price: '24.99' },
-  { id: 'sample-mug', name: 'Ceramic Mug', price: '5.50' },
-  { id: 'sample-keyboard', name: 'Wireless Keyboard', price: '49.00' },
   {
-    id: 'sample-headphones',
-    name: 'Noise-Cancelling Headphones',
-    price: '129.99',
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a01',
+    name: 'Swaggy Jeans',
+    price: '24.99',
   },
-  { id: 'sample-notebook', name: 'A5 Notebook', price: '3.75' },
-  { id: 'sample-bottle', name: 'Water Bottle', price: '12.00' },
+  {
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a02',
+    name: 'POU Shirt',
+    price: '12.50',
+  },
+  {
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a03',
+    name: 'Kainos Hoodie',
+    price: '8.99',
+  },
+  {
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a04',
+    name: 'Princess Dylan Crown',
+    price: '9999.00',
+  },
+  {
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a05',
+    name: "Lee's Hair",
+    price: '828938392829282.00',
+  },
+  {
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a06',
+    name: 'Metellica Band Shirt',
+    price: '15.99',
+  },
 ];

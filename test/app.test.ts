@@ -116,7 +116,10 @@ describe('frontend routes', () => {
       const html = await (await fetch(`${base}/`)).text();
       const buttons = html.match(/data-add-to-basket /g) ?? [];
       assert.equal(buttons.length, SAMPLE_PRODUCTS.length);
-      assert.match(html, /data-product-id="sample-lamp"/);
+      assert.match(
+        html,
+        new RegExp(`data-product-id="${SAMPLE_PRODUCTS[0]?.id}"`),
+      );
     });
   });
 
