@@ -2,7 +2,9 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
+import { CatalogController } from './server/controllers/catalog-controller';
 import { LoginController } from './server/controllers/login';
+import { CatalogService } from './server/services/catalog-service';
 import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,
@@ -136,6 +138,17 @@ export function createApp(
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
+  app.use(
+    '/product-catalog',
+    express.static(
+      fileURLToPath(new URL('../product_catalog/', import.meta.url)),
+      { index: false },
+    ),
+  );
+  const catalogController = new CatalogController(
+    new CatalogService(backendOrigin),
+  );
+  app.get('/products', catalogController.showProducts);
 
   app.get('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
