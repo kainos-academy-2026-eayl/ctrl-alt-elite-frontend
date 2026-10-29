@@ -28,7 +28,7 @@
   "include": [
     "src/**/*",
     "test/**/*",
-    "product_catalog/product_catalog_nunjuck_file.ts"
+    "product_catalog/product_catalog_content.ts"
   ],
   "exclude": ["node_modules", "dist", "src/controllers"]
 }
