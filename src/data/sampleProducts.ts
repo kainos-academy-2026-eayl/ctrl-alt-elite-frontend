@@ -1,164 +1,47 @@
 /*
  * TEMPORARY sample products so the basket can be tested before the product
  * ticket is complete. To remove: delete this file and the SAMPLE_PRODUCTS
- * import/usage in src/app.ts, then pass the real products to the homepage and
- * the search page.
+ * import/usage in src/app.ts, then pass the real products to the homepage.
  * The ids must exist in the backend's product catalogue (prisma/seed.ts), which
  * is the source of truth for prices in the basket.
  */
 
-import type { Product } from '../models/product';
-
-const PLACEHOLDER_IMAGE = '/assets/images/placeholder.svg';
+export interface Product {
+  id: string;
+  name: string;
+  /** Price in pounds as a 2 decimal place string, e.g. "24.99". */
+  price: string;
+}
 
 export const SAMPLE_PRODUCTS: readonly Product[] = [
   {
-    id: 'sample-lamp',
-    name: 'Desk Lamp',
-    description: 'Adjustable LED lamp with a warm and a cool light setting.',
-    imageUrl: PLACEHOLDER_IMAGE,
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a01',
+    name: 'Swaggy Jeans',
     price: '24.99',
-    keywords: [
-      'light',
-      'lighting',
-      'led',
-      'office',
-      'desk',
-      'table',
-      'bedside',
-      'reading',
-      'study',
-      'bulb',
-    ],
-    isInStock: true,
   },
   {
-    id: 'sample-mug',
-    name: 'Ceramic Mug',
-    description: 'Dishwasher-safe 350ml mug for tea and coffee.',
-    imageUrl: PLACEHOLDER_IMAGE,
-    price: '5.50',
-    keywords: [
-      'cup',
-      'coffee',
-      'tea',
-      'kitchen',
-      'drinkware',
-      'hot drink',
-      'latte',
-    ],
-    isInStock: true,
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a02',
+    name: 'POU Shirt',
+    price: '12.50',
   },
   {
-    id: 'sample-keyboard',
-    name: 'Wireless Keyboard',
-    description: 'Slim bluetooth keyboard with a quiet typing action.',
-    imageUrl: PLACEHOLDER_IMAGE,
-    price: '49.00',
-    keywords: [
-      'computer',
-      'typing',
-      'bluetooth',
-      'office',
-      'keys',
-      'pc',
-      'laptop',
-      'mac',
-      'cordless',
-    ],
-    isInStock: true,
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a03',
+    name: 'Kainos Hoodie',
+    price: '8.99',
   },
   {
-    id: 'sample-headphones',
-    name: 'Noise-Cancelling Headphones',
-    description: 'Over-ear headphones with active noise cancelling.',
-    imageUrl: PLACEHOLDER_IMAGE,
-    price: '129.99',
-    keywords: [
-      'headphone',
-      'audio',
-      'music',
-      'headset',
-      'anc',
-      'over-ear',
-      'wireless',
-      'bluetooth',
-      'travel',
-    ],
-    isInStock: true,
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a04',
+    name: 'Princess Dylan Crown',
+    price: '9999.00',
   },
   {
-    id: 'sample-notebook',
-    name: 'A5 Notebook',
-    description: 'Lined A5 notebook with 120 pages.',
-    imageUrl: PLACEHOLDER_IMAGE,
-    price: '3.75',
-    keywords: [
-      'paper',
-      'stationery',
-      'journal',
-      'notes',
-      'notepad',
-      'diary',
-      'writing',
-      'lined',
-      'school',
-    ],
-    isInStock: true,
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a05',
+    name: "Lee's Hair",
+    price: '828938392829282.00',
   },
   {
-    id: 'sample-bottle',
-    name: 'Water Bottle',
-    description: 'Insulated 500ml steel bottle that keeps drinks cold.',
-    imageUrl: PLACEHOLDER_IMAGE,
-    price: '12.00',
-    keywords: [
-      'drink',
-      'flask',
-      'hydration',
-      'travel',
-      'insulated',
-      'steel',
-      'gym',
-      'sports',
-      'reusable',
-    ],
-    isInStock: true,
-  },
-  {
-    id: 'sample-studio-headphones',
-    name: 'Studio Headphones',
-    description: 'Wired studio headphones with a flat sound profile.',
-    imageUrl: PLACEHOLDER_IMAGE,
-    price: '89.00',
-    keywords: [
-      'headphone',
-      'audio',
-      'music',
-      'wired',
-      'monitor',
-      'recording',
-      'mixing',
-      'dj',
-    ],
-    isInStock: false,
-  },
-  {
-    id: 'sample-earbuds',
-    name: 'Wireless Earbuds',
-    description: 'Compact earbuds with a charging case.',
-    imageUrl: PLACEHOLDER_IMAGE,
-    price: '59.99',
-    keywords: [
-      'earphone',
-      'earbud',
-      'in-ear',
-      'audio',
-      'music',
-      'bluetooth',
-      'running',
-      'sport',
-    ],
-    isInStock: false,
+    id: '99a89432-b64d-4c54-b6af-71591fdb0a06',
+    name: 'Metellica Band Shirt',
+    price: '15.99',
   },
 ];

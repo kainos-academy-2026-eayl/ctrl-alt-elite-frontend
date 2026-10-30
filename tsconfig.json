@@ -5,7 +5,7 @@
     "types": ["node"],
     "module": "Preserve",
     "moduleResolution": "Bundler",
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "./dist",
     "noEmit": true,
     "strict": true,
@@ -25,6 +25,10 @@
     "incremental": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo"
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "test/**/*",
+    "product_catalog/product_catalog_content.ts"
+  ],
   "exclude": ["node_modules", "dist", "src/controllers"]
 }

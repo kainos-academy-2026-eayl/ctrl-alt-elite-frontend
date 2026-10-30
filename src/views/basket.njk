@@ -1,87 +1,94 @@
 {#
-  KAN-28 Basket page.
-  The page shell is rendered on the server. Basket items live in the
-  browser's sessionStorage, so /controllers/basket.js fills in the rows and totals.
+  KAN-28 Basket page. Rendered on the server: BasketController loads the
+  basket and basket.page.ts builds the data shown here. The +, − and Remove
+  buttons are forms that post back to /basket, so no JavaScript is needed.
 #}
-{% set pageTitle = "Basket" %}
-<!doctype html>
-<html lang="en">
+{% extends "layout.njk" %}
 
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="description" content="Review the items in your Ctrl-Alt-Elite basket and continue to checkout." />
-<link rel="stylesheet" href="/assets/styles.css" />
+{% block title %}Ctrl-Alt-Elite | Basket{% endblock %}
+{% block description %}Review the items in your Ctrl-Alt-Elite basket and continue to checkout.{% endblock %}
+
+{% block styles %}
 <link rel="stylesheet" href="/assets/basket.css" />
-<title>Ctrl-Alt-Elite | {{ pageTitle }}</title>
-</head>
+{% endblock %}
 
-<body>
-  <header class="site-header">
-    <div class="page-width header-content">
-      <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
-        <span class="brand-mark" aria-hidden="true">C</span>
-        <span>Ctrl-Alt-Elite</span>
-      </a>
-      <nav class="primary-nav" aria-label="Main navigation">
-        <a class="nav-link basket-icon-link" href="/basket" aria-current="page">
-          <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
-          </svg>
-          <span class="basket-visually-hidden" data-basket-link-label>Basket, 0 items</span>
-          <span class="basket-badge" data-basket-count aria-hidden="true">0</span>
-        </a>
-      </nav>
-    </div>
-  </header>
+{% block navigation %}
+<nav class="primary-nav" aria-label="Main navigation">
+  <a class="nav-link basket-icon-link" href="/basket" aria-current="page">
+    <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
+    </svg>
+    <span class="basket-visually-hidden">Basket, {{ basketSummary.itemCountText }}</span>
+    <span class="basket-badge" aria-hidden="true">{{ basketSummary.itemCount }}</span>
+  </a>
+</nav>
+{% endblock %}
 
-  <main>
-    <section class="page-width basket" aria-labelledby="basket-heading" data-basket>
-      <h1 id="basket-heading">Your basket</h1>
+{% block content %}
+<section class="page-width basket" aria-labelledby="basket-heading">
+  <h1 id="basket-heading" tabindex="-1"{% if focusTarget == "heading" %} autofocus{% endif %}>Your basket</h1>
 
-      <div class="basket-alert" role="alert" data-basket-alert hidden></div>
+  {% if notice %}
+  <p class="basket-notice{% if notice.isError %} basket-notice--error{% endif %}" role="{% if notice.isError %}alert{% else %}status{% endif %}">{{ notice.message }}</p>
+  {% endif %}
 
-      <div class="basket-empty" data-basket-empty hidden>
-        <p>Your basket is empty.</p>
-        <a class="basket-button" href="{{ browseProductsUrl }}">Browse products</a>
-      </div>
+  {% if loadErrorMessage %}
+  <p class="basket-alert" role="alert">{{ loadErrorMessage }}</p>
+  {% elif isEmpty %}
+  <div class="basket-empty">
+    <p>Your basket is empty.</p>
+    <a class="basket-button" href="/">Browse products</a>
+  </div>
+  {% else %}
+  <table class="basket-table">
+    <caption class="basket-visually-hidden">Items in your basket</caption>
+    <thead>
+      <tr>
+        <th scope="col">Product</th>
+        <th scope="col">Unit price</th>
+        <th scope="col">Quantity</th>
+        <th scope="col">Line total</th>
+        <th scope="col"><span class="basket-visually-hidden">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+      <tr>
+        <th scope="row">{{ line.name }}</th>
+        <td data-label="Unit price">{{ line.unitPrice }}</td>
+        <td data-label="Quantity">
+          <div class="basket-quantity">
+            <form action="{{ line.updateUrl }}" method="post">
+              <input type="hidden" name="change" value="-1" />
+              <button type="submit" aria-label="Decrease quantity of {{ line.name }}"{% if not line.canDecrease %} disabled{% endif %}{% if line.focusDecrease %} autofocus{% endif %}>−</button>
+            </form>
+            <span class="basket-quantity__value">{{ line.quantity }}</span>
+            <form action="{{ line.updateUrl }}" method="post">
+              <input type="hidden" name="change" value="1" />
+              <button type="submit" aria-label="Increase quantity of {{ line.name }}"{% if not line.canIncrease %} disabled{% endif %}{% if line.focusIncrease %} autofocus{% endif %}>+</button>
+            </form>
+          </div>
+        </td>
+        <td data-label="Line total" class="basket-line-total">{{ line.lineTotal }}</td>
+        <td data-label="">
+          <form action="{{ line.removeUrl }}" method="post">
+            <button type="submit" class="basket-remove" aria-label="Remove {{ line.name }}">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-      <div data-basket-contents hidden>
-        <table class="basket-table">
-          <caption class="basket-visually-hidden">Items in your basket</caption>
-          <thead>
-            <tr>
-              {% for heading in ["Product", "Unit price", "Quantity", "Line total"] %}
-              <th scope="col">{{ heading }}</th>
-              {% endfor %}
-              <th scope="col"><span class="basket-visually-hidden">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody data-basket-items></tbody>
-        </table>
-
-        <div class="basket-summary">
-          <p class="basket-total">
-            Total (<span data-basket-item-count>0 items</span>):
-            <strong data-basket-total aria-live="polite">£0.00</strong>
-          </p>
-          <button type="button" class="basket-button" data-basket-checkout disabled>Checkout</button>
-        </div>
-      </div>
-
-      <noscript>
-        <p class="basket-alert">Your basket needs JavaScript. Please turn it on in your browser to view your basket.</p>
-      </noscript>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="page-width">
-      <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
-    </div>
-  </footer>
-  <script src="/controllers/script.js" defer></script>
-  <script src="/controllers/basket.js" defer></script>
-</body>
-
-</html>
+  <div class="basket-summary">
+    <p class="basket-total">
+      Total ({{ basketSummary.itemCountText }}):
+      <strong>{{ total }}</strong>
+    </p>
+    <form action="/basket/checkout" method="post">
+      <button type="submit" class="basket-button">Checkout</button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

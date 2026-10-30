@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Ctrl-Alt-Elite Admin Portal." />
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/admin.css" />
+  <title>{{ title }} | Admin | Ctrl-Alt-Elite</title>
+  <script src="/controllers/adminPreferences.js"></script>
+</head>
+
+<body class="admin-page">
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <a class="brand admin-brand" href="/admin" aria-label="Admin Portal home">
+        <span class="brand-mark" aria-hidden="true">C</span>
+        <span>Admin Portal</span>
+      </a>
+      {% set displayName = profile.name if profile else 'Admin' %}
+      {% set displayRole = profile.role if profile else 'Administrator' %}
+      <details class="admin-profile" id="admin-profile">
+        <summary class="admin-profile-toggle">
+          <span class="admin-profile-avatar" aria-hidden="true">{{ displayName | first | upper }}</span>
+          <span class="admin-profile-text">
+            <span class="admin-profile-name">{{ displayName }}</span>
+            <span class="admin-profile-role">{{ displayRole }}</span>
+          </span>
+          <span class="admin-profile-chevron" aria-hidden="true"></span>
+        </summary>
+        <div class="admin-profile-menu">
+          <a class="admin-home-link" href="/">&larr; Back to homepage</a>
+          <form class="admin-logout-form" action="/logout" method="post">
+            <button class="admin-logout-btn" type="submit">Log out</button>
+          </form>
+        </div>
+      </details>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <ul>
+          {% for item in navItems %}
+          <li>
+            <a class="admin-nav-link{% if item.slug == activeSlug %} is-active{% endif %}" href="{{ item.href }}"
+              {% if item.slug == activeSlug %}aria-current="page" {% endif %}>{{ item.label }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="admin-main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% block scripts %}{% endblock %}
+</body>
+
+</html>
