@@ -994,10 +994,17 @@ describe('frontend routes', () => {
       ].map((match) => match[1] as string);
       assert.equal(cards.length, 10);
       for (const [index, card] of cards.entries()) {
-        const button = card.match(
-          /<button\b[^>]*data-add-to-basket[^>]*>/,
-        )?.[0];
+        const form = card.match(
+          /<form action="\/basket\/items" method="post">([\s\S]*?)<\/form>/,
+        )?.[1];
+        assert.ok(form, 'each product has an Add to basket form');
+        assert.match(
+          form,
+          /<input type="hidden" name="productId" value="[^"]+" \/>/,
+        );
+        const button = form.match(/<button\b[^>]*>/)?.[0];
         assert.ok(button);
+        assert.match(button, /type="submit"/);
         if (index === 0 || index === 2) {
           assert.match(card, index === 0 ? /12 in stock/ : /7 in stock/);
           assert.doesNotMatch(button, /\bdisabled\b/);
