@@ -131,6 +131,13 @@ function mountForm(existing: Product | undefined, categories: string[]): void {
     formError.hidden = true;
     formSuccess.hidden = true;
     const current = readForm();
+    if (imageInput.files?.length && !imageDataUrl) {
+      showFieldErrors({
+        image: 'Wait for the selected image to finish loading, or choose another file.',
+      });
+      imageInput.focus();
+      return;
+    }
     const errors = validateProductForm(current, {
       imageRequired: !existing,
       image: imageDataUrl,
