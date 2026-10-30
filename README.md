@@ -14,7 +14,9 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
 | `POST /basket/checkout` | Verifies the saved basket and redirects to `/checkout` |
 | `GET /checkout` | Server-rendered review of the saved basket items and total |
-| `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)). [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
+| `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)), Admin role only. [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
+| `GET /admin/customer-service` | Customer Service dashboard ([customer-service-dashboard.njk](src/views/admin/customer-service-dashboard.njk)) linking to Customers, Orders, Support Tickets and Settings. Customer Service role only; other staff are redirected to their own dashboard. |
+| `GET /dashboard` | Target of the **Dashboard** option in the homepage Account menu (staff only). Redirects staff to the dashboard of their role, and visitors to `/login`. |
 | `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
 | `GET /admin/customers/:id` | Customer details shell. [adminCustomerDetail.ts](src/controllers/adminCustomerDetail.ts) loads the customer from the backend. |
 | `GET /admin/settings` | Settings page ([settings.njk](src/views/admin/settings.njk)): profile (name, email, role) rendered by the server, a dark mode toggle and dashboard widget choices saved in the browser's `localStorage` ([adminPreferences.ts](src/controllers/adminPreferences.ts) applies them on every admin page), and system information whose backend and database status [adminSettings.ts](src/controllers/adminSettings.ts) loads in the browser. |
@@ -44,8 +46,18 @@ content and scripts blocks. Pass `currentYear` when rendering for the footer.
 The browser submits the login form to `POST /login` as URL-encoded form data.
 The frontend controller calls `BACKEND_ORIGIN/api/auth/login` with JSON.
 A successful backend response produces a `303` redirect based on its `role`:
-`ADMIN` goes to `/admin` and `CUSTOMER` goes to `/`. A missing or unknown role
+`ADMIN` goes to `/admin`, `CUSTOMER_SERVICE` goes to `/admin/customer-service`
+and `CUSTOMER` goes to `/`. A missing or unknown role
 renders the login page with an error.
+
+Staff roles are defined in [staffRoles.ts](src/util/staffRoles.ts): each role has
+a dashboard path, template and a list of permissions (`dashboard`, `orders`,
+`customers`, `support`, `inventory`, `reports`, `settings`). The admin guard asks
+the backend for the signed-in user's role (`/api/admin/profile`) and every
+`/admin` route then checks the role's permissions, so the sidebar and the
+reachable routes only include what the role may use. Adding a role (Finance,
+Super Admin, ...) means adding one entry to `STAFF_ROLES`, a dashboard template
+and a dashboard route. A role the portal does not know is denied.
 Incorrect credentials render the login page with an error and retain the email,
 but never the password. Backend failures also render an error.
 Login submission does not require browser JavaScript. An optional browser script
@@ -128,13 +140,16 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 │   ├── views/            # Nunjucks page templates and admin/ shells
 │   ├── assets/           # CSS served at /assets
 │   ├── server/
-│   │   └── controllers/  # server-side controllers (login)
+│   │   ├── controllers/  # server-side controllers (home, account, admin, support, status, login, catalog)
+│   │   ├── routes/       # route tables that wire URLs to controllers (admin)
+│   │   └── middleware/   # shared Express middleware (same-origin check)
 │   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers
 │   ├── util/
 │   │   ├── apiProxy.ts   # forwards /api requests to the backend
 │   │   ├── customers.ts  # customer types, query parsing and formatting (shared by controllers)
 │   │   ├── customerViews.ts / adminDashboard.ts  # pure HTML rendering helpers used by the controllers
-│   │   └── adminPortal.ts # admin navigation and placeholder content
+│   │   ├── adminPortal.ts # admin navigation
+│   │   └── adminResources.ts # admin placeholder content
 │   ├── repos/            # reserved for data access code
 │   └── services/         # reserved for business logic
 ├── test/
