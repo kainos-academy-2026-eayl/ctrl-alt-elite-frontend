@@ -33,6 +33,9 @@
           <ul class="account-menu-list">
             {% if isAuthenticated %}
             <li><a class="account-menu-link" href="/profile">My Profile</a></li>
+            {% if isStaff %}
+            <li><a class="account-menu-link" href="/dashboard">Dashboard</a></li>
+            {% endif %}
             <li>
               <form action="/logout" method="post">
                 <button class="account-menu-link account-menu-button" type="submit">Logout</button>

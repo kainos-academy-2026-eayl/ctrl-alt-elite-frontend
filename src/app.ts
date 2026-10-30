@@ -1,44 +1,27 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import express, { type Express, type Request, type Response } from 'express';
+import express, { type Express } from 'express';
 import nunjucks from 'nunjucks';
-import { SAMPLE_PRODUCTS } from './data/sampleProducts';
-import { errorHandler, renderErrorPage } from './middleware/errorHandler';
+import { errorHandler } from './middleware/errorHandler';
 import { requireSameOrigin } from './middleware/requireSameOrigin';
 import { createBasketRouter } from './routes/basketRouter';
+import { AccountController } from './server/controllers/account-controller';
+import { AdminController } from './server/controllers/admin-controller';
 import { BasketController } from './server/controllers/basketController';
 import { CatalogController } from './server/controllers/catalog-controller';
+import { HomeController } from './server/controllers/home-controller';
 import { LoginController } from './server/controllers/login';
 import { ProductDetailController } from './server/controllers/productDetailController';
 import { SearchController } from './server/controllers/searchController';
+import { StatusController } from './server/controllers/status-controller';
+import { SupportController } from './server/controllers/support-controller';
+import { createAdminRouter } from './server/routes/admin';
 import { CatalogService } from './server/services/catalog-service';
 import { BasketService } from './services/basketService';
 import { ProductService } from './services/productService';
-import { createAdminGuard } from './util/adminGuard';
-import {
-  ADMIN_NAV_ITEMS,
-  ADMIN_QUICK_ACTIONS,
-  ADMIN_SUMMARY_CARDS,
-  ADMIN_SYSTEM_STATUS,
-  findAdminModule,
-} from './util/adminPortal';
-import { DASHBOARD_WIDGETS } from './util/adminSettings';
-import { loadAdminFirstName, loadAdminProfile } from './util/adminUser';
 import { createApiProxy } from './util/apiProxy';
-import { clearAuthCookie, readAuthCookie } from './util/authCookie';
 import { createCustomerGuard } from './util/customerGuard';
-import { CUSTOMER_SORT_OPTIONS } from './util/customers';
 import { LoginSession } from './util/loginSession';
-import {
-  MAX_DESCRIPTION_LENGTH,
-  MAX_SUBJECT_LENGTH,
-  TICKET_CATEGORIES,
-  TICKET_STATUSES,
-} from './util/supportTickets';
-import { buildHomepage } from './views/homepage.page';
-
-/** How many best sellers the homepage conveyor shows. */
-const CONVEYOR_PRODUCT_COUNT = 6;
 
 const VIEWS_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
@@ -102,32 +85,22 @@ export function createApp(
     { autoescape: true },
   );
 
-  async function renderAdminPage(
-    req: Request,
-    res: Response,
-    template: string,
-    context: Record<string, unknown>,
-  ): Promise<void> {
-    const profile =
-      'profile' in context
-        ? context.profile
-        : await loadAdminProfile(
-            backendOrigin,
-            readAuthCookie(req.headers.cookie),
-          );
-    try {
-      res.type('html').send(
-        adminTemplates.render(template, {
-          navItems: ADMIN_NAV_ITEMS,
-          profile,
-          ...context,
-        }),
-      );
-    } catch (error) {
-      console.error(`Unable to load the admin page ${template}:`, error);
-      res.redirect('/unavailable');
-    }
-  }
+  const productService = new ProductService(backendOrigin);
+  const homeController = new HomeController(
+    backendOrigin,
+    loginSession,
+    adminTemplates,
+    basketController,
+    productService,
+  );
+  const accountController = new AccountController(loginSession, adminTemplates);
+  const supportController = new SupportController();
+  const statusController = new StatusController(adminTemplates);
+  const adminController = new AdminController(
+    backendOrigin,
+    adminTemplates,
+    readAppVersion,
+  );
 
   app.use('/api', createApiProxy(backendOrigin));
 
@@ -150,47 +123,14 @@ export function createApp(
   );
   app.get('/products/:id', productDetailController.show);
 
-  const productService = new ProductService(backendOrigin);
   const searchController = new SearchController(
     productService,
     basketController.getHeaderBasket,
   );
   app.get('/search', searchController.show);
 
-  /** The conveyor is optional: if products cannot be loaded it is left out. */
-  async function loadConveyorProducts() {
-    try {
-      return await productService.getPopular(CONVEYOR_PRODUCT_COUNT);
-    } catch (error) {
-      console.error('Unable to load products for the conveyor:', error);
-      return [];
-    }
-  }
-
-  app.get('/', async (req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
-    try {
-      const [account, basket, conveyorProducts] = await Promise.all([
-        loginSession.getAccount(req, res),
-        basketController.getHeaderBasket(req),
-        loadConveyorProducts(),
-      ]);
-      res.type('html').send(
-        adminTemplates.render(
-          'homepage.njk',
-          buildHomepage({
-            account,
-            products: SAMPLE_PRODUCTS,
-            conveyorProducts,
-            basket,
-          }),
-        ),
-      );
-    } catch (error) {
-      console.error('Unable to load the homepage:', error);
-      res.redirect('/unavailable');
-    }
-  });
+  app.get('/', homeController.show);
+  app.get('/dashboard', homeController.redirectToDashboard);
 
   app.get('/login', loginController.show);
   app.post(
@@ -200,180 +140,22 @@ export function createApp(
     loginController.submit,
   );
 
-  app.get('/profile', async (req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
-    try {
-      const account = await loginSession.getAccount(req, res);
-      if (!account) {
-        res.redirect('/login');
-        return;
-      }
-      res.type('html').send(
-        adminTemplates.render('profile.njk', {
-          account,
-          currentYear: new Date().getFullYear(),
-        }),
-      );
-    } catch (error) {
-      console.error('Unable to load the profile page:', error);
-      res.redirect('/unavailable');
-    }
-  });
-
-  app.post('/logout', requireSameOrigin, (_req: Request, res: Response) => {
-    res.setHeader('Cache-Control', 'no-store');
-    clearAuthCookie(res);
-    loginSession.clear(res);
-    res.redirect(303, '/login');
-  });
-
-  app.get('/register', async (_req: Request, res: Response) => {
-    try {
-      const register = adminTemplates.render('register.njk');
-      res.type('html').send(register);
-    } catch (error) {
-      console.error('Unable to load the register page:', error);
-      res.redirect('/unavailable');
-    }
-  });
+  app.get('/profile', accountController.showProfile);
+  app.post('/logout', requireSameOrigin, accountController.logout);
+  app.get('/register', accountController.showRegister);
 
   app.get('/checkout', basketController.showCheckout);
   app.use('/basket', createBasketRouter(basketController));
 
-  // Like the admin pages, these are page shells: src/controllers/support.ts
-  // loads and submits tickets through /api/support/tickets in the browser.
   app.use('/account', createCustomerGuard());
+  app.get('/account/support', supportController.showList);
+  app.get('/account/support/new', supportController.showNew);
+  app.get('/account/support/:id', supportController.showDetail);
 
-  function renderSupportPage(
-    res: Response,
-    page: 'list' | 'new' | 'detail',
-    title: string,
-  ): void {
-    res.render(
-      'support',
-      {
-        page,
-        title,
-        categories: TICKET_CATEGORIES,
-        maxSubjectLength: MAX_SUBJECT_LENGTH,
-        maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
-        currentYear: new Date().getFullYear(),
-      },
-      (error: Error | null, html: string) => {
-        if (error) {
-          console.error('Unable to load the support page:', error);
-          renderErrorPage(res);
-          return;
-        }
-        res.type('html').send(html);
-      },
-    );
-  }
+  app.use('/admin', createAdminRouter(backendOrigin, adminController));
 
-  app.get('/account/support', (_req: Request, res: Response) => {
-    renderSupportPage(res, 'list', 'My support tickets');
-  });
-
-  app.get('/account/support/new', (_req: Request, res: Response) => {
-    renderSupportPage(res, 'new', 'Create a ticket');
-  });
-
-  app.get('/account/support/:id', (_req: Request, res: Response) => {
-    renderSupportPage(res, 'detail', 'Ticket details');
-  });
-
-  app.use('/admin', createAdminGuard(backendOrigin));
-
-  // The server only serves page shells. Live data is loaded in the browser by the
-  // matching controller in src/controllers, which calls the backend through /api.
-  app.get('/admin', async (req: Request, res: Response) => {
-    const firstName = await loadAdminFirstName(
-      backendOrigin,
-      readAuthCookie(req.headers.cookie),
-    );
-    await renderAdminPage(req, res, 'admin/dashboard.njk', {
-      title: 'Dashboard',
-      firstName,
-      activeSlug: 'dashboard',
-      summaryCards: ADMIN_SUMMARY_CARDS,
-      quickActions: ADMIN_QUICK_ACTIONS,
-      systemStatus: ADMIN_SYSTEM_STATUS,
-    });
-  });
-
-  app.get('/admin/customers', async (req: Request, res: Response) => {
-    await renderAdminPage(req, res, 'admin/customers.njk', {
-      title: 'Customers',
-      activeSlug: 'customers',
-      sortOptions: CUSTOMER_SORT_OPTIONS,
-    });
-  });
-
-  app.get('/admin/customers/:id', async (req: Request, res: Response) => {
-    await renderAdminPage(req, res, 'admin/customer-detail.njk', {
-      title: 'Customer details',
-      activeSlug: 'customers',
-    });
-  });
-
-  app.get('/admin/support', async (req: Request, res: Response) => {
-    await renderAdminPage(req, res, 'admin/support.njk', {
-      title: 'Support Tickets',
-      activeSlug: 'support',
-      statuses: TICKET_STATUSES,
-      categories: TICKET_CATEGORIES,
-    });
-  });
-
-  app.get('/admin/support/:id', async (req: Request, res: Response) => {
-    await renderAdminPage(req, res, 'admin/support-detail.njk', {
-      title: 'Ticket details',
-      activeSlug: 'support',
-    });
-  });
-
-  app.get('/admin/settings', async (req: Request, res: Response) => {
-    const [profile, appVersion] = await Promise.all([
-      loadAdminProfile(backendOrigin, readAuthCookie(req.headers.cookie)),
-      readAppVersion(),
-    ]);
-    await renderAdminPage(req, res, 'admin/settings.njk', {
-      title: 'Settings',
-      activeSlug: 'settings',
-      profile,
-      appVersion,
-      dashboardWidgets: DASHBOARD_WIDGETS,
-    });
-  });
-
-  app.get('/admin/:section', async (req: Request, res: Response, next) => {
-    const adminModule = findAdminModule(String(req.params.section));
-    if (!adminModule) {
-      next();
-      return;
-    }
-    await renderAdminPage(req, res, 'admin/module.njk', {
-      title: adminModule.label,
-      activeSlug: adminModule.slug,
-    });
-  });
-
-  app.get('/unavailable', async (_req: Request, res: Response) => {
-    try {
-      const unavailablePage = adminTemplates.render('unavailable.njk');
-      res.status(503).type('html').send(unavailablePage);
-    } catch (error) {
-      console.error('Unable to load the unavailable page:', error);
-      res
-        .status(500)
-        .type('text')
-        .send('The website is currently unavailable.');
-    }
-  });
-
-  app.get('/health', (_req: Request, res: Response) => {
-    res.json({ status: 'ok', uptime: process.uptime() });
-  });
+  app.get('/unavailable', statusController.showUnavailable);
+  app.get('/health', statusController.health);
 
   // Must be registered after every route so it catches their errors.
   app.use(errorHandler);

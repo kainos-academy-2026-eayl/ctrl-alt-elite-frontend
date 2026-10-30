@@ -28,6 +28,17 @@ describe('admin portal pages', () => {
     backend = createServer((req, res) => {
       checks += 1;
       const auth = req.headers.authorization;
+      if (req.url === '/api/admin/profile') {
+        res.statusCode = auth?.endsWith('admin-token') ? 200 : 401;
+        res.end(
+          JSON.stringify({
+            name: 'Ada Lovelace',
+            email: 'ada@example.com',
+            role: 'ADMIN',
+          }),
+        );
+        return;
+      }
       const ok = req.url === '/api/admin/customers?pageSize=1';
       res.statusCode = !ok
         ? 500
@@ -229,7 +240,7 @@ describe('admin portal pages', () => {
       )?.[0];
       assert.ok(menu, 'missing profile dropdown');
       assert.match(menu, /<summary class="admin-profile-toggle">/);
-      assert.match(menu, /admin-profile-name">Admin</);
+      assert.match(menu, /admin-profile-name">Ada Lovelace</);
       assert.match(menu, /admin-profile-role">Administrator</);
       assert.doesNotMatch(menu, /admin-nav-link/);
       assert.match(
