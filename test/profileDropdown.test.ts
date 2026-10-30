@@ -183,13 +183,55 @@ describe('homepage profile dropdown', () => {
     assert.match(profileHtml, /<title>My Profile \| Ctrl-Alt-Elite<\/title>/);
     assert.match(profileHtml, /<h2>Test Customer<\/h2>/);
     assert.match(profileHtml, /class="profile-preview-avatar"/);
-    assert.match(profileHtml, /coming soon/);
+    assert.match(profileHtml, /Design preview only/);
     assert.match(profileHtml, /href="\/">Back to home/);
     assert.match(profileHtml, /href="\/assets\/profile\.css"/);
-    assert.doesNotMatch(profileHtml, /{{|{%|<input|<form/);
+    assert.doesNotMatch(profileHtml, /{{|{%|<form|<script/);
     const stylesheet = await fetch(`${base}/assets/profile.css`);
     assert.equal(stylesheet.status, 200);
     assert.match(stylesheet.headers.get('content-type') ?? '', /text\/css/);
+  });
+
+  it('renders cosmetic profile fields without submission or backend calls', async () => {
+    const backendRequest = vi.fn();
+    backend.on('request', backendRequest);
+    try {
+      const response = await fetch(`${base}/profile`, {
+        headers: { cookie: `ctrl_alt_elite_login=${validToken}` },
+      });
+      assert.equal(response.status, 200);
+      const html = await response.text();
+      for (const [id, label] of [
+        ['profile-picture', 'Profile picture'],
+        ['profile-username', 'Username'],
+        ['profile-first-name', 'First name'],
+        ['profile-second-name', 'Second name'],
+        ['profile-pronouns', 'Pronouns'],
+        ['profile-description', 'About you'],
+      ]) {
+        assert.ok(html.includes(`for="${id}">${label}</label>`));
+        assert.ok(html.includes(`id="${id}"`));
+      }
+      assert.match(
+        html,
+        /type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/,
+      );
+      for (const pronouns of ['he/him', 'she/her', 'they/them', 'other']) {
+        assert.ok(html.includes(`<option value="${pronouns}">`));
+      }
+      assert.match(html, /<option value="">Prefer not to say<\/option>/);
+      assert.match(html, /<textarea[^>]*maxlength="200"/);
+      assert.match(
+        html,
+        /<button[^>]*type="button"[^>]*disabled[^>]*>Save changes<\/button>/,
+      );
+      assert.match(html, /changes are not saved/);
+      assert.match(html, /pictures are not uploaded or previewed/);
+      assert.doesNotMatch(html, /<form|<script|\/api\/|profileController/);
+      assert.equal(backendRequest.mock.calls.length, 0);
+    } finally {
+      backend.off('request', backendRequest);
+    }
   });
 
   it('redirects guests and expired sessions from the profile preview to login', async () => {
