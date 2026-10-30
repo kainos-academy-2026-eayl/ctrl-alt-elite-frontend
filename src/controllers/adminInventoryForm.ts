@@ -114,7 +114,9 @@ function mountForm(existing: Product | undefined, categories: string[]): void {
       return;
     }
     try {
-      imageDataUrl = await readFileAsDataUrl(file);
+      const dataUrl = await readFileAsDataUrl(file);
+      if (imageInput.files?.[0] !== file) return;
+      imageDataUrl = dataUrl;
       showFieldErrors({});
       preview.src = imageDataUrl;
       preview.alt = 'Selected product image';
