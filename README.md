@@ -4,9 +4,15 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 
 | Route | What it does |
 | --- | --- |
-| `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)) |
+| `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Currently lists temporary products from [src/data/sampleProducts.ts](src/data/sampleProducts.ts) until the product ticket is complete. |
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
 | `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
+| `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/server/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
+| `POST /basket/items` | "Add to Basket" form (`productId`), then redirects to `/basket` |
+| `POST /basket/items/:productId` | Quantity +/− form (`change` = `1` or `-1`), then redirects to `/basket` |
+| `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
+| `POST /basket/checkout` | Verifies the saved basket and redirects to `/checkout` |
+| `GET /checkout` | Server-rendered review of the saved basket items and total |
 | `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)), Admin role only. [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customer-service` | Customer Service dashboard ([customer-service-dashboard.njk](src/views/admin/customer-service-dashboard.njk)) linking to Customers, Orders, Support Tickets and Settings. Customer Service role only; other staff are redirected to their own dashboard. |
 | `GET /dashboard` | Target of the **Dashboard** option in the homepage Account menu (staff only). Redirects staff to the dashboard of their role, and visitors to `/login`. |
