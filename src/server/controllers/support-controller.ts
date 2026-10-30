@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { renderErrorPage } from '../../middleware/errorHandler';
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_SUBJECT_LENGTH,
@@ -24,7 +25,7 @@ export class SupportController {
       (error: Error | null, html: string) => {
         if (error) {
           console.error('Unable to load the support page:', error);
-          res.redirect('/unavailable');
+          renderErrorPage(res);
           return;
         }
         res.type('html').send(html);

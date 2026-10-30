@@ -2,16 +2,20 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express } from 'express';
 import nunjucks from 'nunjucks';
+import { errorHandler } from './middleware/errorHandler';
+import { requireSameOrigin } from './middleware/requireSameOrigin';
+import { createBasketRouter } from './routes/basketRouter';
 import { AccountController } from './server/controllers/account-controller';
 import { AdminController } from './server/controllers/admin-controller';
+import { BasketController } from './server/controllers/basketController';
 import { CatalogController } from './server/controllers/catalog-controller';
 import { HomeController } from './server/controllers/home-controller';
 import { LoginController } from './server/controllers/login';
 import { StatusController } from './server/controllers/status-controller';
 import { SupportController } from './server/controllers/support-controller';
-import { requireSameOrigin } from './server/middleware/require-same-origin';
 import { createAdminRouter } from './server/routes/admin';
 import { CatalogService } from './server/services/catalog-service';
+import { BasketService } from './services/basketService';
 import { createApiProxy } from './util/apiProxy';
 import { createCustomerGuard } from './util/customerGuard';
 import { LoginSession } from './util/loginSession';
@@ -66,6 +70,9 @@ export function createApp(
   app.set('view engine', 'njk');
   const loginSession = new LoginSession(jwtSecret);
   const loginController = new LoginController(backendOrigin, loginSession);
+  const basketController = new BasketController(
+    new BasketService(backendOrigin),
+  );
 
   // noCache is a loader option, so it must be set on the loader to take effect.
   const adminTemplates = new nunjucks.Environment(
@@ -79,6 +86,7 @@ export function createApp(
     backendOrigin,
     loginSession,
     adminTemplates,
+    basketController,
   );
   const accountController = new AccountController(loginSession, adminTemplates);
   const supportController = new SupportController();
@@ -120,6 +128,9 @@ export function createApp(
   app.post('/logout', requireSameOrigin, accountController.logout);
   app.get('/register', accountController.showRegister);
 
+  app.get('/checkout', basketController.showCheckout);
+  app.use('/basket', createBasketRouter(basketController));
+
   app.use('/account', createCustomerGuard());
   app.get('/account/support', supportController.showList);
   app.get('/account/support/new', supportController.showNew);
@@ -129,6 +140,9 @@ export function createApp(
 
   app.get('/unavailable', statusController.showUnavailable);
   app.get('/health', statusController.health);
+
+  // Must be registered after every route so it catches their errors.
+  app.use(errorHandler);
 
   return app;
 }

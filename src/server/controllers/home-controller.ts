@@ -1,21 +1,28 @@
 import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
+import { SAMPLE_PRODUCTS } from '../../data/sampleProducts';
 import { loadStaffAccount } from '../../util/adminUser';
 import { readAuthCookie } from '../../util/authCookie';
 import type { LoginSession } from '../../util/loginSession';
 import { findStaffRole, normaliseRole, Role } from '../../util/staffRoles';
+import { buildHomepage } from '../../views/homepage.page';
+import type { BasketController } from './basketController';
 
 export class HomeController {
   constructor(
     private readonly backendOrigin: string,
     private readonly loginSession: LoginSession,
     private readonly templates: Environment,
+    private readonly basketController: BasketController,
   ) {}
 
   show = async (req: Request, res: Response): Promise<void> => {
     res.setHeader('Cache-Control', 'no-store');
     try {
-      const account = await this.loginSession.getAccount(req, res);
+      const [account, basket] = await Promise.all([
+        this.loginSession.getAccount(req, res),
+        this.basketController.getHeaderBasket(req),
+      ]);
       // Sessions created before roles were stored have no role to read.
       const role = account
         ? (findStaffRole(account.role) ??
@@ -30,9 +37,8 @@ export class HomeController {
         : undefined;
       res.type('html').send(
         this.templates.render('homepage.njk', {
-          isAuthenticated: account !== null,
+          ...buildHomepage({ account, products: SAMPLE_PRODUCTS, basket }),
           isStaff: role !== undefined,
-          accountName: account?.name ?? 'Account',
         }),
       );
     } catch (error) {
