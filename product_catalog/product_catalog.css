@@ -208,6 +208,11 @@ h1 {
   margin-top: auto;
 }
 
+/* Lets the Add to basket button inside its form sit in the grid like a button. */
+.product-actions form {
+  display: contents;
+}
+
 .button {
   min-height: 42px;
   padding: 8px 10px;
@@ -363,4 +368,21 @@ h1 {
   .button {
     min-height: 40px;
   }
+}
+
+.cta-button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #14532d;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+}
+
+.cta-button:hover {
+  background: #166534;
 }

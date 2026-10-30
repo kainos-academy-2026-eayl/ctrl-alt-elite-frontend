@@ -403,6 +403,16 @@ describe('inventory pages', () => {
   beforeAll(async () => {
     backend = createServer((req, res) => {
       const ok = req.headers.authorization?.endsWith('admin-token');
+      if (req.url === '/api/admin/profile' && ok) {
+        res.end(
+          JSON.stringify({
+            name: 'Ada Lovelace',
+            email: 'ada@example.com',
+            role: 'ADMIN',
+          }),
+        );
+        return;
+      }
       res.statusCode =
         req.url === '/api/admin/customers?pageSize=1' && ok ? 200 : 401;
       res.end('{}');

@@ -6,6 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Welcome to Ctrl-Alt-Elite. Log in or browse products." />
   <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/basket.css" />
+  <link rel="stylesheet" href="/assets/search.css" />
   <title>Ctrl-Alt-Elite | Home</title>
 </head>
 
@@ -17,6 +19,7 @@
         <span>Ctrl-Alt-Elite</span>
       </a>
       <nav class="primary-nav" aria-label="Main navigation">
+        {% include "_searchForm.njk" %}
         <details class="account-menu" data-account-menu>
           <summary aria-label="{{ accountName }} options">
             <svg class="account-avatar" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
@@ -29,6 +32,9 @@
           <ul class="account-menu-list">
             {% if isAuthenticated %}
             <li><a class="account-menu-link" href="/profile">My Profile</a></li>
+            {% if isStaff %}
+            <li><a class="account-menu-link" href="/dashboard">Dashboard</a></li>
+            {% endif %}
             <li>
               <form action="/logout" method="post">
                 <button class="account-menu-link account-menu-button" type="submit">Logout</button>
@@ -41,6 +47,13 @@
             <li><a class="account-menu-link" href="/account/support">Support</a></li>
           </ul>
         </details>
+        <a class="nav-link basket-icon-link" href="/basket">
+          <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
+          </svg>
+          <span class="basket-visually-hidden">Basket, {{ basketSummary.itemCountText }}</span>
+          <span class="basket-badge" aria-hidden="true">{{ basketSummary.itemCount }}</span>
+        </a>
       </nav>
     </div>
   </header>
@@ -51,8 +64,27 @@
       <h1 id="welcome-heading">Find your next favourite.</h1>
       <p class="welcome-copy">
         Explore our collection and find something made for your everyday.
+        <button class="cta-button" onclick="location.href='/products'">Browse Products</button>
       </p>
     </section>
+
+    {% if products and products.length %}
+    <section class="page-width products" aria-labelledby="products-heading">
+      <h2 id="products-heading">Featured products</h2>
+      <ul class="product-grid">
+        {% for product in products %}
+        <li class="product-card">
+          <h3>{{ product.name }}</h3>
+          <p class="product-price">{{ product.price }}</p>
+          <form action="{{ addToBasketUrl }}" method="post">
+            <input type="hidden" name="productId" value="{{ product.id }}" />
+            <button type="submit" class="basket-button">Add to Basket</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
   </main>
 
   <footer class="site-footer">

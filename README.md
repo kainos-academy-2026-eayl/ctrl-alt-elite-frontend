@@ -4,16 +4,28 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 
 | Route | What it does |
 | --- | --- |
-| `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)) |
+| `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Currently lists temporary products from [src/data/sampleProducts.ts](src/data/sampleProducts.ts) until the product ticket is complete. |
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
 | `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
-| `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)). [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
+| `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/server/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
+| `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/server/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms. |
+| `POST /basket/items` | "Add to Basket" form (`productId`), then redirects to `/basket` |
+| `POST /basket/items/:productId` | Quantity +/− form (`change` = `1` or `-1`), then redirects to `/basket` |
+| `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
+| `POST /basket/checkout` | Verifies the saved basket and redirects to `/checkout` |
+| `GET /checkout` | Server-rendered review of the saved basket items and total |
+| `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)), Admin role only. [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
+| `GET /admin/customer-service` | Customer Service dashboard ([customer-service-dashboard.njk](src/views/admin/customer-service-dashboard.njk)) linking to Customers, Orders, Support Tickets and Settings. Customer Service role only; other staff are redirected to their own dashboard. |
+| `GET /dashboard` | Target of the **Dashboard** option in the homepage Account menu (staff only). Redirects staff to the dashboard of their role, and visitors to `/login`. |
 | `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
 | `GET /admin/customers/:id` | Customer details shell. [adminCustomerDetail.ts](src/controllers/adminCustomerDetail.ts) loads the customer from the backend. |
 | `GET /admin/settings` | Settings page ([settings.njk](src/views/admin/settings.njk)): profile (name, email, role) rendered by the server, a dark mode toggle and dashboard widget choices saved in the browser's `localStorage` ([adminPreferences.ts](src/controllers/adminPreferences.ts) applies them on every admin page), and system information whose backend and database status [adminSettings.ts](src/controllers/adminSettings.ts) loads in the browser. |
 | `GET /admin/support` | Support ticket list shell ([support.njk](src/views/admin/support.njk)). [adminSupport.ts](src/controllers/adminSupport.ts) loads every ticket (ID, customer name, subject, category, status, date created) and applies `q` (ticket ID, customer name or subject), `status` and `category` from the URL. |
 | `GET /admin/support/:id` | Ticket details (subject, category, description, customer, date created, status) with a status form and a comment thread (refreshes every 10 seconds; read-only once the ticket is closed). [adminSupportDetail.ts](src/controllers/adminSupportDetail.ts) loads the ticket, saves status changes and posts replies. |
-| `GET /admin/{orders,inventory,reports}` | "Coming soon" placeholders |
+| `GET /admin/inventory` | Inventory list shell, Admin role only |
+| `GET /admin/inventory/new` | Add-product form shell, Admin role only |
+| `GET /admin/inventory/:id` | Edit-product form shell, Admin role only |
+| `GET /admin/{orders,reports}` | "Coming soon" placeholders |
 | `GET /account/support` | Customer support dashboard shell ([support.njk](src/views/support.njk)): lists the customer's tickets with ID, subject, status and created date. Requires a login cookie, otherwise redirects to `/login`. |
 | `GET /account/support/new` | Create-ticket form (subject, category, description) with validation that blocks empty submissions |
 | `GET /account/support/:id` | Ticket details (subject, description, created date, status) and a comment thread to reply to support (refreshes every 10 seconds; read-only once the ticket is closed). [support.ts](src/controllers/support.ts) loads and submits tickets in the browser. |
@@ -37,8 +49,18 @@ content and scripts blocks. Pass `currentYear` when rendering for the footer.
 The browser submits the login form to `POST /login` as URL-encoded form data.
 The frontend controller calls `BACKEND_ORIGIN/api/auth/login` with JSON.
 A successful backend response produces a `303` redirect based on its `role`:
-`ADMIN` goes to `/admin` and `CUSTOMER` goes to `/`. A missing or unknown role
+`ADMIN` goes to `/admin`, `CUSTOMER_SERVICE` goes to `/admin/customer-service`
+and `CUSTOMER` goes to `/`. A missing or unknown role
 renders the login page with an error.
+
+Staff roles are defined in [staffRoles.ts](src/util/staffRoles.ts): each role has
+a dashboard path, template and a list of permissions (`dashboard`, `orders`,
+`customers`, `support`, `inventory`, `reports`, `settings`). The admin guard asks
+the backend for the signed-in user's role (`/api/admin/profile`) and every
+`/admin` route then checks the role's permissions, so the sidebar and the
+reachable routes only include what the role may use. Adding a role (Finance,
+Super Admin, ...) means adding one entry to `STAFF_ROLES`, a dashboard template
+and a dashboard route. A role the portal does not know is denied.
 Incorrect credentials render the login page with an error and retain the email,
 but never the password. Backend failures also render an error.
 Login submission does not require browser JavaScript. An optional browser script
@@ -121,13 +143,16 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 │   ├── views/            # Nunjucks page templates and admin/ shells
 │   ├── assets/           # CSS served at /assets
 │   ├── server/
-│   │   └── controllers/  # server-side controllers (login)
+│   │   ├── controllers/  # server-side controllers (home, account, admin, support, status, login, catalog)
+│   │   ├── routes/       # route tables that wire URLs to controllers (admin)
+│   │   └── middleware/   # shared Express middleware (same-origin check)
 │   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers
 │   ├── util/
 │   │   ├── apiProxy.ts   # forwards /api requests to the backend
 │   │   ├── customers.ts  # customer types, query parsing and formatting (shared by controllers)
 │   │   ├── customerViews.ts / adminDashboard.ts  # pure HTML rendering helpers used by the controllers
-│   │   └── adminPortal.ts # admin navigation and placeholder content
+│   │   ├── adminPortal.ts # admin navigation
+│   │   └── adminResources.ts # admin placeholder content
 │   ├── repos/            # reserved for data access code
 │   └── services/         # reserved for business logic
 ├── test/
