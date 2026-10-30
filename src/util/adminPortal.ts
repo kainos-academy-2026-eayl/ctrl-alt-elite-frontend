@@ -8,6 +8,7 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   { slug: 'dashboard', label: 'Dashboard', href: '/admin' },
   { slug: 'orders', label: 'Orders', href: '/admin/orders' },
   { slug: 'customers', label: 'Customers', href: '/admin/customers' },
+  { slug: 'support', label: 'Support Tickets', href: '/admin/support' },
   { slug: 'inventory', label: 'Inventory', href: '/admin/inventory' },
   { slug: 'reports', label: 'Reports', href: '/admin/reports' },
   { slug: 'settings', label: 'Settings', href: '/admin/settings' },

@@ -2,7 +2,15 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
+import { SAMPLE_PRODUCTS } from './data/sampleProducts';
+import { errorHandler, renderErrorPage } from './middleware/errorHandler';
+import { requireSameOrigin } from './middleware/requireSameOrigin';
+import { createBasketRouter } from './routes/basketRouter';
+import { BasketController } from './server/controllers/basketController';
+import { CatalogController } from './server/controllers/catalog-controller';
 import { LoginController } from './server/controllers/login';
+import { CatalogService } from './server/services/catalog-service';
+import { BasketService } from './services/basketService';
 import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,
@@ -15,29 +23,16 @@ import { DASHBOARD_WIDGETS } from './util/adminSettings';
 import { loadAdminFirstName, loadAdminProfile } from './util/adminUser';
 import { createApiProxy } from './util/apiProxy';
 import { clearAuthCookie, readAuthCookie } from './util/authCookie';
+import { createCustomerGuard } from './util/customerGuard';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
 import { LoginSession } from './util/loginSession';
-
-function requireSameOrigin(
-  req: Request,
-  res: Response,
-  next: (error?: unknown) => void,
-): void {
-  const source = req.get('origin') ?? req.get('referer');
-  if (source) {
-    try {
-      const requestOrigin = new URL(`${req.protocol}://${req.get('host')}`)
-        .origin;
-      if (new URL(source).origin === requestOrigin) {
-        next();
-        return;
-      }
-    } catch {
-      // Reject malformed origin and referer values.
-    }
-  }
-  res.status(403).type('text').send('Forbidden');
-}
+import {
+  MAX_DESCRIPTION_LENGTH,
+  MAX_SUBJECT_LENGTH,
+  TICKET_CATEGORIES,
+  TICKET_STATUSES,
+} from './util/supportTickets';
+import { buildHomepage } from './views/homepage.page';
 
 const VIEWS_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
@@ -89,6 +84,9 @@ export function createApp(
   app.set('view engine', 'njk');
   const loginSession = new LoginSession(jwtSecret);
   const loginController = new LoginController(backendOrigin, loginSession);
+  const basketController = new BasketController(
+    new BasketService(backendOrigin),
+  );
 
   // noCache is a loader option, so it must be set on the loader to take effect.
   const adminTemplates = new nunjucks.Environment(
@@ -129,17 +127,33 @@ export function createApp(
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
+  app.use(
+    '/product-catalog',
+    express.static(
+      fileURLToPath(new URL('../product_catalog/', import.meta.url)),
+      { index: false },
+    ),
+  );
+  const catalogController = new CatalogController(
+    new CatalogService(backendOrigin),
+  );
+  app.get('/products', catalogController.showProducts);
 
   app.get('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
-      const account = await loginSession.getAccount(req, res);
-      res.type('html').send(
-        adminTemplates.render('homepage.njk', {
-          isAuthenticated: account !== null,
-          accountName: account?.name ?? 'Account',
-        }),
-      );
+      const [account, basket] = await Promise.all([
+        loginSession.getAccount(req, res),
+        basketController.getHeaderBasket(req),
+      ]);
+      res
+        .type('html')
+        .send(
+          adminTemplates.render(
+            'homepage.njk',
+            buildHomepage({ account, products: SAMPLE_PRODUCTS, basket }),
+          ),
+        );
     } catch (error) {
       console.error('Unable to load the homepage:', error);
       res.redirect('/unavailable');
@@ -191,6 +205,51 @@ export function createApp(
     }
   });
 
+  app.get('/checkout', basketController.showCheckout);
+  app.use('/basket', createBasketRouter(basketController));
+
+  // Like the admin pages, these are page shells: src/controllers/support.ts
+  // loads and submits tickets through /api/support/tickets in the browser.
+  app.use('/account', createCustomerGuard());
+
+  function renderSupportPage(
+    res: Response,
+    page: 'list' | 'new' | 'detail',
+    title: string,
+  ): void {
+    res.render(
+      'support',
+      {
+        page,
+        title,
+        categories: TICKET_CATEGORIES,
+        maxSubjectLength: MAX_SUBJECT_LENGTH,
+        maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
+        currentYear: new Date().getFullYear(),
+      },
+      (error: Error | null, html: string) => {
+        if (error) {
+          console.error('Unable to load the support page:', error);
+          renderErrorPage(res);
+          return;
+        }
+        res.type('html').send(html);
+      },
+    );
+  }
+
+  app.get('/account/support', (_req: Request, res: Response) => {
+    renderSupportPage(res, 'list', 'My support tickets');
+  });
+
+  app.get('/account/support/new', (_req: Request, res: Response) => {
+    renderSupportPage(res, 'new', 'Create a ticket');
+  });
+
+  app.get('/account/support/:id', (_req: Request, res: Response) => {
+    renderSupportPage(res, 'detail', 'Ticket details');
+  });
+
   app.use('/admin', createAdminGuard(backendOrigin));
 
   // The server only serves page shells. Live data is loaded in the browser by the
@@ -222,6 +281,22 @@ export function createApp(
     await renderAdminPage(req, res, 'admin/customer-detail.njk', {
       title: 'Customer details',
       activeSlug: 'customers',
+    });
+  });
+
+  app.get('/admin/support', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/support.njk', {
+      title: 'Support Tickets',
+      activeSlug: 'support',
+      statuses: TICKET_STATUSES,
+      categories: TICKET_CATEGORIES,
+    });
+  });
+
+  app.get('/admin/support/:id', async (req: Request, res: Response) => {
+    await renderAdminPage(req, res, 'admin/support-detail.njk', {
+      title: 'Ticket details',
+      activeSlug: 'support',
     });
   });
 
@@ -267,6 +342,9 @@ export function createApp(
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', uptime: process.uptime() });
   });
+
+  // Must be registered after every route so it catches their errors.
+  app.use(errorHandler);
 
   return app;
 }

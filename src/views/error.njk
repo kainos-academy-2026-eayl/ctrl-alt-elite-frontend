@@ -1,0 +1,20 @@
+{#
+  Shared error screen. The status, title and message come from error.page.ts.
+#}
+{% extends "layout.njk" %}
+
+{% block title %}Ctrl-Alt-Elite | {{ title }}{% endblock %}
+
+{% block navigation %}
+<nav class="primary-nav" aria-label="Main navigation">
+  <a class="nav-link" href="/">Back to home</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="page-width welcome" aria-labelledby="error-heading">
+  <p class="eyebrow">Error {{ status }}</p>
+  <h1 id="error-heading">{{ title }}</h1>
+  <p class="welcome-copy">{{ message }}</p>
+</section>
+{% endblock %}

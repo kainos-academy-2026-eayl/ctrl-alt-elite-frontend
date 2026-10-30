@@ -1,11 +1,95 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { createServer, type IncomingMessage, type Server } from 'node:http';
+import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { afterAll, beforeAll, describe, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  it,
+  vi,
+} from 'vitest';
 import { createApp } from '../src/app';
+import { SAMPLE_PRODUCTS } from '../src/data/sampleProducts';
 
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
+const BACKEND_ORIGIN = 'https://backend.example.test';
+const fetch = globalThis.fetch;
+
+/** In-memory stand-in for the backend basket API (/api/baskets). */
+const fakeBaskets = new Map<string, Map<string, number>>();
+
+function basketBody(id: string, quantities: Map<string, number>) {
+  const items = [...quantities].map(([productId, quantity]) => {
+    const product = SAMPLE_PRODUCTS.find((p) => p.id === productId);
+    const unitPricePence = Math.round(Number(product?.price) * 100);
+    return {
+      id: productId,
+      name: product?.name ?? productId,
+      unitPricePence,
+      quantity,
+      lineTotalPence: unitPricePence * quantity,
+    };
+  });
+  return {
+    id,
+    items,
+    itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+    totalPence: items.reduce((sum, item) => sum + item.lineTotalPence, 0),
+    maxQuantity: 99,
+  };
+}
+
+async function handleFakeBasketApi(req: Request): Promise<Response> {
+  const [, , , basketId, , productId] = new URL(req.url).pathname.split('/');
+  if (req.method === 'POST' && basketId === undefined) {
+    const id = randomUUID();
+    fakeBaskets.set(id, new Map());
+    return Response.json(basketBody(id, new Map()), { status: 201 });
+  }
+  const quantities = fakeBaskets.get(basketId ?? '');
+  if (!basketId || !quantities) {
+    return Response.json({ message: 'Basket not found.' }, { status: 404 });
+  }
+  if (req.method === 'POST') {
+    const { productId: added } = (await req.json()) as { productId: string };
+    if (!SAMPLE_PRODUCTS.some((product) => product.id === added)) {
+      return Response.json(
+        { message: 'That product is not available.' },
+        { status: 400 },
+      );
+    }
+    quantities.set(added, (quantities.get(added) ?? 0) + 1);
+  } else if (req.method === 'PATCH' && productId) {
+    const { change } = (await req.json()) as { change: number };
+    const id = decodeURIComponent(productId);
+    quantities.set(id, (quantities.get(id) ?? 0) + change);
+  } else if (req.method === 'DELETE' && productId) {
+    quantities.delete(decodeURIComponent(productId));
+    return new Response(null, { status: 204 });
+  }
+  return Response.json(basketBody(basketId, quantities));
+}
+
+/** Keeps the cookies a browser would send back, like a tiny cookie jar. */
+function updateCookies(cookies: string, res: Response): string {
+  const jar = new Map(
+    cookies
+      .split('; ')
+      .filter(Boolean)
+      .map((pair) => [pair.slice(0, pair.indexOf('=')), pair] as const),
+  );
+  for (const setCookie of res.headers.getSetCookie()) {
+    const pair = setCookie.split(';')[0] ?? '';
+    const name = pair.slice(0, pair.indexOf('='));
+    if (pair.endsWith('=')) jar.delete(name);
+    else jar.set(name, pair);
+  }
+  return [...jar.values()].join('; ');
+}
 
 function listen(server: Server): Promise<string> {
   return new Promise((resolve) => {
@@ -19,14 +103,7 @@ function close(server: Server): Promise<void> {
   return new Promise((resolve) => server.close(() => resolve()));
 }
 
-async function readBody(req: IncomingMessage): Promise<string> {
-  let body = '';
-  for await (const chunk of req) body += chunk;
-  return body;
-}
-
 describe('frontend routes', () => {
-  let backend: Server;
   let frontend: Server;
   let base: string;
   const loginRequests: {
@@ -35,76 +112,120 @@ describe('frontend routes', () => {
     contentType: string | undefined;
   }[] = [];
 
-  beforeAll(async () => {
-    backend = createServer(async (req, res) => {
-      if (req.url === '/api/auth/login') {
-        const body = JSON.parse(await readBody(req));
+  beforeEach(() => {
+    loginRequests.length = 0;
+    fakeBaskets.clear();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const req = new Request(input, init);
+      assert.equal(new URL(req.url).origin, BACKEND_ORIGIN);
+      const path = new URL(req.url).pathname;
+      if (path === '/api/auth/login') {
+        const body = (await req.json()) as {
+          email: string;
+          password: string;
+        };
         loginRequests.push({
           method: req.method,
           body,
-          contentType: req.headers['content-type'],
+          contentType: req.headers.get('content-type') ?? undefined,
         });
-        res.setHeader('content-type', 'application/json');
         if (body.email === 'unavailable@example.com') {
-          res.statusCode = 500;
-          res.end(JSON.stringify({ message: 'Private backend error' }));
+          return Response.json(
+            { message: 'Private backend error' },
+            { status: 500 },
+          );
         } else if (
           body.email === 'user@example.com' &&
           body.password === 'CorrectPassword@1'
         ) {
-          res.end(
-            JSON.stringify({ userId: 1, email: body.email, role: 'CUSTOMER' }),
-          );
+          return Response.json({
+            userId: 1,
+            email: body.email,
+            role: 'CUSTOMER',
+          });
         } else if (
           body.email === 'admin@example.com' &&
           body.password === 'CorrectPassword@1'
         ) {
-          res.end(
-            JSON.stringify({
-              userId: 2,
-              email: body.email,
-              role: 'ADMIN',
-              token: 'admin.jwt.token',
-            }),
-          );
+          return Response.json({
+            userId: 2,
+            email: body.email,
+            role: 'ADMIN',
+            token: 'admin.jwt.token',
+          });
         } else if (body.email === 'unknownrole@example.com') {
-          res.end(JSON.stringify({ userId: 3, role: 'SUPERUSER' }));
+          return Response.json({ userId: 3, role: 'SUPERUSER' });
         } else if (body.email === 'norole@example.com') {
-          res.end(JSON.stringify({ userId: 4 }));
+          return Response.json({ userId: 4 });
         } else {
-          res.statusCode = 401;
-          res.end(JSON.stringify({ message: 'Incorrect email or password.' }));
+          return Response.json(
+            { message: 'Incorrect email or password.' },
+            { status: 401 },
+          );
         }
-      } else if (req.url === '/api/echo') {
-        res.setHeader('content-type', 'application/json');
-        res.setHeader('x-custom', 'yes');
-        res.setHeader('set-cookie', ['a=1; Path=/', 'b=2; Path=/']);
-        res.statusCode = 201;
-        res.end(
-          JSON.stringify({
+      } else if (path === '/api/echo') {
+        return Response.json(
+          {
             method: req.method,
-            body: await readBody(req),
-            auth: req.headers.authorization ?? null,
-          }),
+            body: await req.text(),
+            auth: req.headers.get('authorization'),
+          },
+          {
+            status: 201,
+            headers: [
+              ['x-custom', 'yes'],
+              ['set-cookie', 'a=1; Path=/'],
+              ['set-cookie', 'b=2; Path=/'],
+            ],
+          },
         );
-      } else if (req.url === '/api/missing') {
-        res.statusCode = 404;
-        res.end('nope');
-      } else {
-        res.statusCode = 500;
-        res.end();
+      } else if (path === '/api/missing') {
+        return new Response('nope', { status: 404 });
+      } else if (path === '/api/products') {
+        return Response.json({
+          products: [
+            {
+              id: 'database-product',
+              name: 'Backend Product',
+              category: 'Test category',
+              price: 25,
+              image: 'https://example.com/product.jpg',
+              description: 'Loaded from the mocked backend response.',
+              stock: 12,
+            },
+            ...[0, '7', undefined, null, '', ' ', 'invalid', -1, 1.5].map(
+              (stock, index) => ({
+                id: `stock-${index}`,
+                name: `Stock fixture ${index}`,
+                category: ['Audio', 'Photography', 'Test category'][index % 3],
+                price: 10,
+                image: 'https://example.com/product.jpg',
+                description: 'Stock test product.',
+                stock,
+              }),
+            ),
+          ],
+        });
+      } else if (path.startsWith('/api/baskets')) {
+        return handleFakeBasketApi(req);
       }
+      throw new Error(`Unexpected backend request: ${req.method} ${req.url}`);
     });
-    const backendOrigin = await listen(backend);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  beforeAll(async () => {
     frontend = createServer(
-      createApp(backendOrigin, { jwtSecret: TEST_JWT_SECRET }),
+      createApp(BACKEND_ORIGIN, { jwtSecret: TEST_JWT_SECRET }),
     );
     base = await listen(frontend);
   });
 
   afterAll(async () => {
     await close(frontend);
-    await close(backend);
   });
 
   describe('GET /', () => {
@@ -113,6 +234,25 @@ describe('frontend routes', () => {
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       assert.match(await res.text(), /<html/i);
+    });
+
+    it('renders an Add to Basket form for each product without JavaScript', async () => {
+      const html = await (await fetch(`${base}/`)).text();
+      const forms = html.match(
+        /<form action="\/basket\/items" method="post">/g,
+      );
+      assert.equal(forms?.length, SAMPLE_PRODUCTS.length);
+      assert.match(
+        html,
+        new RegExp(
+          `<input type="hidden" name="productId" value="${SAMPLE_PRODUCTS[0]?.id}" />`,
+        ),
+      );
+      assert.doesNotMatch(html, /basket\.js/);
+      assert.match(
+        html,
+        /<span class="basket-badge" aria-hidden="true">0<\/span>/,
+      );
     });
   });
 
@@ -228,7 +368,7 @@ describe('frontend routes', () => {
                 status,
               })
             : new Response(new ReadableStream({ cancel }), { status });
-        const originalFetch = globalThis.fetch;
+        const originalFetch = fetch;
         const fetchMock = vi
           .spyOn(globalThis, 'fetch')
           .mockResolvedValueOnce(upstream);
@@ -259,7 +399,7 @@ describe('frontend routes', () => {
     }
 
     it('renders an error for a successful response without a body', async () => {
-      const originalFetch = globalThis.fetch;
+      const originalFetch = fetch;
       const fetchMock = vi
         .spyOn(globalThis, 'fetch')
         .mockResolvedValueOnce(new Response(null, { status: 200 }));
@@ -359,7 +499,7 @@ describe('frontend routes', () => {
         }),
         { status: 500 },
       );
-      const originalFetch = globalThis.fetch;
+      const originalFetch = fetch;
       const fetchMock = vi
         .spyOn(globalThis, 'fetch')
         .mockResolvedValueOnce(upstream);
@@ -489,16 +629,13 @@ describe('frontend routes', () => {
     });
 
     it('renders an error when the backend cannot be reached', async () => {
-      const dead = createServer();
-      const deadOrigin = await listen(dead);
-      await close(dead);
-      const app = createServer(createApp(deadOrigin));
-      const origin = await listen(app);
+      const connectionError = new TypeError('fetch failed');
+      vi.mocked(globalThis.fetch).mockRejectedValueOnce(connectionError);
       const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
       try {
-        const res = await fetch(`${origin}/login`, {
+        const res = await fetch(`${base}/login`, {
           method: 'POST',
-          headers: { origin },
+          headers: { origin: base },
           body: new URLSearchParams({
             email: 'user@example.com',
             password: 'password',
@@ -507,10 +644,11 @@ describe('frontend routes', () => {
         });
         assert.equal(res.status, 502);
         assert.match(await res.text(), /Unable to reach the server\./);
-        assert.equal(errorLog.mock.calls.length, 1);
+        assert.deepEqual(errorLog.mock.calls, [
+          ['Unable to reach the backend login API:', connectionError],
+        ]);
       } finally {
         errorLog.mockRestore();
-        await close(app);
       }
     });
   });
@@ -521,6 +659,218 @@ describe('frontend routes', () => {
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       assert.match(await res.text(), /<html/i);
+    });
+  });
+
+  describe('basket (server-rendered, no JavaScript)', () => {
+    const product = SAMPLE_PRODUCTS[0] as (typeof SAMPLE_PRODUCTS)[number];
+    const productPath = `/basket/items/${encodeURIComponent(product.id)}`;
+
+    function post(
+      path: string,
+      cookies: string,
+      form: Record<string, string> = {},
+    ) {
+      return fetch(`${base}${path}`, {
+        method: 'POST',
+        redirect: 'manual',
+        headers: {
+          origin: base,
+          cookie: cookies,
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams(form),
+      });
+    }
+
+    async function getBasketPage(cookies: string, path = '/basket') {
+      const res = await fetch(`${base}${path}`, {
+        headers: { cookie: cookies },
+      });
+      return { res, html: await res.text() };
+    }
+
+    it('renders an empty basket page with no scripts', async () => {
+      const { res, html } = await getBasketPage('');
+      assert.equal(res.status, 200);
+      assert.match(res.headers.get('content-type') ?? '', /text\/html/);
+      assert.match(
+        html,
+        /<h1 id="basket-heading" tabindex="-1">Your basket<\/h1>/,
+      );
+      assert.match(html, /Your basket is empty\./);
+      assert.doesNotMatch(html, /<script/);
+    });
+
+    it('adds, updates and removes items with form posts and redirects', async () => {
+      let cookies = '';
+
+      const added = await post('/basket/items', cookies, {
+        productId: product.id,
+      });
+      assert.equal(added.status, 303);
+      assert.equal(added.headers.get('location'), '/basket');
+      cookies = updateCookies(cookies, added);
+      assert.match(cookies, /basket_id=/);
+
+      let page = await getBasketPage(cookies);
+      cookies = updateCookies(cookies, page.res);
+      assert.match(
+        page.html,
+        new RegExp(`${product.name} added to your basket`),
+      );
+      assert.match(page.html, /<span class="basket-quantity__value">1<\/span>/);
+
+      const increased = await post(productPath, cookies, { change: '1' });
+      assert.equal(increased.status, 303);
+      assert.equal(
+        increased.headers.get('location'),
+        `/basket?focus=${encodeURIComponent(`${product.id}:increase`)}`,
+      );
+      page = await getBasketPage(
+        cookies,
+        increased.headers.get('location') ?? '/basket',
+      );
+      assert.match(page.html, /<span class="basket-quantity__value">2<\/span>/);
+      assert.match(
+        page.html,
+        /aria-label="Increase quantity of Swaggy Jeans" autofocus/,
+      );
+      assert.match(page.html, /Total \(2 items\)/);
+
+      const home = await (
+        await fetch(`${base}/`, { headers: { cookie: cookies } })
+      ).text();
+      assert.match(
+        home,
+        /<span class="basket-badge" aria-hidden="true">2<\/span>/,
+      );
+
+      const checkout = await post('/basket/checkout', cookies);
+      assert.equal(checkout.status, 303);
+      assert.equal(checkout.headers.get('location'), '/checkout');
+      const checkoutPage = await fetch(`${base}/checkout`, {
+        headers: { cookie: cookies },
+      });
+      const checkoutHtml = await checkoutPage.text();
+      assert.equal(checkoutPage.status, 200);
+      assert.match(checkoutHtml, /<h1 id="checkout-heading">Checkout<\/h1>/);
+      assert.match(checkoutHtml, new RegExp(product.name));
+      assert.match(checkoutHtml, /Total \(2 items\)/);
+      assert.doesNotMatch(checkoutHtml, /<script/);
+
+      const removed = await post(`${productPath}/remove`, cookies);
+      assert.equal(removed.status, 303);
+      cookies = updateCookies(cookies, removed);
+      page = await getBasketPage(
+        cookies,
+        removed.headers.get('location') ?? '/basket',
+      );
+      assert.match(
+        page.html,
+        new RegExp(`${product.name} removed from your basket`),
+      );
+      assert.match(page.html, /Your basket is empty\./);
+      assert.match(
+        page.html,
+        /<h1 id="basket-heading" tabindex="-1" autofocus>/,
+      );
+    });
+
+    it('does not open checkout for an empty basket', async () => {
+      const added = await post('/basket/items', '', { productId: product.id });
+      const cookies = updateCookies('', added);
+      const removed = await post(`${productPath}/remove`, cookies);
+      assert.equal(removed.status, 303);
+      const checkout = await post('/basket/checkout', cookies);
+      assert.equal(checkout.status, 303);
+      assert.equal(checkout.headers.get('location'), '/basket');
+      const { html } = await getBasketPage(updateCookies(cookies, checkout));
+      assert.match(html, /Your basket is empty\./);
+    });
+
+    it('shows the backend message when a product cannot be added', async () => {
+      const res = await post('/basket/items', '', {
+        productId: 'not-a-product',
+      });
+      assert.equal(res.status, 303);
+      const { html } = await getBasketPage(updateCookies('', res));
+      assert.match(html, /That product is not available\./);
+    });
+
+    it('starts again when the saved basket no longer exists', async () => {
+      const { res, html } = await getBasketPage(`basket_id=${randomUUID()}`);
+      assert.match(html, /We could not find your previous basket/);
+      assert.match(res.headers.getSetCookie().join(), /basket_id=;/);
+    });
+
+    it('rejects form posts from other sites', async () => {
+      const res = await fetch(`${base}/basket/items`, {
+        method: 'POST',
+        headers: {
+          origin: 'https://evil.example',
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ productId: product.id }),
+      });
+      assert.equal(res.status, 403);
+    });
+  });
+
+  describe('GET /products', () => {
+    it('renders products returned by the backend API', async () => {
+      const res = await fetch(`${base}/products`);
+      assert.equal(res.status, 200);
+      const html = await res.text();
+      assert.match(html, /Backend Product/);
+      assert.match(html, /Test category/);
+      assert.doesNotMatch(html, /Studio Wireless Headphones/);
+    });
+
+    it('removes search while keeping the product count', async () => {
+      const html = await (await fetch(`${base}/products`)).text();
+      assert.doesNotMatch(
+        html,
+        /productSearch|search-field|data-search|noSearchResults/,
+      );
+      assert.match(html, /10 products/);
+    });
+
+    it('renders one category toggle per backend category and tags product cards', async () => {
+      const html = await (await fetch(`${base}/products`)).text();
+      const filters = [...html.matchAll(/data-category-filter="([^"]+)"/g)].map(
+        (match) => match[1],
+      );
+      assert.deepEqual(filters, ['Test category', 'Audio', 'Photography']);
+      assert.equal((html.match(/aria-pressed="false"/g) ?? []).length, 3);
+      assert.equal(
+        (html.match(/data-product-card data-category=/g) ?? []).length,
+        10,
+      );
+    });
+
+    it('shows stock quantities and disables unavailable products', async () => {
+      const html = await (await fetch(`${base}/products`)).text();
+      const cards = [
+        ...html.matchAll(/<article\b[^>]*>([\s\S]*?)<\/article>/g),
+      ].map((match) => match[1] as string);
+      assert.equal(cards.length, 10);
+      for (const [index, card] of cards.entries()) {
+        const button = card.match(
+          /<button\b[^>]*data-add-to-basket[^>]*>/,
+        )?.[0];
+        assert.ok(button);
+        if (index === 0 || index === 2) {
+          assert.match(card, index === 0 ? /12 in stock/ : /7 in stock/);
+          assert.doesNotMatch(button, /\bdisabled\b/);
+        } else {
+          assert.match(
+            card,
+            index === 1 ? /Out of stock/ : /Stock unavailable/,
+          );
+          assert.match(button, /\bdisabled\b/);
+        }
+      }
     });
   });
 
@@ -550,10 +900,13 @@ describe('frontend routes', () => {
       ['/controllers/script.js', /javascript/],
       ['/assets/register.css', /text\/css/],
       ['/controllers/register.js', /javascript/],
+      ['/assets/basket.css', /text\/css/],
       ['/assets/admin.css', /text\/css/],
       ['/controllers/adminDashboard.js', /javascript/],
       ['/controllers/adminCustomers.js', /javascript/],
       ['/controllers/adminCustomerDetail.js', /javascript/],
+      ['/assets/support.css', /text\/css/],
+      ['/controllers/support.js', /javascript/],
     ] as const) {
       it(`serves ${path}`, async () => {
         const res = await fetch(`${base}${path}`);
@@ -573,6 +926,7 @@ describe('frontend routes', () => {
       '/',
       '/login',
       '/register',
+      '/basket',
       '/unavailable',
       '/admin',
       '/admin/customers',
@@ -588,8 +942,13 @@ describe('frontend routes', () => {
           const res = await fetch(new URL(ref, `${base}${page}`), {
             redirect: 'manual',
           });
+          // Protected pages redirect to the login page when logged out.
+          const resolves =
+            res.status === 200 ||
+            res.status === 503 ||
+            (res.status === 303 && res.headers.get('location') === '/login');
           assert.ok(
-            res.status === 200 || res.status === 503,
+            resolves,
             `${page} references ${ref} which returned ${res.status}`,
           );
         }
@@ -633,22 +992,20 @@ describe('frontend routes', () => {
     });
 
     it('returns 502 when the backend is unreachable', async () => {
-      const dead = createServer();
-      const deadOrigin = await listen(dead);
-      await close(dead);
-      const app = createServer(createApp(deadOrigin));
-      const origin = await listen(app);
-      const originalError = console.error;
-      console.error = () => {};
+      const connectionError = new TypeError('fetch failed');
+      vi.mocked(globalThis.fetch).mockRejectedValueOnce(connectionError);
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
       try {
-        const res = await fetch(`${origin}/api/anything`);
+        const res = await fetch(`${base}/api/anything`);
         assert.equal(res.status, 502);
         assert.deepEqual(await res.json(), {
           message: 'Unable to reach the backend API.',
         });
+        assert.deepEqual(errorLog.mock.calls, [
+          ['Unable to reach the backend API:', connectionError],
+        ]);
       } finally {
-        console.error = originalError;
-        await close(app);
+        errorLog.mockRestore();
       }
     });
   });

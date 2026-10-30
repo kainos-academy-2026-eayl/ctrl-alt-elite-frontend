@@ -4,15 +4,26 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 
 | Route | What it does |
 | --- | --- |
-| `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)) |
+| `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Currently lists temporary products from [src/data/sampleProducts.ts](src/data/sampleProducts.ts) until the product ticket is complete. |
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
 | `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
 | `GET /profile` | Signed-in profile design preview ([src/views/profile.njk](src/views/profile.njk)) with a picture picker, username, first and second names, pronouns and a short description. Cosmetic only: no controller, profile API calls, picture upload/preview or saving. |
+| `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/server/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
+| `POST /basket/items` | "Add to Basket" form (`productId`), then redirects to `/basket` |
+| `POST /basket/items/:productId` | Quantity +/− form (`change` = `1` or `-1`), then redirects to `/basket` |
+| `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
+| `POST /basket/checkout` | Verifies the saved basket and redirects to `/checkout` |
+| `GET /checkout` | Server-rendered review of the saved basket items and total |
 | `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)). [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
 | `GET /admin/customers/:id` | Customer details shell. [adminCustomerDetail.ts](src/controllers/adminCustomerDetail.ts) loads the customer from the backend. |
 | `GET /admin/settings` | Settings page ([settings.njk](src/views/admin/settings.njk)): profile (name, email, role) rendered by the server, a dark mode toggle and dashboard widget choices saved in the browser's `localStorage` ([adminPreferences.ts](src/controllers/adminPreferences.ts) applies them on every admin page), and system information whose backend and database status [adminSettings.ts](src/controllers/adminSettings.ts) loads in the browser. |
+| `GET /admin/support` | Support ticket list shell ([support.njk](src/views/admin/support.njk)). [adminSupport.ts](src/controllers/adminSupport.ts) loads every ticket (ID, customer name, subject, category, status, date created) and applies `q` (ticket ID, customer name or subject), `status` and `category` from the URL. |
+| `GET /admin/support/:id` | Ticket details (subject, category, description, customer, date created, status) with a status form and a comment thread (refreshes every 10 seconds; read-only once the ticket is closed). [adminSupportDetail.ts](src/controllers/adminSupportDetail.ts) loads the ticket, saves status changes and posts replies. |
 | `GET /admin/{orders,inventory,reports}` | "Coming soon" placeholders |
+| `GET /account/support` | Customer support dashboard shell ([support.njk](src/views/support.njk)): lists the customer's tickets with ID, subject, status and created date. Requires a login cookie, otherwise redirects to `/login`. |
+| `GET /account/support/new` | Create-ticket form (subject, category, description) with validation that blocks empty submissions |
+| `GET /account/support/:id` | Ticket details (subject, description, created date, status) and a comment thread to reply to support (refreshes every 10 seconds; read-only once the ticket is closed). [support.ts](src/controllers/support.ts) loads and submits tickets in the browser. |
 | `GET /unavailable` | Fallback page, served with `503`. Pages redirect here if they cannot be loaded. |
 | `GET /assets/*` | Stylesheets from [src/assets/](src/assets) |
 | `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |

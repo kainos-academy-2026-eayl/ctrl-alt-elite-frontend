@@ -11,6 +11,10 @@
   background: #f3f6f4;
 }
 
+html[data-theme="dark"] .admin-page {
+  background: #0f172a;
+}
+
 .admin-shell {
   display: flex;
   flex: 1;
@@ -820,7 +824,9 @@
   font-weight: 700;
 }
 
-.admin-field input {
+.admin-field input,
+.admin-field select,
+.admin-field textarea {
   min-height: 2.4rem;
   padding: 0.5rem 0.75rem;
   border: 1px solid #9ca3af;
@@ -830,7 +836,13 @@
   font: inherit;
 }
 
-.admin-field input:focus-visible {
+.admin-field textarea {
+  resize: vertical;
+}
+
+.admin-field input:focus-visible,
+.admin-field select:focus-visible,
+.admin-field textarea:focus-visible {
   outline: 3px solid #22c55e;
   outline-offset: 2px;
 }
@@ -857,6 +869,10 @@ html[data-theme="dark"] {
   color-scheme: dark;
   background: #0f172a;
   color: #e5e7eb;
+}
+
+html[data-theme="dark"] .admin-page {
+  background: #0f172a;
 }
 
 html[data-theme="dark"] .admin-sidebar {
@@ -903,10 +919,34 @@ html[data-theme="dark"] .customer-table tr {
 
 html[data-theme="dark"] .customer-field input,
 html[data-theme="dark"] .customer-field select,
-html[data-theme="dark"] .admin-field input {
+html[data-theme="dark"] .admin-field input,
+html[data-theme="dark"] .admin-field select,
+html[data-theme="dark"] .admin-field textarea {
   border-color: #64748b;
   background: #0f172a;
   color: #e5e7eb;
+}
+
+html[data-theme="dark"] .ticket-comment {
+  border-color: #334155;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+html[data-theme="dark"] .ticket-comment-staff {
+  border-color: #14532d;
+  background: #052e16;
+}
+
+html[data-theme="dark"] .ticket-comment-closed {
+  border-color: #475569;
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .ticket-comment-meta time,
+html[data-theme="dark"] .ticket-comment-empty {
+  color: #94a3b8;
 }
 
 html[data-theme="dark"] .admin-status-badge {
