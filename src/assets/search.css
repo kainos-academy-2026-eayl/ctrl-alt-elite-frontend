@@ -1,0 +1,83 @@
+/* KAN-23 Product search and product card details. */
+
+.search-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-input {
+  width: min(100%, 16rem);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #14532d;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  font: inherit;
+}
+
+.search-input:focus-visible,
+.search-button:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 3px;
+}
+
+.search-button {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #14532d;
+  border-radius: 0.5rem;
+  background: #15803d;
+  color: #f8fafc;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.search-button:hover {
+  background: #14532d;
+}
+
+.search-heading {
+  margin-bottom: 1rem;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  text-align: center;
+}
+
+.search-message {
+  margin: 0 0 1.5rem;
+  text-align: center;
+}
+
+.product-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.product-description {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.product-availability {
+  margin: 0;
+  font-weight: 700;
+}
+
+.product-availability-in-stock {
+  color: #15803d;
+}
+
+.product-availability-out-of-stock {
+  color: #b91c1c;
+}
+
+@media (max-width: 480px) {
+  .search-form {
+    width: 100%;
+  }
+
+  .search-input {
+    flex: 1;
+  }
+}

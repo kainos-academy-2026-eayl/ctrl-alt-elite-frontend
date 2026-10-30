@@ -11,11 +11,13 @@ import { BasketController } from './server/controllers/basketController';
 import { CatalogController } from './server/controllers/catalog-controller';
 import { HomeController } from './server/controllers/home-controller';
 import { LoginController } from './server/controllers/login';
+import { SearchController } from './server/controllers/searchController';
 import { StatusController } from './server/controllers/status-controller';
 import { SupportController } from './server/controllers/support-controller';
 import { createAdminRouter } from './server/routes/admin';
 import { CatalogService } from './server/services/catalog-service';
 import { BasketService } from './services/basketService';
+import { ProductService } from './services/productService';
 import { createApiProxy } from './util/apiProxy';
 import { createCustomerGuard } from './util/customerGuard';
 import { LoginSession } from './util/loginSession';
@@ -112,6 +114,12 @@ export function createApp(
     new CatalogService(backendOrigin),
   );
   app.get('/products', catalogController.showProducts);
+
+  const searchController = new SearchController(
+    new ProductService(backendOrigin),
+    basketController.getHeaderBasket,
+  );
+  app.get('/search', searchController.show);
 
   app.get('/', homeController.show);
   app.get('/dashboard', homeController.redirectToDashboard);

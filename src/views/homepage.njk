@@ -7,6 +7,7 @@
   <meta name="description" content="Welcome to Ctrl-Alt-Elite. Log in or browse products." />
   <link rel="stylesheet" href="/assets/styles.css" />
   <link rel="stylesheet" href="/assets/basket.css" />
+  <link rel="stylesheet" href="/assets/search.css" />
   <title>Ctrl-Alt-Elite | Home</title>
 </head>
 
@@ -18,6 +19,7 @@
         <span>Ctrl-Alt-Elite</span>
       </a>
       <nav class="primary-nav" aria-label="Main navigation">
+        {% include "_searchForm.njk" %}
         <details class="account-menu" data-account-menu>
           <summary aria-label="{{ accountName }} options">
             <svg class="account-avatar" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
