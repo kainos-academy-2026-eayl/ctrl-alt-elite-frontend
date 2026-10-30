@@ -7,7 +7,9 @@ import { errorHandler, renderErrorPage } from './middleware/errorHandler';
 import { requireSameOrigin } from './middleware/requireSameOrigin';
 import { createBasketRouter } from './routes/basketRouter';
 import { BasketController } from './server/controllers/basketController';
+import { CatalogController } from './server/controllers/catalog-controller';
 import { LoginController } from './server/controllers/login';
+import { CatalogService } from './server/services/catalog-service';
 import { BasketService } from './services/basketService';
 import { createAdminGuard } from './util/adminGuard';
 import {
@@ -125,6 +127,17 @@ export function createApp(
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
   app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
+  app.use(
+    '/product-catalog',
+    express.static(
+      fileURLToPath(new URL('../product_catalog/', import.meta.url)),
+      { index: false },
+    ),
+  );
+  const catalogController = new CatalogController(
+    new CatalogService(backendOrigin),
+  );
+  app.get('/products', catalogController.showProducts);
 
   app.get('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
