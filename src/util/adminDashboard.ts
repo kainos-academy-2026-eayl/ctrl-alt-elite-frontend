@@ -11,6 +11,7 @@ const NEW_CUSTOMER_WINDOW_DAYS = 7;
 const NEWEST_PAGE_SIZE = 100;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const UNKNOWN_STATUS = 'Status unavailable';
+const PRODUCTS_COUNT_PATH = '/api/products';
 
 export interface DashboardCustomerData {
   available: boolean;
@@ -55,6 +56,33 @@ export async function loadDashboardCustomerData(
   } catch (error) {
     console.error('Unable to load dashboard customer data:', error);
     return UNAVAILABLE_CUSTOMER_DATA;
+  }
+}
+
+// Never throws: the dashboard must stay usable when the backend is down.
+// Returns null when the count cannot be read, so the placeholder stays.
+export async function loadProductCount(
+  fetchImpl: typeof fetch = (input, init) => fetch(input, init),
+  timeoutMs = 3000,
+): Promise<number | null> {
+  try {
+    const response = await fetchImpl(PRODUCTS_COUNT_PATH, {
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!response.ok) {
+      await response.body?.cancel();
+      return null;
+    }
+    const body: unknown = await response.json();
+    const list =
+      typeof body === 'object' && body !== null && 'products' in body
+        ? body.products
+        : body;
+    return Array.isArray(list) ? list.length : null;
+  } catch (error) {
+    console.error('Unable to load the product count:', error);
+    return null;
   }
 }
 

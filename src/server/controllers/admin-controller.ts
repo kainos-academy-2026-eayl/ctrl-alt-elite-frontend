@@ -110,6 +110,27 @@ export class AdminController {
     });
   };
 
+  showInventory = (_req: Request, res: Response): void => {
+    this.renderPage(res, 'admin/inventory.njk', {
+      title: 'Inventory',
+      activeSlug: 'inventory',
+    });
+  };
+
+  showNewProduct = (_req: Request, res: Response): void => {
+    this.renderPage(res, 'admin/inventory-form.njk', {
+      title: 'Add product',
+      activeSlug: 'inventory',
+    });
+  };
+
+  showEditProduct = (_req: Request, res: Response): void => {
+    this.renderPage(res, 'admin/inventory-form.njk', {
+      title: 'Edit product',
+      activeSlug: 'inventory',
+    });
+  };
+
   showModule = (
     req: Request,
     res: Response,

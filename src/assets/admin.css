@@ -1011,3 +1011,132 @@ html[data-theme="dark"] .admin-secondary-button {
 html[data-theme="dark"] .admin-secondary-button:hover {
   background: #14532d;
 }
+
+/* Inventory management */
+.inventory-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+a.customer-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.customer-button-secondary {
+  border: 1px solid #15803d;
+  background: transparent;
+  color: #14532d;
+}
+
+.customer-button-secondary:hover {
+  background: #f0fdf4;
+}
+
+.customer-button-danger {
+  background: #b91c1c;
+}
+
+.customer-button-danger:hover {
+  background: #991b1b;
+}
+
+.admin-card .customer-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inventory-thumb {
+  display: block;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  background: #f3f4f6;
+  object-fit: cover;
+}
+
+.inventory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inventory-actions .customer-button {
+  min-height: 2.2rem;
+  padding: 0.3rem 0.9rem;
+}
+
+.inventory-stock {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #14532d;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inventory-stock.is-low {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.inventory-stock.is-out {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.inventory-preview {
+  display: block;
+  width: 8rem;
+  height: 8rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.5rem;
+  background: #f3f4f6;
+  object-fit: cover;
+}
+
+.inventory-preview[hidden] {
+  display: none;
+}
+
+.admin-hint {
+  margin: 0.25rem 0 0;
+  color: #4b5563;
+  font-size: 0.85rem;
+}
+
+.inventory-form {
+  max-width: 36rem;
+}
+
+html[data-theme="dark"] .customer-button-secondary {
+  border-color: #22c55e;
+  color: #86efac;
+}
+
+html[data-theme="dark"] .customer-button-secondary:hover {
+  background: #14532d;
+}
+
+html[data-theme="dark"] .inventory-thumb,
+html[data-theme="dark"] .inventory-preview {
+  background: #1f2937;
+}
+
+html[data-theme="dark"] .admin-hint {
+  color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .inventory-actions .customer-button {
+    width: auto;
+  }
+}

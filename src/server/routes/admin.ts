@@ -41,6 +41,21 @@ export function createAdminRouter(
     requirePermission('settings'),
     controller.showSettings,
   );
+  router.get(
+    '/inventory',
+    requirePermission('inventory'),
+    controller.showInventory,
+  );
+  router.get(
+    '/inventory/new',
+    requirePermission('inventory'),
+    controller.showNewProduct,
+  );
+  router.get(
+    '/inventory/:id',
+    requirePermission('inventory'),
+    controller.showEditProduct,
+  );
   router.get('/:section', controller.showModule);
 
   return router;
