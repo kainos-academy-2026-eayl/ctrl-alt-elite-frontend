@@ -133,13 +133,16 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 │   ├── views/            # Nunjucks page templates and admin/ shells
 │   ├── assets/           # CSS served at /assets
 │   ├── server/
-│   │   └── controllers/  # server-side controllers (login)
+│   │   ├── controllers/  # server-side controllers (home, account, admin, support, status, login, catalog)
+│   │   ├── routes/       # route tables that wire URLs to controllers (admin)
+│   │   └── middleware/   # shared Express middleware (same-origin check)
 │   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers
 │   ├── util/
 │   │   ├── apiProxy.ts   # forwards /api requests to the backend
 │   │   ├── customers.ts  # customer types, query parsing and formatting (shared by controllers)
 │   │   ├── customerViews.ts / adminDashboard.ts  # pure HTML rendering helpers used by the controllers
-│   │   └── adminPortal.ts # admin navigation and placeholder content
+│   │   ├── adminPortal.ts # admin navigation
+│   │   └── adminResources.ts # admin placeholder content
 │   ├── repos/            # reserved for data access code
 │   └── services/         # reserved for business logic
 ├── test/

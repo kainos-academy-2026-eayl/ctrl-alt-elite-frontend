@@ -1,12 +1,12 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { sendAccessDenied } from '../server/controllers/access-denied';
-import { type AdminProfile, loadStaffAccount } from './adminUser';
-import { readAuthCookie } from './authCookie';
+import { type AdminProfile, loadStaffAccount } from '../../util/adminUser';
+import { readAuthCookie } from '../../util/authCookie';
 import {
   hasPermission,
   type StaffPermission,
   type StaffRole,
-} from './staffRoles';
+} from '../../util/staffRoles';
+import { sendAccessDenied } from '../controllers/access-denied';
 
 export interface StaffContext {
   profile: AdminProfile;
