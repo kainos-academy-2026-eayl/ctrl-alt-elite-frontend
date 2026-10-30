@@ -9,6 +9,7 @@ import { createBasketRouter } from './routes/basketRouter';
 import { BasketController } from './server/controllers/basketController';
 import { CatalogController } from './server/controllers/catalog-controller';
 import { LoginController } from './server/controllers/login';
+import { ProductDetailController } from './server/controllers/productDetailController';
 import { SearchController } from './server/controllers/searchController';
 import { CatalogService } from './server/services/catalog-service';
 import { BasketService } from './services/basketService';
@@ -35,6 +36,9 @@ import {
   TICKET_STATUSES,
 } from './util/supportTickets';
 import { buildHomepage } from './views/homepage.page';
+
+/** How many best sellers the homepage conveyor shows. */
+const CONVEYOR_PRODUCT_COUNT = 6;
 
 const VIEWS_DIRECTORY = fileURLToPath(
   new URL('../src/views/', import.meta.url),
@@ -136,32 +140,52 @@ export function createApp(
       { index: false },
     ),
   );
-  const catalogController = new CatalogController(
-    new CatalogService(backendOrigin),
-  );
+  const catalogService = new CatalogService(backendOrigin);
+  const catalogController = new CatalogController(catalogService);
   app.get('/products', catalogController.showProducts);
 
+  const productDetailController = new ProductDetailController(
+    catalogService,
+    basketController.getHeaderBasket,
+  );
+  app.get('/products/:id', productDetailController.show);
+
+  const productService = new ProductService(backendOrigin);
   const searchController = new SearchController(
-    new ProductService(backendOrigin),
+    productService,
     basketController.getHeaderBasket,
   );
   app.get('/search', searchController.show);
 
+  /** The conveyor is optional: if products cannot be loaded it is left out. */
+  async function loadConveyorProducts() {
+    try {
+      return await productService.getPopular(CONVEYOR_PRODUCT_COUNT);
+    } catch (error) {
+      console.error('Unable to load products for the conveyor:', error);
+      return [];
+    }
+  }
+
   app.get('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
-      const [account, basket] = await Promise.all([
+      const [account, basket, conveyorProducts] = await Promise.all([
         loginSession.getAccount(req, res),
         basketController.getHeaderBasket(req),
+        loadConveyorProducts(),
       ]);
-      res
-        .type('html')
-        .send(
-          adminTemplates.render(
-            'homepage.njk',
-            buildHomepage({ account, products: SAMPLE_PRODUCTS, basket }),
-          ),
-        );
+      res.type('html').send(
+        adminTemplates.render(
+          'homepage.njk',
+          buildHomepage({
+            account,
+            products: SAMPLE_PRODUCTS,
+            conveyorProducts,
+            basket,
+          }),
+        ),
+      );
     } catch (error) {
       console.error('Unable to load the homepage:', error);
       res.redirect('/unavailable');

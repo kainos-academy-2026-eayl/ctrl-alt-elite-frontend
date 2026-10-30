@@ -8,7 +8,7 @@ type BackendProduct = {
   stock?: unknown;
 };
 
-type CatalogProduct = Omit<BackendProduct, 'stock'> & {
+export type CatalogProduct = Omit<BackendProduct, 'stock'> & {
   stock: number | null;
   stockLabel: string;
   available: boolean;
@@ -42,6 +42,25 @@ function getProducts(payload: unknown): BackendProduct[] {
   throw new Error('The products API returned an unexpected response.');
 }
 
+function toCatalogProduct(product: BackendProduct): CatalogProduct {
+  const stock = getStock(product.stock);
+  return {
+    ...product,
+    stock,
+    stockLabel:
+      stock === null
+        ? 'Stock unavailable'
+        : stock === 0
+          ? 'Out of stock'
+          : `${stock} in stock`,
+    available: stock !== null && stock > 0,
+    priceLabel: new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+    }).format(Number(product.price)),
+  };
+}
+
 export class CatalogService {
   constructor(private readonly backendOrigin: string) {}
 
@@ -58,28 +77,37 @@ export class CatalogService {
     }
 
     const records = getProducts(await response.json());
-    const products = records.map((product) => {
-      const stock = getStock(product.stock);
-      return {
-        ...product,
-        stock,
-        stockLabel:
-          stock === null
-            ? 'Stock unavailable'
-            : stock === 0
-              ? 'Out of stock'
-              : `${stock} in stock`,
-        available: stock !== null && stock > 0,
-        priceLabel: new Intl.NumberFormat('en-GB', {
-          style: 'currency',
-          currency: 'GBP',
-        }).format(Number(product.price)),
-      };
-    });
+    const products = records.map(toCatalogProduct);
 
     const categories = [
       ...new Set(products.map((product) => product.category)),
     ];
     return { products, categories };
+  }
+
+  /** One product by id, or null when the backend has no such product. */
+  async getProduct(id: string): Promise<CatalogProduct | null> {
+    const response = await fetch(
+      new URL(`/api/products/${encodeURIComponent(id)}`, this.backendOrigin),
+      { headers: { accept: 'application/json' } },
+    );
+    if (response.status === 404) {
+      await response.body?.cancel();
+      return null;
+    }
+    if (!response.ok) {
+      throw new Error(`Product API returned ${response.status}.`);
+    }
+    const body: unknown = await response.json();
+    if (
+      typeof body !== 'object' ||
+      body === null ||
+      !('product' in body) ||
+      typeof body.product !== 'object' ||
+      body.product === null
+    ) {
+      throw new Error('The product API returned an unexpected response.');
+    }
+    return toCatalogProduct(body.product as BackendProduct);
   }
 }

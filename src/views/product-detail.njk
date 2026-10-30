@@ -1,0 +1,45 @@
+{#
+  One product. Rendered on the server: ProductDetailController loads the
+  product and product-detail.page.ts builds the data shown here.
+#}
+{% extends "layout.njk" %}
+
+{% block title %}Ctrl-Alt-Elite | {{ product.name }}{% endblock %}
+{% block description %}{{ product.name }} at Ctrl-Alt-Elite.{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/assets/basket.css" />
+<link rel="stylesheet" href="/assets/search.css" />
+<link rel="stylesheet" href="/assets/conveyor.css" />
+{% endblock %}
+
+{% block navigation %}
+<nav class="primary-nav" aria-label="Main navigation">
+  {% include "_searchForm.njk" %}
+  <a class="nav-link basket-icon-link" href="/basket">
+    <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
+    </svg>
+    <span class="basket-visually-hidden">Basket, {{ basketSummary.itemCountText }}</span>
+    <span class="basket-badge" aria-hidden="true">{{ basketSummary.itemCount }}</span>
+  </a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<article class="page-width product-detail" aria-labelledby="product-heading">
+  <img class="product-detail-image" src="{{ product.imageUrl }}" alt="{{ product.name }}" width="480" height="360" />
+  <div class="product-detail-info">
+    <p class="eyebrow">{{ product.category }}</p>
+    <h1 id="product-heading">{{ product.name }}</h1>
+    <p class="product-detail-price">{{ product.price }}</p>
+    <p class="product-description">{{ product.description }}</p>
+    <p class="product-availability {% if product.isAvailable %}product-availability-in-stock{% else %}product-availability-out-of-stock{% endif %}">{{ product.stockLabel }}</p>
+    <form action="{{ addToBasketUrl }}" method="post">
+      <input type="hidden" name="productId" value="{{ product.id }}" />
+      <button type="submit" class="basket-button"{% if not product.isAvailable %} disabled{% endif %}>Add to Basket</button>
+    </form>
+    <a class="nav-link" href="/products">Browse all products</a>
+  </div>
+</article>
+{% endblock %}

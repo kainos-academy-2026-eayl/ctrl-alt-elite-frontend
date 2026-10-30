@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/assets/styles.css" />
   <link rel="stylesheet" href="/assets/basket.css" />
   <link rel="stylesheet" href="/assets/search.css" />
+  <link rel="stylesheet" href="/assets/conveyor.css" />
   <title>Ctrl-Alt-Elite | Home</title>
 </head>
 
@@ -64,6 +65,28 @@
         <button class="cta-button" onclick="location.href='/products'">Browse Products</button>
       </p>
     </section>
+
+    {% if conveyorCards.length %}
+    <section class="conveyor" aria-labelledby="conveyor-heading">
+      <h2 id="conveyor-heading" class="conveyor-heading">Shop our range</h2>
+      <div class="conveyor-track">
+        {# The second group is a copy so the loop is seamless; it is hidden from screen readers and the keyboard. #}
+        {% for isCopy in [false, true] %}
+        <ul class="conveyor-group"{% if isCopy %} aria-hidden="true"{% endif %}>
+          {% for card in conveyorCards %}
+          <li>
+            <a class="conveyor-card" href="{{ card.url }}"{% if isCopy %} tabindex="-1"{% endif %}>
+              <img class="conveyor-image" src="{{ card.imageUrl }}" alt="" width="200" height="150" />
+              <span class="conveyor-name">{{ card.name }}</span>
+              <span class="conveyor-price">{{ card.price }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
 
     {% if products and products.length %}
     <section class="page-width products" aria-labelledby="products-heading">

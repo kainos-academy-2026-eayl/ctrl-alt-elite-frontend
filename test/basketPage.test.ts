@@ -205,6 +205,7 @@ describe('buildHomepage', () => {
       isAuthenticated: true,
       accountName: 'Grace',
       products: [{ id: 'jeans', name: 'Swaggy Jeans', price: '£24.99' }],
+      conveyorCards: [],
       basketSummary: { itemCount: 101, itemCountText: '101 items' },
       addToBasketUrl: '/basket/items',
     });

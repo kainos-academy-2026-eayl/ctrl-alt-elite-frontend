@@ -18,6 +18,54 @@ import { SAMPLE_PRODUCTS } from '../src/data/sampleProducts';
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 const BACKEND_ORIGIN = 'https://backend.example.test';
 
+/** Canned response from the backend's GET /api/products/popular. */
+const POPULAR_PRODUCTS = [
+  {
+    id: 'hoodie-1',
+    name: 'Kainos Hoodie',
+    price: '8.99',
+    imageUrl: 'data:image/png;base64,iVBORw0KGgo=',
+  },
+  {
+    id: 'jeans-1',
+    name: 'Swaggy Jeans',
+    price: '24.99',
+    imageUrl: 'data:image/png;base64,iVBORw0KGgo=',
+  },
+];
+let isPopularFailing = false;
+
+/** Canned responses from the backend's GET /api/products/:id. */
+const DETAIL_PRODUCTS: Record<string, unknown> = {
+  'hoodie-1': {
+    id: 'hoodie-1',
+    name: 'Kainos Hoodie',
+    category: 'Hoodie',
+    price: 8.99,
+    image: 'data:image/png;base64,iVBORw0KGgo=',
+    description: 'A cozy hoodie for everyday wear.',
+    stock: 65,
+  },
+  'jeans-1': {
+    id: 'jeans-1',
+    name: 'Swaggy Jeans',
+    category: 'Jeans',
+    price: 24.99,
+    image: 'data:image/png;base64,iVBORw0KGgo=',
+    description: 'Stylish and comfortable jeans.',
+    stock: 18,
+  },
+  'sold-out': {
+    id: 'sold-out',
+    name: "Lee's Hair",
+    category: 'Home',
+    price: 5,
+    image: 'data:image/png;base64,iVBORw0KGgo=',
+    description: 'Out of stock.',
+    stock: 0,
+  },
+};
+
 function searchItem(id: string, name: string, price: string, isInStock = true) {
   return {
     id,
@@ -261,6 +309,20 @@ describe('frontend routes', () => {
           searchTerm: q,
           ...(SEARCH_RESPONSES[q] ?? { products: [], isClosestMatch: false }),
         });
+      } else if (path === '/api/products/popular') {
+        if (isPopularFailing) {
+          return Response.json({ message: 'Down' }, { status: 500 });
+        }
+        return Response.json({ products: POPULAR_PRODUCTS });
+      } else if (path.startsWith('/api/products/')) {
+        const id = decodeURIComponent(path.slice('/api/products/'.length));
+        if (id === 'backend-error') {
+          return Response.json({ message: 'Down' }, { status: 500 });
+        }
+        const product = DETAIL_PRODUCTS[id];
+        return product
+          ? Response.json({ product })
+          : Response.json({ message: 'Product not found.' }, { status: 404 });
       }
       throw new Error(`Unexpected backend request: ${req.method} ${req.url}`);
     });
@@ -279,6 +341,74 @@ describe('frontend routes', () => {
 
   afterAll(async () => {
     await close(frontend);
+  });
+
+  describe('homepage conveyor and product pages (no JavaScript)', () => {
+    it('shows the popular products on a looping conveyor linking to their pages', async () => {
+      const html = await (await fetch(`${base}/`)).text();
+      const cards = html.match(/class="conveyor-card" href="[^"]+"/g) ?? [];
+      // Each product appears twice: the second copy makes the loop seamless.
+      assert.equal(cards.length, POPULAR_PRODUCTS.length * 2);
+      assert.match(html, /class="conveyor-card" href="\/products\/hoodie-1"/);
+      assert.match(html, /<span class="conveyor-price">£8\.99<\/span>/);
+      assert.match(html, /<ul class="conveyor-group" aria-hidden="true">/);
+      assert.match(
+        html,
+        /class="conveyor-card" href="\/products\/hoodie-1" tabindex="-1"/,
+      );
+    });
+
+    it('still loads the homepage without the conveyor if popular products fail', async () => {
+      isPopularFailing = true;
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const res = await fetch(`${base}/`);
+        assert.equal(res.status, 200);
+        const html = await res.text();
+        assert.doesNotMatch(html, /class="conveyor"/);
+        assert.match(html, /Find your next favourite\./);
+        assert.equal(errorLog.mock.calls.length, 1);
+      } finally {
+        isPopularFailing = false;
+      }
+    });
+
+    it('shows a product page with an Add to Basket form and no scripts', async () => {
+      const res = await fetch(`${base}/products/hoodie-1`);
+      assert.equal(res.status, 200);
+      const html = await res.text();
+      assert.match(html, /<h1 id="product-heading">Kainos Hoodie<\/h1>/);
+      assert.match(html, /£8\.99/);
+      assert.match(html, /65 in stock/);
+      assert.match(
+        html,
+        /<input type="hidden" name="productId" value="hoodie-1" \/>/,
+      );
+      assert.doesNotMatch(html, /<script/);
+    });
+
+    it('disables Add to Basket for a product that is out of stock', async () => {
+      const html = await (await fetch(`${base}/products/sold-out`)).text();
+      assert.match(html, /Out of stock/);
+      assert.match(
+        html,
+        /<button type="submit" class="basket-button" disabled>/,
+      );
+    });
+
+    it('shows a 404 page for an unknown product', async () => {
+      const res = await fetch(`${base}/products/not-a-product`);
+      assert.equal(res.status, 404);
+      assert.match(await res.text(), /Page not found/);
+    });
+
+    it('shows a 503 page when the product cannot be loaded', async () => {
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const res = await fetch(`${base}/products/backend-error`);
+      assert.equal(res.status, 503);
+      assert.match(await res.text(), /Service temporarily unavailable/);
+      assert.equal(errorLog.mock.calls.length, 1);
+    });
   });
 
   describe('GET /', () => {
@@ -1073,6 +1203,7 @@ describe('frontend routes', () => {
       '/register',
       '/basket',
       '/search?q=shirt',
+      '/products/hoodie-1',
       '/unavailable',
       '/admin',
       '/admin/customers',

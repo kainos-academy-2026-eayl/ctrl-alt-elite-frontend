@@ -11,6 +11,11 @@ export interface ErrorPage {
 }
 
 const ERROR_COPY: Record<number, { title: string; message: string }> = {
+  404: {
+    title: 'Page not found',
+    message:
+      'Sorry, we could not find that page. It may have been moved or removed.',
+  },
   503: {
     title: 'Service temporarily unavailable',
     message:
