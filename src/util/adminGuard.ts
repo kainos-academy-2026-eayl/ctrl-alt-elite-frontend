@@ -1,4 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { sendAccessDenied } from '../server/controllers/access-denied';
 import { type AdminProfile, loadStaffAccount } from './adminUser';
 import { readAuthCookie } from './authCookie';
 import {
@@ -10,19 +11,6 @@ import {
 export interface StaffContext {
   profile: AdminProfile;
   role: StaffRole;
-}
-
-export function sendAccessDenied(res: Response, message: string): void {
-  res
-    .status(403)
-    .type('html')
-    .send(
-      '<!doctype html><html lang="en"><head><meta charset="utf-8" />' +
-        '<title>Access denied | Ctrl-Alt-Elite</title></head><body>' +
-        '<h1>Access denied</h1>' +
-        `<p>${message}</p>` +
-        '<p><a href="/">Return to the homepage</a></p></body></html>',
-    );
 }
 
 // The backend is the source of truth for roles, so the guard asks it to

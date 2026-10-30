@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express, type Request, type Response } from 'express';
 import nunjucks from 'nunjucks';
+import { sendAccessDenied } from './server/controllers/access-denied';
 import { CatalogController } from './server/controllers/catalog-controller';
 import { LoginController } from './server/controllers/login';
 import { CatalogService } from './server/services/catalog-service';
@@ -10,7 +11,6 @@ import {
   getStaffContext,
   requireDashboardRole,
   requirePermission,
-  sendAccessDenied,
 } from './util/adminGuard';
 import {
   ADMIN_QUICK_ACTIONS,
