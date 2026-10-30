@@ -4,6 +4,7 @@ import {
   INVENTORY_PATH,
   MAX_CATEGORY_LENGTH,
   MAX_DESCRIPTION_LENGTH,
+  MAX_IMAGE_LABEL,
   MAX_NAME_LENGTH,
   type Product,
   type ProductForm,
@@ -91,8 +92,8 @@ export function renderProductForm(
     ? `<img class="inventory-preview" src="${escapeHtml(existing.image)}" alt="Current product image" data-image-preview />`
     : '<img class="inventory-preview" alt="" data-image-preview hidden />';
   const imageHint = existing
-    ? 'Leave empty to keep the current image. PNG, JPEG, WebP or SVG, up to 1 MB.'
-    : 'PNG, JPEG, WebP or SVG, up to 1 MB.';
+    ? `Leave empty to keep the current image. PNG, JPEG, WebP or SVG, up to ${MAX_IMAGE_LABEL}.`
+    : `PNG, JPEG, WebP or SVG, up to ${MAX_IMAGE_LABEL}.`;
   return `<form class="admin-form inventory-form" novalidate data-product-form>
 ${field('name', 'Name', input('name', values.name, `type="text" maxlength="${MAX_NAME_LENGTH}" autocomplete="off" required`))}
 ${field('category', 'Category', `${input('category', values.category, `type="text" maxlength="${MAX_CATEGORY_LENGTH}" list="category-options" autocomplete="off" required`)}${datalist}`)}

@@ -15,6 +15,7 @@ export const MAX_DESCRIPTION_LENGTH = 2000;
 export const MAX_PRICE = 1_000_000;
 export const MAX_STOCK = 1_000_000;
 export const MAX_IMAGE_BYTES = 1_000_000;
+export const MAX_IMAGE_LABEL = `${MAX_IMAGE_BYTES / 1_000_000} MB`;
 export const IMAGE_TYPES = [
   'image/png',
   'image/jpeg',
@@ -229,7 +230,9 @@ export function validateImageFile(file: ImageFileInfo): string | null {
   if (!(IMAGE_TYPES as readonly string[]).includes(file.type)) {
     return 'Image must be a PNG, JPEG, WebP or SVG file.';
   }
-  if (file.size > MAX_IMAGE_BYTES) return 'Image must be 1 MB or smaller.';
+  if (file.size > MAX_IMAGE_BYTES) {
+    return `Image must be ${MAX_IMAGE_LABEL} or smaller.`;
+  }
   if (file.size === 0) return 'Image file is empty.';
   return null;
 }
