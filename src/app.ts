@@ -9,8 +9,10 @@ import { createBasketRouter } from './routes/basketRouter';
 import { BasketController } from './server/controllers/basketController';
 import { CatalogController } from './server/controllers/catalog-controller';
 import { LoginController } from './server/controllers/login';
+import { SearchController } from './server/controllers/searchController';
 import { CatalogService } from './server/services/catalog-service';
 import { BasketService } from './services/basketService';
+import { ProductService } from './services/productService';
 import { createAdminGuard } from './util/adminGuard';
 import {
   ADMIN_NAV_ITEMS,
@@ -138,6 +140,12 @@ export function createApp(
     new CatalogService(backendOrigin),
   );
   app.get('/products', catalogController.showProducts);
+
+  const searchController = new SearchController(
+    new ProductService(backendOrigin),
+    basketController.getHeaderBasket,
+  );
+  app.get('/search', searchController.show);
 
   app.get('/', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-store');

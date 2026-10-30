@@ -8,6 +8,7 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
 | `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
 | `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/server/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
+| `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/server/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms. |
 | `POST /basket/items` | "Add to Basket" form (`productId`), then redirects to `/basket` |
 | `POST /basket/items/:productId` | Quantity +/− form (`change` = `1` or `-1`), then redirects to `/basket` |
 | `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
