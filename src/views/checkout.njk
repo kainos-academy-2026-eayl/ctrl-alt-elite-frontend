@@ -1,0 +1,53 @@
+{% extends "layout.njk" %}
+
+{% block title %}Ctrl-Alt-Elite | Checkout{% endblock %}
+{% block description %}Review the items selected for checkout.{% endblock %}
+
+{% block navigation %}
+<nav class="primary-nav" aria-label="Main navigation">
+  <a class="nav-link basket-icon-link" href="/basket">
+    <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
+    </svg>
+    <span class="basket-visually-hidden">Basket, {{ basketSummary.itemCountText }}</span>
+    <span class="basket-badge" aria-hidden="true">{{ basketSummary.itemCount }}</span>
+  </a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="page-width basket" aria-labelledby="checkout-heading">
+  <h1 id="checkout-heading">Checkout</h1>
+  <p>Review the items selected for checkout.</p>
+
+  <table class="basket-table">
+    <caption class="basket-visually-hidden">Items selected for checkout</caption>
+    <thead>
+      <tr>
+        <th scope="col">Product</th>
+        <th scope="col">Unit price</th>
+        <th scope="col">Quantity</th>
+        <th scope="col">Line total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+      <tr>
+        <th scope="row">{{ line.name }}</th>
+        <td data-label="Unit price">{{ line.unitPrice }}</td>
+        <td data-label="Quantity">{{ line.quantity }}</td>
+        <td data-label="Line total" class="basket-line-total">{{ line.lineTotal }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="basket-summary">
+    <p class="basket-total">
+      Total ({{ basketSummary.itemCountText }}):
+      <strong>{{ total }}</strong>
+    </p>
+    <a class="basket-button" href="/basket">Return to basket</a>
+  </div>
+</section>
+{% endblock %}
