@@ -61,7 +61,7 @@ export const STAFF_ROLES: Readonly<Partial<Record<Role, StaffRole>>> = {
     dashboardPath: '/admin/stock/dashboard',
     dashboardTemplate: 'admin/stock-dashboard.njk',
     permissions: ['stock-dashboard', 'stock', 'settings'],
-    storefrontLink: false,
+    storefrontLink: true,
   },
 };
 
