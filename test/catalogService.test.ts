@@ -171,3 +171,49 @@ describe('CatalogService.getProducts', () => {
     await expect(service.getProducts()).rejects.toBeInstanceOf(SyntaxError);
   });
 });
+
+describe('CatalogService.getProduct', () => {
+  const service = new CatalogService(BACKEND_ORIGIN);
+  const fetchMock = vi.fn<typeof fetch>();
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('fetches one product by its encoded id and adds the same labels', async () => {
+    fetchMock.mockResolvedValue(Response.json({ product: PRODUCT }));
+
+    const product = await service.getProduct('a/b');
+
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      new URL('/api/products/a%2Fb', BACKEND_ORIGIN),
+      { headers: { accept: 'application/json' } },
+    );
+    expect(product).toMatchObject({
+      id: 'product-1',
+      priceLabel: '£25.00',
+      stockLabel: '12 in stock',
+      available: true,
+    });
+  });
+
+  it('returns null when the backend has no such product', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ message: 'Product not found.' }, { status: 404 }),
+    );
+    expect(await service.getProduct('missing')).toBeNull();
+  });
+
+  it('throws when the backend fails or sends an unexpected body', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('', { status: 500 }));
+    await expect(service.getProduct('x')).rejects.toThrow('500');
+
+    fetchMock.mockResolvedValueOnce(Response.json({ products: [] }));
+    await expect(service.getProduct('x')).rejects.toThrow('unexpected');
+  });
+});
