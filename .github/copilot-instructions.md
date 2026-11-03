@@ -21,6 +21,18 @@ This is a Node.js 22 HTTP service written in TypeScript and built with Express.
 | `npm run format` | Formats files with Biome (formatting only). |
 | `npm test` | Runs Vitest unit tests; also runs as a Husky pre-push hook. |
 
+## Harness verification
+
+Before changing code, identify the relevant acceptance criterion.
+After every change, you must run:
+npm run build -> npm run lint -> npm run test -> automated test harness
+
+Automated test harness command:
+
+
+Report the commands run, failures, regressions, and any specified future-feature failures.
+If the criterion does not identify relevant tests, ask the student.
+
 ## Code Style and Preferences
 
-Follow the guidance below when generating code for this repository.
+Follow the guidance below when generating code for this repository. 
