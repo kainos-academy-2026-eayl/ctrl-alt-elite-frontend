@@ -492,7 +492,7 @@ describe('inventory management access', () => {
       assert.equal((await get('/admin/unknown', token)).status, 404);
     });
 
-    it('shows Inventory Dashboard, Inventory and Settings, with My Profile and Log out in the menu', async () => {
+    it('shows Inventory Dashboard, Inventory and Settings, with My Profile, Back to homepage and Log out in the menu', async () => {
       const html = await (await get('/admin/stock', token)).text();
       const nav = navOf(html);
       assert.deepEqual(
@@ -505,7 +505,7 @@ describe('inventory management access', () => {
       assert.match(menu, /href="\/profile">My Profile</);
       assert.match(menu, /action="\/logout"/);
       assert.match(menu, />Log out</);
-      assert.doesNotMatch(menu, /Back to homepage/);
+      assert.match(menu, /href="\/">&larr; Back to homepage<\/a>/);
     });
 
     it('shows Settings without the dashboard widget preferences', async () => {
