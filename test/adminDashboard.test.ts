@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, it, vi } from 'vitest';
 import {
   buildNotifications,
   buildSystemStatus,
   loadDashboardCustomerData,
+  loadProductCount,
   renderActivity,
   renderNotifications,
   renderSystemStatus,
@@ -12,6 +13,44 @@ import type { Customer, CustomerSource } from '../src/util/customers';
 import { createInMemoryCustomerSource } from './customerFixtures';
 
 const NOW = new Date('2026-10-22T10:00:00Z');
+
+describe('dashboard product count', () => {
+  const respond = (body: unknown, status = 200) =>
+    (async () => Response.json(body, { status })) as unknown as typeof fetch;
+
+  it('counts products from { products } or a plain array', async () => {
+    assert.equal(
+      await loadProductCount(respond({ products: [{}, {}, {}] })),
+      3,
+    );
+    assert.equal(await loadProductCount(respond([{}])), 1);
+    assert.equal(await loadProductCount(respond({ products: [] })), 0);
+  });
+
+  it('asks the products API', async () => {
+    const fetchImpl = vi.fn(async (_url: string) =>
+      Response.json({ products: [] }),
+    );
+    await loadProductCount(fetchImpl as unknown as typeof fetch);
+    assert.equal(fetchImpl.mock.calls[0]?.[0], '/api/products');
+  });
+
+  it('returns null so the placeholder stays when the count is unavailable', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      assert.equal(await loadProductCount(respond({}, 500)), null);
+      assert.equal(await loadProductCount(respond({ nope: true })), null);
+      assert.equal(
+        await loadProductCount((async () => {
+          throw new Error('offline');
+        }) as unknown as typeof fetch),
+        null,
+      );
+    } finally {
+      errorLog.mockRestore();
+    }
+  });
+});
 
 describe('dashboard customer data', () => {
   it('loads the total, latest registrations and the last-7-days count', async () => {

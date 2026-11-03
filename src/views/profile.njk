@@ -63,6 +63,23 @@
                     <label for="profile-second-name">Second name</label>
                     <input type="text" id="profile-second-name" name="lastName" autocomplete="family-name" maxlength="80" placeholder="Your second name" />
                 </div>
+
+                <div class="profile-field profile-field-wide">
+                    <label for="profile-pronouns">Pronouns</label>
+                    <select id="profile-pronouns" name="pronouns">
+                        <option value="">Prefer not to say</option>
+                        <option value="he/him">he/him</option>
+                        <option value="she/her">she/her</option>
+                        <option value="they/them">they/them</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="profile-field profile-field-wide">
+                    <label for="profile-description">About you</label>
+                    <textarea id="profile-description" name="description" rows="4" maxlength="200" placeholder="Share a little about yourself..." aria-describedby="profile-description-hint"></textarea>
+                    <p class="profile-hint" id="profile-description-hint">A short description, up to 200 characters.</p>
+                </div>
             </div>
 
             <div class="profile-actions">

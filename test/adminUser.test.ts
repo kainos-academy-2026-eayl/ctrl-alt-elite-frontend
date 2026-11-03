@@ -28,7 +28,16 @@ describe('admin first name', () => {
   beforeAll(async () => {
     backend = createServer((req, res) => {
       const bearer = req.headers.authorization === `Bearer ${tokenFor('u-1')}`;
-      if (req.url === '/api/admin/customers?pageSize=1') {
+      if (req.url === '/api/admin/profile') {
+        res.statusCode = bearer ? 200 : 401;
+        res.end(
+          JSON.stringify({
+            name: 'Ada Lovelace',
+            email: 'ada@example.com',
+            role: 'ADMIN',
+          }),
+        );
+      } else if (req.url === '/api/admin/customers?pageSize=1') {
         res.statusCode = bearer ? 200 : 401;
         res.end('{}');
       } else if (req.url === '/api/admin/customers/u-1' && bearer) {

@@ -17,6 +17,44 @@ import { SAMPLE_PRODUCTS } from '../src/data/sampleProducts';
 
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 const BACKEND_ORIGIN = 'https://backend.example.test';
+
+function searchItem(id: string, name: string, price: string, isInStock = true) {
+  return {
+    id,
+    name,
+    description: `${name} description`,
+    imageUrl: 'data:image/png;base64,iVBORw0KGgo=',
+    price,
+    keywords: [],
+    isInStock,
+  };
+}
+
+/** Canned responses from the backend's GET /api/products/search, keyed by q. */
+const SEARCH_RESPONSES: Record<
+  string,
+  { products: unknown[]; isClosestMatch: boolean }
+> = {
+  hoodie: {
+    products: [searchItem('hoodie-1', 'Kainos Hoodie', '8.99')],
+    isClosestMatch: false,
+  },
+  hodie: {
+    products: [searchItem('hoodie-1', 'Kainos Hoodie', '8.99')],
+    isClosestMatch: true,
+  },
+  shirt: {
+    products: [
+      searchItem('shirt-1', 'POU Shirt', '12.50'),
+      searchItem('shirt-2', 'Band Shirt', '15.99', false),
+    ],
+    isClosestMatch: false,
+  },
+  '<b>shirt</b>': {
+    products: [searchItem('shirt-1', 'POU Shirt', '12.50')],
+    isClosestMatch: true,
+  },
+};
 const fetch = globalThis.fetch;
 
 /** In-memory stand-in for the backend basket API (/api/baskets). */
@@ -106,6 +144,7 @@ function close(server: Server): Promise<void> {
 describe('frontend routes', () => {
   let frontend: Server;
   let base: string;
+  const searchRequests: string[] = [];
   const loginRequests: {
     method: string | undefined;
     body: unknown;
@@ -114,6 +153,7 @@ describe('frontend routes', () => {
 
   beforeEach(() => {
     loginRequests.length = 0;
+    searchRequests.length = 0;
     fakeBaskets.clear();
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const req = new Request(input, init);
@@ -208,6 +248,19 @@ describe('frontend routes', () => {
         });
       } else if (path.startsWith('/api/baskets')) {
         return handleFakeBasketApi(req);
+      } else if (path === '/api/products/search') {
+        const q = new URL(req.url).searchParams.get('q') ?? '';
+        searchRequests.push(q);
+        if (q === 'backend-error') {
+          return Response.json(
+            { message: 'Unable to complete the request.' },
+            { status: 500 },
+          );
+        }
+        return Response.json({
+          searchTerm: q,
+          ...(SEARCH_RESPONSES[q] ?? { products: [], isClosestMatch: false }),
+        });
       }
       throw new Error(`Unexpected backend request: ${req.method} ${req.url}`);
     });
@@ -252,6 +305,91 @@ describe('frontend routes', () => {
       assert.match(
         html,
         /<span class="basket-badge" aria-hidden="true">0<\/span>/,
+      );
+    });
+  });
+
+  describe('GET /search (server-rendered, no JavaScript)', () => {
+    it('shows matching products with Add to Basket forms and no scripts', async () => {
+      const res = await fetch(`${base}/search?q=shirt`);
+      assert.equal(res.status, 200);
+      const html = await res.text();
+      assert.match(html, /2 products found for &quot;shirt&quot;\./);
+      assert.match(html, /<h3>POU Shirt<\/h3>/);
+      assert.match(html, /£12\.50/);
+      assert.match(
+        html,
+        /<input type="hidden" name="productId" value="shirt-1" \/>/,
+      );
+      assert.doesNotMatch(html, /value="shirt-2"/);
+      assert.match(html, /Out of Stock/);
+      assert.doesNotMatch(html, /<script/);
+    });
+
+    it('explains when the closest match is shown and keeps the search term', async () => {
+      const html = await (await fetch(`${base}/search?q=hodie`)).text();
+      assert.match(
+        html,
+        /No exact matches for &quot;hodie&quot;\. Showing the closest match\./,
+      );
+      assert.match(html, /name="q" value="hodie"/);
+    });
+
+    it('escapes the search term everywhere it is shown', async () => {
+      const html = await (
+        await fetch(`${base}/search?q=${encodeURIComponent('<b>shirt</b>')}`)
+      ).text();
+      assert.doesNotMatch(html, /<b>shirt<\/b>/);
+      assert.match(html, /&lt;b&gt;shirt&lt;\/b&gt;/);
+    });
+
+    it('shows a message when nothing matches', async () => {
+      const html = await (await fetch(`${base}/search?q=zzzz`)).text();
+      assert.match(html, /No products found for &quot;zzzz&quot;/);
+    });
+
+    it('sends the trimmed term to the backend and skips blank searches', async () => {
+      await fetch(`${base}/search?q=${encodeURIComponent('  hoodie  ')}`);
+      const blank = await (await fetch(`${base}/search?q=%20%20`)).text();
+      assert.deepEqual(searchRequests, ['hoodie']);
+      assert.match(blank, /Enter a product name or keyword to search\./);
+    });
+
+    it('shows an error on the search page (not a redirect) when the backend fails', async () => {
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const res = await fetch(`${base}/search?q=backend-error`, {
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 503);
+      const html = await res.text();
+      assert.match(html, /Search is unavailable right now/);
+      assert.match(html, /name="q" value="backend-error"/);
+      assert.equal(errorLog.mock.calls.length, 1);
+    });
+
+    it('adds a product to the basket from the search results', async () => {
+      const added = await fetch(`${base}/basket/items`, {
+        method: 'POST',
+        redirect: 'manual',
+        headers: {
+          origin: base,
+          'content-type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({ productId: SAMPLE_PRODUCTS[0]?.id ?? '' }),
+      });
+      assert.equal(added.status, 303);
+      const cookie = added.headers
+        .getSetCookie()
+        .find((c) => c.startsWith('basket_id='));
+      assert.ok(cookie);
+      const html = await (
+        await fetch(`${base}/search?q=hoodie`, {
+          headers: { cookie: cookie.split(';')[0] ?? '' },
+        })
+      ).text();
+      assert.match(
+        html,
+        /<span class="basket-badge" aria-hidden="true">1<\/span>/,
       );
     });
   });
@@ -856,10 +994,17 @@ describe('frontend routes', () => {
       ].map((match) => match[1] as string);
       assert.equal(cards.length, 10);
       for (const [index, card] of cards.entries()) {
-        const button = card.match(
-          /<button\b[^>]*data-add-to-basket[^>]*>/,
-        )?.[0];
+        const form = card.match(
+          /<form action="\/basket\/items" method="post">([\s\S]*?)<\/form>/,
+        )?.[1];
+        assert.ok(form, 'each product has an Add to basket form');
+        assert.match(
+          form,
+          /<input type="hidden" name="productId" value="[^"]+" \/>/,
+        );
+        const button = form.match(/<button\b[^>]*>/)?.[0];
         assert.ok(button);
+        assert.match(button, /type="submit"/);
         if (index === 0 || index === 2) {
           assert.match(card, index === 0 ? /12 in stock/ : /7 in stock/);
           assert.doesNotMatch(button, /\bdisabled\b/);
@@ -927,6 +1072,7 @@ describe('frontend routes', () => {
       '/login',
       '/register',
       '/basket',
+      '/search?q=shirt',
       '/unavailable',
       '/admin',
       '/admin/customers',
