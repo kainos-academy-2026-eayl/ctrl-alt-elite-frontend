@@ -206,8 +206,6 @@ describe('homepage profile dropdown', () => {
         ['profile-username', 'Username'],
         ['profile-first-name', 'First name'],
         ['profile-second-name', 'Second name'],
-        ['profile-pronouns', 'Pronouns'],
-        ['profile-description', 'About you'],
       ]) {
         assert.ok(html.includes(`for="${id}">${label}</label>`));
         assert.ok(html.includes(`id="${id}"`));
@@ -216,11 +214,10 @@ describe('homepage profile dropdown', () => {
         html,
         /type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/,
       );
-      for (const pronouns of ['he/him', 'she/her', 'they/them', 'other']) {
-        assert.ok(html.includes(`<option value="${pronouns}">`));
-      }
-      assert.match(html, /<option value="">Prefer not to say<\/option>/);
-      assert.match(html, /<textarea[^>]*maxlength="200"/);
+      assert.doesNotMatch(
+        html,
+        /profile-pronouns|profile-description|<select|<textarea/,
+      );
       assert.match(
         html,
         /<button[^>]*type="button"[^>]*disabled[^>]*>Save changes<\/button>/,

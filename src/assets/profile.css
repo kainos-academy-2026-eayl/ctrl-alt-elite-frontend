@@ -97,9 +97,7 @@
   font-weight: 700;
 }
 
-.profile-editor input,
-.profile-editor select,
-.profile-editor textarea {
+.profile-editor input {
   display: block;
   width: 100%;
   min-width: 0;
@@ -112,19 +110,12 @@
   font: inherit;
 }
 
-.profile-editor input::placeholder,
-.profile-editor textarea::placeholder {
+.profile-editor input::placeholder {
   color: #64748b;
   opacity: 1;
 }
 
-.profile-editor textarea {
-  resize: vertical;
-}
-
-.profile-editor input:focus-visible,
-.profile-editor select:focus-visible,
-.profile-editor textarea:focus-visible {
+.profile-editor input:focus-visible {
   outline: 3px solid #15803d;
   outline-offset: 3px;
 }
