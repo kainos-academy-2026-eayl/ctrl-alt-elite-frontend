@@ -30,7 +30,10 @@
           <span class="admin-profile-chevron" aria-hidden="true"></span>
         </summary>
         <div class="admin-profile-menu">
+          <a class="admin-home-link" href="/profile">My Profile</a>
+          {% if showStorefrontLink %}
           <a class="admin-home-link" href="/">&larr; Back to homepage</a>
+          {% endif %}
           <form class="admin-logout-form" action="/logout" method="post">
             <button class="admin-logout-btn" type="submit">Log out</button>
           </form>
@@ -40,8 +43,8 @@
         <ul>
           {% for item in navItems %}
           <li>
-            <a class="admin-nav-link{% if item.slug == activeSlug %} is-active{% endif %}" href="{{ item.href }}"
-              {% if item.slug == activeSlug %}aria-current="page" {% endif %}>{{ item.label }}</a>
+            <a class="admin-nav-link{% if item.key == activeSlug %} is-active{% endif %}" href="{{ item.href }}"
+              {% if item.key == activeSlug %}aria-current="page" {% endif %}>{{ item.label }}</a>
           </li>
           {% endfor %}
         </ul>
