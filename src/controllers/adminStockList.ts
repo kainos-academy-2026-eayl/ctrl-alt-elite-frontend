@@ -143,9 +143,7 @@ function render(): void {
     restoreFocusedInput(focused);
   } else if (action && focusedButton) {
     const id = focusedButton.getAttribute(action);
-    Array.from(
-      results.querySelectorAll<HTMLButtonElement>(`button[${action}]`),
-    )
+    Array.from(results.querySelectorAll<HTMLButtonElement>(`button[${action}]`))
       .find((button) => button.getAttribute(action) === id)
       ?.focus();
   }
