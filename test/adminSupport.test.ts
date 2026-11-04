@@ -397,7 +397,10 @@ describe('admin support pages', () => {
         redirect: 'manual',
       });
       assert.equal(bad.status, 303);
-      assert.equal(bad.headers.get('location'), '/login');
+      assert.equal(
+        bad.headers.get('location'),
+        `/login?returnTo=${encodeURIComponent(path)}`,
+      );
     }
   });
 

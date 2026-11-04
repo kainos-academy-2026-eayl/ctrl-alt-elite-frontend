@@ -1,11 +1,6 @@
-import type { Product } from '../data/sampleProducts';
 import type { BasketResponseDto } from '../dtos/basketDto';
-import type { PopularProductDto } from '../dtos/popularProductsDto';
-import {
-  type BasketSummary,
-  formatPrice,
-  toBasketSummary,
-} from './basket.page';
+import type { CatalogProduct } from '../server/services/catalog-service';
+import { type BasketSummary, toBasketSummary } from './basket.page';
 
 /*
  * Page model for homepage.njk: the account menu, the product conveyor, the
@@ -16,6 +11,8 @@ export interface HomepageProductView {
   id: string;
   name: string;
   price: string;
+  imageUrl: string;
+  detailsUrl: string;
 }
 
 /** One card on the looping product conveyor; it links to the product page. */
@@ -37,10 +34,14 @@ export interface HomepagePage {
 
 export interface HomepageInput {
   account: { name: string } | null;
-  products: readonly Product[];
-  /** Best sellers from the backend's popular products API. */
-  conveyorProducts?: readonly PopularProductDto[];
+  /** The Featured products, each shown with an Add to Basket form. */
+  products: readonly CatalogProduct[];
+  conveyorProducts?: readonly CatalogProduct[];
   basket: BasketResponseDto | null;
+}
+
+function productUrl(id: CatalogProduct['id']): string {
+  return `/products/${encodeURIComponent(String(id))}`;
 }
 
 export function buildHomepage({
@@ -52,16 +53,18 @@ export function buildHomepage({
   return {
     isAuthenticated: account !== null,
     accountName: account?.name ?? 'Account',
-    products: products.map(({ id, name, price }) => ({
-      id,
+    products: products.map(({ id, name, priceLabel, image }) => ({
+      id: String(id),
       name,
-      price: `£${price}`,
+      price: priceLabel,
+      imageUrl: image,
+      detailsUrl: productUrl(id),
     })),
     conveyorCards: conveyorProducts.map((product) => ({
       name: product.name,
-      imageUrl: product.imageUrl,
-      price: formatPrice(Math.round(Number(product.price) * 100)),
-      url: `/products/${encodeURIComponent(product.id)}`,
+      imageUrl: product.image,
+      price: product.priceLabel,
+      url: productUrl(product.id),
     })),
     basketSummary: toBasketSummary(basket),
     addToBasketUrl: '/basket/items',

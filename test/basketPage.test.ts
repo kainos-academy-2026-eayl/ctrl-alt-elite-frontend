@@ -198,13 +198,34 @@ describe('buildHomepage', () => {
   it('builds the account menu, product forms and basket count', () => {
     const page = buildHomepage({
       account: { name: 'Grace' },
-      products: [{ id: 'jeans', name: 'Swaggy Jeans', price: '24.99' }],
+      products: [
+        {
+          id: 'jeans',
+          name: 'Swaggy Jeans',
+          category: 'Jeans',
+          description: 'Jeans.',
+          price: 24.99,
+          image: 'data:image/png;base64,AA==',
+          stock: 3,
+          stockLabel: '3 in stock',
+          available: true,
+          priceLabel: '£24.99',
+        },
+      ],
       basket: basketResponse,
     });
     assert.deepEqual(page, {
       isAuthenticated: true,
       accountName: 'Grace',
-      products: [{ id: 'jeans', name: 'Swaggy Jeans', price: '£24.99' }],
+      products: [
+        {
+          id: 'jeans',
+          name: 'Swaggy Jeans',
+          price: '£24.99',
+          imageUrl: 'data:image/png;base64,AA==',
+          detailsUrl: '/products/jeans',
+        },
+      ],
       conveyorCards: [],
       basketSummary: { itemCount: 101, itemCountText: '101 items' },
       addToBasketUrl: '/basket/items',

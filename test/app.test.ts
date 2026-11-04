@@ -13,27 +13,78 @@ import {
   vi,
 } from 'vitest';
 import { createApp } from '../src/app';
-import { SAMPLE_PRODUCTS } from '../src/data/sampleProducts';
+import { HIDDEN_HOMEPAGE_PRODUCT_IDS } from '../src/data/hiddenProducts';
 
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 const BACKEND_ORIGIN = 'https://backend.example.test';
 
-/** Canned response from the backend's GET /api/products/popular. */
-const POPULAR_PRODUCTS = [
-  {
-    id: 'hoodie-1',
-    name: 'Kainos Hoodie',
-    price: '8.99',
-    imageUrl: 'data:image/png;base64,iVBORw0KGgo=',
-  },
-  {
-    id: 'jeans-1',
-    name: 'Swaggy Jeans',
-    price: '24.99',
-    imageUrl: 'data:image/png;base64,iVBORw0KGgo=',
-  },
+/** Products the fake basket API accepts. */
+const BASKET_PRODUCTS = [
+  { id: 'jeans-1', name: 'Swaggy Jeans', price: '24.99' },
+] as const;
+const BASKET_PRODUCT = BASKET_PRODUCTS[0];
+
+function catalogueItem(id: string, name: string, stock = 10) {
+  return {
+    id,
+    name,
+    category: 'Test category',
+    price: 12.5,
+    image: `data:image/png;base64,${id}`,
+    description: `${name} description`,
+    stock,
+  };
+}
+
+const FEATURED_IDS = [
+  'feat-1',
+  'feat-2',
+  'feat-3',
+  'feat-4',
+  'feat-5',
+  'feat-6',
 ];
-let isPopularFailing = false;
+const CONVEYOR_POOL_IDS = Array.from({ length: 8 }, (_, i) => `more-${i + 1}`);
+
+/** The catalogue GET /api/products returns, used by the /products tests. */
+const CATALOGUE = [
+  {
+    id: 'database-product',
+    name: 'Backend Product',
+    category: 'Test category',
+    price: 25,
+    image: 'https://example.com/product.jpg',
+    description: 'Loaded from the mocked backend response.',
+    stock: 12,
+  },
+  ...[0, '7', undefined, null, '', ' ', 'invalid', -1, 1.5].map(
+    (stock, index) => ({
+      id: `stock-${index}`,
+      name: `Stock fixture ${index}`,
+      category: ['Audio', 'Photography', 'Test category'][index % 3],
+      price: 10,
+      image: 'https://example.com/product.jpg',
+      description: 'Stock test product.',
+      stock,
+    }),
+  ),
+];
+
+/**
+ * The catalogue GET /api/products returns while the homepage tests run. The
+ * hidden products and an out-of-stock product come first to show they are
+ * skipped.
+ */
+const HOMEPAGE_CATALOGUE = [
+  ...[...HIDDEN_HOMEPAGE_PRODUCT_IDS].map((id) =>
+    catalogueItem(id, `Hidden ${id}`),
+  ),
+  catalogueItem('sold-out', 'Sold Out Product', 0),
+  ...FEATURED_IDS.map((id) => catalogueItem(id, `Featured ${id}`)),
+  ...CONVEYOR_POOL_IDS.map((id) => catalogueItem(id, `Conveyor ${id}`)),
+];
+let homepageCatalogue: unknown[] | null = null;
+let isCatalogueFailing = false;
 
 /** Canned responses from the backend's GET /api/products/:id. */
 const DETAIL_PRODUCTS: Record<string, unknown> = {
@@ -110,7 +161,7 @@ const fakeBaskets = new Map<string, Map<string, number>>();
 
 function basketBody(id: string, quantities: Map<string, number>) {
   const items = [...quantities].map(([productId, quantity]) => {
-    const product = SAMPLE_PRODUCTS.find((p) => p.id === productId);
+    const product = BASKET_PRODUCTS.find((p) => p.id === productId);
     const unitPricePence = Math.round(Number(product?.price) * 100);
     return {
       id: productId,
@@ -142,7 +193,7 @@ async function handleFakeBasketApi(req: Request): Promise<Response> {
   }
   if (req.method === 'POST') {
     const { productId: added } = (await req.json()) as { productId: string };
-    if (!SAMPLE_PRODUCTS.some((product) => product.id === added)) {
+    if (!BASKET_PRODUCTS.some((product) => product.id === added)) {
       return Response.json(
         { message: 'That product is not available.' },
         { status: 400 },
@@ -270,30 +321,13 @@ describe('frontend routes', () => {
       } else if (path === '/api/missing') {
         return new Response('nope', { status: 404 });
       } else if (path === '/api/products') {
-        return Response.json({
-          products: [
-            {
-              id: 'database-product',
-              name: 'Backend Product',
-              category: 'Test category',
-              price: 25,
-              image: 'https://example.com/product.jpg',
-              description: 'Loaded from the mocked backend response.',
-              stock: 12,
-            },
-            ...[0, '7', undefined, null, '', ' ', 'invalid', -1, 1.5].map(
-              (stock, index) => ({
-                id: `stock-${index}`,
-                name: `Stock fixture ${index}`,
-                category: ['Audio', 'Photography', 'Test category'][index % 3],
-                price: 10,
-                image: 'https://example.com/product.jpg',
-                description: 'Stock test product.',
-                stock,
-              }),
-            ),
-          ],
-        });
+        if (isCatalogueFailing) {
+          return Response.json({ message: 'Down' }, { status: 500 });
+        }
+        if (homepageCatalogue) {
+          return Response.json({ products: homepageCatalogue });
+        }
+        return Response.json({ products: CATALOGUE });
       } else if (path.startsWith('/api/baskets')) {
         return handleFakeBasketApi(req);
       } else if (path === '/api/products/search') {
@@ -309,17 +343,14 @@ describe('frontend routes', () => {
           searchTerm: q,
           ...(SEARCH_RESPONSES[q] ?? { products: [], isClosestMatch: false }),
         });
-      } else if (path === '/api/products/popular') {
-        if (isPopularFailing) {
-          return Response.json({ message: 'Down' }, { status: 500 });
-        }
-        return Response.json({ products: POPULAR_PRODUCTS });
       } else if (path.startsWith('/api/products/')) {
         const id = decodeURIComponent(path.slice('/api/products/'.length));
         if (id === 'backend-error') {
           return Response.json({ message: 'Down' }, { status: 500 });
         }
-        const product = DETAIL_PRODUCTS[id];
+        const product =
+          DETAIL_PRODUCTS[id] ??
+          [...CATALOGUE, ...HOMEPAGE_CATALOGUE].find((item) => item.id === id);
         return product
           ? Response.json({ product })
           : Response.json({ message: 'Product not found.' }, { status: 404 });
@@ -343,36 +374,96 @@ describe('frontend routes', () => {
     await close(frontend);
   });
 
-  describe('homepage conveyor and product pages (no JavaScript)', () => {
-    it('shows the popular products on a looping conveyor linking to their pages', async () => {
+  describe('homepage Featured products and conveyor (no JavaScript)', () => {
+    beforeEach(() => {
+      homepageCatalogue = HOMEPAGE_CATALOGUE;
+    });
+    afterEach(() => {
+      homepageCatalogue = null;
+    });
+
+    function featuredIds(html: string): string[] {
+      return [
+        ...html.matchAll(
+          /<input type="hidden" name="productId" value="([^"]+)" \/>/g,
+        ),
+      ].map((match) => match[1] as string);
+    }
+
+    function conveyorIds(html: string): string[] {
+      const group = html.match(
+        /<ul class="conveyor-group">([\s\S]*?)<\/ul>/,
+      )?.[1];
+      return [...(group ?? '').matchAll(/href="\/products\/([^"]+)"/g)].map(
+        (match) => decodeURIComponent(match[1] as string),
+      );
+    }
+
+    it('shows the first six in-stock, non-hidden products as Featured', async () => {
+      for (let visit = 0; visit < 3; visit++) {
+        const html = await (await fetch(`${base}/`)).text();
+        assert.deepEqual(featuredIds(html), FEATURED_IDS);
+      }
+    });
+
+    it('fills the conveyor with other in-stock products, never Featured or hidden ones', async () => {
+      const html = await (await fetch(`${base}/`)).text();
+      const ids = conveyorIds(html);
+      assert.equal(ids.length, 6);
+      assert.equal(new Set(ids).size, 6);
+      for (const id of ids) {
+        assert.ok(
+          CONVEYOR_POOL_IDS.includes(id),
+          `${id} is a conveyor product`,
+        );
+      }
+      for (const id of HIDDEN_HOMEPAGE_PRODUCT_IDS) {
+        assert.doesNotMatch(html, new RegExp(id));
+      }
+      assert.doesNotMatch(html, /sold-out/);
+    });
+
+    it('loops the conveyor with a hidden copy linking to product pages', async () => {
       const html = await (await fetch(`${base}/`)).text();
       const cards = html.match(/class="conveyor-card" href="[^"]+"/g) ?? [];
       // Each product appears twice: the second copy makes the loop seamless.
-      assert.equal(cards.length, POPULAR_PRODUCTS.length * 2);
-      assert.match(html, /class="conveyor-card" href="\/products\/hoodie-1"/);
-      assert.match(html, /<span class="conveyor-price">£8\.99<\/span>/);
+      assert.equal(cards.length, 12);
+      assert.match(html, /<span class="conveyor-price">£12\.50<\/span>/);
       assert.match(html, /<ul class="conveyor-group" aria-hidden="true">/);
       assert.match(
         html,
-        /class="conveyor-card" href="\/products\/hoodie-1" tabindex="-1"/,
+        /class="conveyor-card" href="\/products\/more-\d" tabindex="-1"/,
       );
     });
 
-    it('still loads the homepage without the conveyor if popular products fail', async () => {
-      isPopularFailing = true;
+    it('picks a random set of conveyor products', async () => {
+      const random = vi.spyOn(Math, 'random');
+      random.mockReturnValue(0);
+      const first = conveyorIds(await (await fetch(`${base}/`)).text());
+      random.mockReturnValue(0.99);
+      const last = conveyorIds(await (await fetch(`${base}/`)).text());
+      assert.deepEqual(first, CONVEYOR_POOL_IDS.slice(0, 6));
+      assert.deepEqual(last, CONVEYOR_POOL_IDS.slice(2).reverse());
+    });
+
+    it('still loads the homepage without products if the catalogue fails', async () => {
+      isCatalogueFailing = true;
       const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
       try {
         const res = await fetch(`${base}/`);
         assert.equal(res.status, 200);
         const html = await res.text();
         assert.doesNotMatch(html, /class="conveyor"/);
+        assert.doesNotMatch(html, /Featured products/);
         assert.match(html, /Find your next favourite\./);
         assert.equal(errorLog.mock.calls.length, 1);
       } finally {
-        isPopularFailing = false;
+        isCatalogueFailing = false;
       }
     });
+  });
 
+  describe('product pages (no JavaScript)', () => {
     it('shows a product page with an Add to Basket form and no scripts', async () => {
       const res = await fetch(`${base}/products/hoodie-1`);
       assert.equal(res.status, 200);
@@ -419,17 +510,33 @@ describe('frontend routes', () => {
       assert.match(await res.text(), /<html/i);
     });
 
-    it('renders an Add to Basket form for each product without JavaScript', async () => {
-      const html = await (await fetch(`${base}/`)).text();
+    it('renders an Add to Basket form for each Featured product without JavaScript', async () => {
+      homepageCatalogue = HOMEPAGE_CATALOGUE;
+      let html: string;
+      try {
+        html = await (await fetch(`${base}/`)).text();
+      } finally {
+        homepageCatalogue = null;
+      }
       const forms = html.match(
         /<form action="\/basket\/items" method="post">/g,
       );
-      assert.equal(forms?.length, SAMPLE_PRODUCTS.length);
+      assert.equal(forms?.length, FEATURED_IDS.length);
       assert.match(
         html,
-        new RegExp(
-          `<input type="hidden" name="productId" value="${SAMPLE_PRODUCTS[0]?.id}" />`,
-        ),
+        /<input type="hidden" name="productId" value="feat-1" \/>/,
+      );
+      assert.match(
+        html,
+        /<img class="product-image featured-image" src="data:image\/png;base64,feat-1" alt="" width="160" height="120" \/>/,
+      );
+      assert.equal(
+        (html.match(/class="details-button"/g) ?? []).length,
+        FEATURED_IDS.length,
+      );
+      assert.match(
+        html,
+        /<a class="details-button" href="\/products\/feat-1">View details<span class="basket-visually-hidden"> of Featured feat-1<\/span><\/a>/,
       );
       assert.doesNotMatch(html, /basket\.js/);
       assert.match(
@@ -505,7 +612,7 @@ describe('frontend routes', () => {
           origin: base,
           'content-type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({ productId: SAMPLE_PRODUCTS[0]?.id ?? '' }),
+        body: new URLSearchParams({ productId: BASKET_PRODUCT.id }),
       });
       assert.equal(added.status, 303);
       const cookie = added.headers
@@ -931,7 +1038,7 @@ describe('frontend routes', () => {
   });
 
   describe('basket (server-rendered, no JavaScript)', () => {
-    const product = SAMPLE_PRODUCTS[0] as (typeof SAMPLE_PRODUCTS)[number];
+    const product = BASKET_PRODUCT;
     const productPath = `/basket/items/${encodeURIComponent(product.id)}`;
 
     function post(

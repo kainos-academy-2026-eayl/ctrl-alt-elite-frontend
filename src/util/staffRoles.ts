@@ -5,6 +5,8 @@ export type StaffPermission =
   | 'customers'
   | 'support'
   | 'inventory'
+  | 'stock'
+  | 'stock-dashboard'
   | 'reports'
   | 'settings';
 
@@ -12,6 +14,7 @@ export enum Role {
   CUSTOMER = 'CUSTOMER',
   ADMIN = 'ADMIN',
   CUSTOMER_SERVICE = 'CUSTOMER_SERVICE',
+  INVENTORY_MANAGEMENT = 'INVENTORY_MANAGEMENT',
 }
 
 export interface StaffRole {
@@ -20,6 +23,8 @@ export interface StaffRole {
   dashboardPath: string;
   dashboardTemplate: string;
   permissions: readonly StaffPermission[];
+  // Whether the account menu offers a way back to the customer storefront.
+  storefrontLink: boolean;
 }
 
 export const STAFF_ROLES: Readonly<Partial<Record<Role, StaffRole>>> = {
@@ -34,9 +39,11 @@ export const STAFF_ROLES: Readonly<Partial<Record<Role, StaffRole>>> = {
       'customers',
       'support',
       'inventory',
+      'stock',
       'reports',
       'settings',
     ],
+    storefrontLink: true,
   },
 
   [Role.CUSTOMER_SERVICE]: {
@@ -45,6 +52,16 @@ export const STAFF_ROLES: Readonly<Partial<Record<Role, StaffRole>>> = {
     dashboardPath: '/admin/customer-service',
     dashboardTemplate: 'admin/customer-service-dashboard.njk',
     permissions: ['dashboard', 'orders', 'customers', 'support', 'settings'],
+    storefrontLink: true,
+  },
+
+  [Role.INVENTORY_MANAGEMENT]: {
+    key: Role.INVENTORY_MANAGEMENT,
+    label: 'Inventory Manager',
+    dashboardPath: '/admin/stock/dashboard',
+    dashboardTemplate: 'admin/stock-dashboard.njk',
+    permissions: ['stock-dashboard', 'stock', 'settings'],
+    storefrontLink: true,
   },
 };
 
