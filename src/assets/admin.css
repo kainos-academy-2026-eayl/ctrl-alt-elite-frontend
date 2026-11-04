@@ -1140,3 +1140,129 @@ html[data-theme="dark"] .admin-hint {
     width: auto;
   }
 }
+
+.stock-low-card {
+  margin-top: 1.25rem;
+}
+
+.stock-summary:not(:empty) {
+  margin-bottom: 1.25rem;
+}
+
+.stock-low-card .customer-table-card {
+  margin: 0 -1.25rem -1.25rem;
+}
+
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.65rem;
+  border: 1px solid #86efac;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #14532d;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stock-badge.is-low-stock {
+  border-color: #f59e0b;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.stock-badge.is-out-of-stock {
+  border-color: #f87171;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.customer-table .stock-row.is-low-stock td {
+  background: #fffbeb;
+}
+
+.customer-table .stock-row.is-out-of-stock td {
+  background: #fef2f2;
+}
+
+.customer-table .stock-row.is-low-stock td:first-child {
+  box-shadow: inset 4px 0 0 #d97706;
+}
+
+.customer-table .stock-row.is-out-of-stock td:first-child {
+  box-shadow: inset 4px 0 0 #b91c1c;
+}
+
+.stock-input {
+  width: 7rem;
+  min-height: 2.2rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #6b7280;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+}
+
+.stock-input:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.stock-input[aria-invalid="true"] {
+  border-color: #b91c1c;
+}
+
+.stock-field-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+}
+
+.stock-toggle {
+  align-self: end;
+}
+
+.customer-toolbar .customer-field.stock-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.customer-toolbar .customer-field.stock-toggle label input {
+  width: auto;
+  min-height: 0;
+}
+
+html[data-theme="dark"] .stock-badge {
+  border-color: #166534;
+  background: #14532d;
+  color: #dcfce7;
+}
+
+html[data-theme="dark"] .stock-badge.is-low-stock {
+  border-color: #b45309;
+  background: #78350f;
+  color: #fef3c7;
+}
+
+html[data-theme="dark"] .stock-badge.is-out-of-stock {
+  border-color: #b91c1c;
+  background: #7f1d1d;
+  color: #fee2e2;
+}
+
+html[data-theme="dark"] .stock-row.is-low-stock td {
+  background: #3b2a0e;
+}
+
+html[data-theme="dark"] .stock-row.is-out-of-stock td {
+  background: #3b1212;
+}
+
+html[data-theme="dark"] .stock-input {
+  border-color: #64748b;
+  background: #0f172a;
+  color: #f9fafb;
+}

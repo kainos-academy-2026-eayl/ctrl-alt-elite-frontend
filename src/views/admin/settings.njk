@@ -80,6 +80,7 @@
     </label>
   </section>
 
+  {% if showDashboardPreferences %}
   <section class="admin-card" aria-labelledby="preferences-heading">
     <h2 id="preferences-heading">Dashboard Preferences</h2>
     <p class="admin-empty">Choose which widgets appear on the dashboard.</p>
@@ -98,6 +99,7 @@
       {% endfor %}
     </ul>
   </section>
+  {% endif %}
 
   <section class="admin-card" aria-labelledby="system-heading">
     <h2 id="system-heading">System Information</h2>

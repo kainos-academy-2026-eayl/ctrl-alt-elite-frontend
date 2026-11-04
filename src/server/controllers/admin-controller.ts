@@ -8,6 +8,7 @@ import {
   CUSTOMER_SERVICE_SHORTCUTS,
 } from '../../util/adminResources';
 import { DASHBOARD_WIDGETS } from '../../util/adminSettings';
+import { STOCK_STATUS_OPTIONS } from '../../util/adminStock';
 import { loadAdminFirstName } from '../../util/adminUser';
 import { readAuthCookie } from '../../util/authCookie';
 import { CUSTOMER_SORT_OPTIONS } from '../../util/customers';
@@ -36,6 +37,7 @@ export class AdminController {
         this.templates.render(template, {
           navItems: navItemsForRole(role),
           profile,
+          showStorefrontLink: role.storefrontLink,
           ...context,
         }),
       );
@@ -107,13 +109,32 @@ export class AdminController {
       activeSlug: 'settings',
       appVersion: await this.readAppVersion(),
       dashboardWidgets: DASHBOARD_WIDGETS,
+      showDashboardPreferences: hasPermission(
+        getStaffContext(res).role,
+        'dashboard',
+      ),
     });
   };
 
   showInventory = (_req: Request, res: Response): void => {
     this.renderPage(res, 'admin/inventory.njk', {
-      title: 'Inventory',
+      title: 'Products',
       activeSlug: 'inventory',
+    });
+  };
+
+  showStockDashboard = (_req: Request, res: Response): void => {
+    this.renderPage(res, 'admin/stock-dashboard.njk', {
+      title: 'Inventory Dashboard',
+      activeSlug: 'stock-dashboard',
+    });
+  };
+
+  showStock = (_req: Request, res: Response): void => {
+    this.renderPage(res, 'admin/stock.njk', {
+      title: 'Inventory',
+      activeSlug: 'stock',
+      statuses: STOCK_STATUS_OPTIONS,
     });
   };
 
@@ -147,7 +168,7 @@ export class AdminController {
     }
     this.renderPage(res, 'admin/module.njk', {
       title: adminModule.label,
-      activeSlug: adminModule.slug,
+      activeSlug: adminModule.key,
     });
   };
 }
