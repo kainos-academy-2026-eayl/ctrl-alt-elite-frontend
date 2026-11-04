@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { SignJWT } from 'jose';
+import { jwtVerify, SignJWT } from 'jose';
 import { afterAll, beforeAll, beforeEach, describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
 import {
@@ -46,23 +46,52 @@ describe('saved profile autofill', () => {
   let body: unknown;
   let status: number;
   let rawBody: string | undefined;
-  const requests: { url: string; authorization: string | undefined }[] = [];
+  let patchStatus: number;
+  let patchBody: unknown;
+  const requests: {
+    url: string;
+    authorization: string | undefined;
+    method?: string | undefined;
+    contentType?: string | undefined;
+    body?: unknown;
+  }[] = [];
 
   beforeAll(async () => {
+    const issuedAt = Math.floor(Date.now() / 1000) - 1200;
     const token = await new SignJWT({ name: 'Session Name', role: 'CUSTOMER' })
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject('customer-1')
       .setIssuer('ctrl-alt-elite-frontend')
       .setAudience('ctrl-alt-elite-homepage')
-      .setIssuedAt()
-      .setExpirationTime('1h')
+      .setIssuedAt(issuedAt)
+      .setExpirationTime(issuedAt + 3600)
       .sign(new TextEncoder().encode(SECRET));
     loginCookie = `ctrl_alt_elite_login=${token}`;
-    backend = createServer((req, res) => {
+    backend = createServer(async (req, res) => {
+      const isPatch = req.method === 'PATCH';
+      let fields: unknown;
+      if (isPatch) {
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) chunks.push(Buffer.from(chunk));
+        fields = JSON.parse(Buffer.concat(chunks).toString());
+      }
       requests.push({
         url: req.url ?? '',
         authorization: req.headers.authorization,
+        ...(isPatch
+          ? {
+            method: req.method,
+            contentType: req.headers['content-type'],
+            body: fields,
+          }
+          : {}),
       });
+      if (isPatch) {
+        if (patchStatus === 200) body = patchBody;
+        res.writeHead(patchStatus, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(patchBody));
+        return;
+      }
       res.writeHead(status, { 'Content-Type': 'application/json' });
       res.end(rawBody ?? JSON.stringify(body));
     });
@@ -75,6 +104,8 @@ describe('saved profile autofill', () => {
     status = 200;
     rawBody = undefined;
     body = makeProfile();
+    patchStatus = 200;
+    patchBody = makeProfile();
     requests.length = 0;
   });
 
@@ -156,6 +187,151 @@ describe('saved profile autofill', () => {
     );
   });
 
+  it.each([
+    { username: 'updated-user', displayName: 'updated-user' },
+    { username: null, displayName: 'Updated Customer' },
+  ])(
+    'saves profile details and refreshes the name to $displayName without extending the session',
+    async ({ username, displayName }) => {
+      const fields = {
+        username: username ?? '',
+        firstName: 'Updated',
+        lastName: 'Customer',
+        addressLine1: '12 Updated Street',
+        addressLine2: 'Flat 2',
+        postcode: 'AB1 2CD',
+        phoneNumber: '+44 20 1234 5678',
+      };
+      patchBody = makeProfile({ ...fields, username });
+      const response = await fetch(`${base}/profile`, {
+        method: 'POST',
+        headers: {
+          origin: base,
+          cookie: `${loginCookie}; auth_token=${BACKEND_TOKEN}`,
+        },
+        body: new URLSearchParams(fields),
+        redirect: 'manual',
+      });
+      assert.equal(response.status, 303);
+      assert.equal(response.headers.get('location'), '/profile?saved=1');
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.deepEqual(requests, [
+        { url: '/api/profile', authorization: `Bearer ${BACKEND_TOKEN}` },
+        {
+          url: '/api/profile',
+          authorization: `Bearer ${BACKEND_TOKEN}`,
+          method: 'PATCH',
+          contentType: 'application/json',
+          body: fields,
+        },
+      ]);
+      const cookies = response.headers.getSetCookie();
+      assert.equal(cookies.length, 1);
+      const cookie = cookies[0];
+      assert.ok(cookie);
+      assert.match(cookie, /^ctrl_alt_elite_login=/);
+      assert.match(cookie, /HttpOnly/);
+      assert.match(cookie, /SameSite=Lax/);
+      assert.match(cookie, /Path=\//);
+      const refreshedCookie = cookie.split(';')[0];
+      assert.ok(refreshedCookie);
+      const verification = {
+        issuer: 'ctrl-alt-elite-frontend',
+        audience: 'ctrl-alt-elite-homepage',
+        algorithms: ['HS256'],
+      };
+      const key = new TextEncoder().encode(SECRET);
+      const original = await jwtVerify(
+        loginCookie.split('=')[1] ?? '',
+        key,
+        verification,
+      );
+      const refreshed = await jwtVerify(
+        refreshedCookie.split('=')[1] ?? '',
+        key,
+        verification,
+      );
+      assert.deepEqual(refreshed.payload, {
+        ...original.payload,
+        name: displayName,
+      });
+      const expires = cookie.match(/Expires=([^;]+)/)?.[1];
+      assert.ok(expires);
+      assert.equal(Date.parse(expires), Number(original.payload.exp) * 1000);
+
+      const reload = await fetch(`${base}/profile?saved=1`, {
+        headers: {
+          cookie: `${refreshedCookie}; auth_token=${BACKEND_TOKEN}`,
+        },
+        redirect: 'manual',
+      });
+      assert.equal(reload.status, 200);
+      const html = await reload.text();
+      assert.match(html, /role="status">Your profile has been saved\./);
+      assert.ok(html.includes(`<h2>${displayName}</h2>`));
+      for (const [field, value] of Object.entries(fields)) {
+        assert.ok(html.includes(`name="${field}" value="${value}"`));
+      }
+      assert.equal(requests.length, 3);
+      assert.deepEqual(requests[2], {
+        url: '/api/profile',
+        authorization: `Bearer ${BACKEND_TOKEN}`,
+      });
+      assert.equal(reload.headers.getSetCookie().length, 0);
+    },
+  );
+
+  it.each([
+    { code: 400, message: 'Enter a valid phone number.' },
+    { code: 409, message: 'That username is already in use.' },
+  ])(
+    'retains submitted profile fields after a $code PATCH response',
+    async ({ code, message }) => {
+      const fields = {
+        username: 'unsaved-user',
+        firstName: 'Unsaved',
+        lastName: 'Edits',
+        addressLine1: '34 Unsaved Street',
+        addressLine2: '',
+        postcode: 'XY9 8ZZ',
+        phoneNumber: 'invalid-phone',
+      };
+      patchStatus = code;
+      patchBody = { message };
+      const response = await fetch(`${base}/profile`, {
+        method: 'POST',
+        headers: {
+          origin: base,
+          cookie: `${loginCookie}; auth_token=${BACKEND_TOKEN}`,
+        },
+        body: new URLSearchParams(fields),
+        redirect: 'manual',
+      });
+      assert.equal(response.status, code);
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.equal(response.headers.get('location'), null);
+      assert.equal(response.headers.getSetCookie().length, 0);
+      const html = await response.text();
+      assert.ok(html.includes(`role="alert">${message}</p>`));
+      assert.match(html, /<form action="\/profile" method="post">/);
+      for (const [field, value] of Object.entries(fields)) {
+        assert.ok(html.includes(`name="${field}" value="${value}"`));
+      }
+      assert.match(html, /id="profile-email" value="saved@example.invalid"/);
+      assert.deepEqual(body, makeProfile());
+      assert.deepEqual(requests, [
+        { url: '/api/profile', authorization: `Bearer ${BACKEND_TOKEN}` },
+        {
+          url: '/api/profile',
+          authorization: `Bearer ${BACKEND_TOKEN}`,
+          method: 'PATCH',
+          contentType: 'application/json',
+          body: fields,
+        },
+      ]);
+    },
+  );
+
   it('renders a null username as empty and retains names up to the backend limit', async () => {
     body = makeProfile({
       username: null,
@@ -199,7 +375,7 @@ describe('saved profile autofill', () => {
     context.onTestFinished(() => {
       vi.restoreAllMocks();
     });
-    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => { });
     const response = await fetch(`${base}/profile`, {
       headers: { cookie: loginCookie },
     });
@@ -223,7 +399,7 @@ describe('saved profile autofill', () => {
     context.onTestFinished(() => {
       vi.restoreAllMocks();
     });
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => { });
     for (const cookie of [
       `auth_token=${BACKEND_TOKEN}`,
       `ctrl_alt_elite_login=forged; auth_token=${BACKEND_TOKEN}`,
@@ -242,7 +418,7 @@ describe('saved profile autofill', () => {
     context.onTestFinished(() => {
       vi.restoreAllMocks();
     });
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => { });
     for (const code of [401, 403]) {
       status = code;
       const response = await getProfile();
@@ -259,7 +435,7 @@ describe('saved profile autofill', () => {
     context.onTestFinished(() => {
       vi.restoreAllMocks();
     });
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => { });
     for (const code of [404, 500, 503]) {
       status = code;
       const response = await getProfile();
