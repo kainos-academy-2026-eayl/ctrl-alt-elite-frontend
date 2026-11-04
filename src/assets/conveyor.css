@@ -1,0 +1,142 @@
+/* Looping product conveyor on the homepage. Pure CSS: no JavaScript. */
+
+.conveyor {
+  /*
+   * Sized from the window (vw), not its content: main is a centred grid, so a
+   * content-based width would let the extra-wide moving track widen the page.
+   */
+  width: min(calc(100vw - 2rem), 1120px);
+  margin: 3rem auto 0;
+}
+
+.conveyor-heading {
+  margin: 0 0 1.25rem;
+  color: #14532d;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.conveyor-track {
+  display: flex;
+  overflow: hidden;
+  border: 3px solid #15803d;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+/*
+ * Two identical groups slide left together. When the first has moved fully
+ * off screen the animation restarts, which looks identical, so it never jumps.
+ */
+.conveyor-group {
+  display: flex;
+  flex-shrink: 0;
+  gap: 1.5rem;
+  margin: 0;
+  /* Must match the gap so the join between the two groups is seamless. */
+  padding: 1.25rem 1.5rem 1.25rem 0;
+  list-style: none;
+  animation: conveyor-slide 30s linear infinite;
+}
+
+.conveyor-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 12rem;
+  padding: 0.75rem;
+  border: 2px solid transparent;
+  border-radius: 0.5rem;
+  color: #111827;
+  text-decoration: none;
+}
+
+.conveyor-card:hover,
+.conveyor-card:focus-visible {
+  border-color: #15803d;
+  background: #f0fdf4;
+  outline: none;
+}
+
+.conveyor-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.35rem;
+  object-fit: cover;
+}
+
+.conveyor-name {
+  font-weight: 700;
+}
+
+.conveyor-price {
+  color: #14532d;
+  font-weight: 700;
+}
+
+/* Pause the conveyor so a card can be read and clicked. */
+.conveyor-track:hover .conveyor-group,
+.conveyor-track:focus-within .conveyor-group {
+  animation-play-state: paused;
+}
+
+/* People who ask for less motion get a still row they can scroll instead. */
+@media (prefers-reduced-motion: reduce) {
+  .conveyor-track {
+    overflow-x: auto;
+  }
+
+  .conveyor-group {
+    animation: none;
+  }
+
+  .conveyor-group[aria-hidden="true"] {
+    display: none;
+  }
+}
+
+@keyframes conveyor-slide {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* Product page (product-detail.njk). */
+
+.product-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  gap: 2rem;
+  align-items: start;
+  margin-top: 2rem;
+}
+
+.product-detail-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.75rem;
+  object-fit: cover;
+}
+
+.product-detail-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.product-detail-info h1 {
+  margin: 0;
+}
+
+.product-detail-price {
+  margin: 0;
+  color: #14532d;
+  font-size: 1.5rem;
+  font-weight: 700;
+}

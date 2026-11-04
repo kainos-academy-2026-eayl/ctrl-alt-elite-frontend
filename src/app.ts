@@ -13,6 +13,7 @@ import { CatalogController } from './server/controllers/catalog-controller';
 import { CheckoutController } from './server/controllers/checkoutController';
 import { HomeController } from './server/controllers/home-controller';
 import { LoginController } from './server/controllers/login';
+import { ProductDetailController } from './server/controllers/productDetailController';
 import { SearchController } from './server/controllers/searchController';
 import { StatusController } from './server/controllers/status-controller';
 import { SupportController } from './server/controllers/support-controller';
@@ -97,11 +98,13 @@ export function createApp(
     { autoescape: true },
   );
 
+  const productService = new ProductService(backendOrigin);
   const homeController = new HomeController(
     backendOrigin,
     loginSession,
     adminTemplates,
     basketController,
+    productService,
   );
   const accountController = new AccountController(
     loginSession,
@@ -127,13 +130,18 @@ export function createApp(
       { index: false },
     ),
   );
-  const catalogController = new CatalogController(
-    new CatalogService(backendOrigin),
-  );
+  const catalogService = new CatalogService(backendOrigin);
+  const catalogController = new CatalogController(catalogService);
   app.get('/products', catalogController.showProducts);
 
+  const productDetailController = new ProductDetailController(
+    catalogService,
+    basketController.getHeaderBasket,
+  );
+  app.get('/products/:id', productDetailController.show);
+
   const searchController = new SearchController(
-    new ProductService(backendOrigin),
+    productService,
     basketController.getHeaderBasket,
   );
   app.get('/search', searchController.show);

@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
 import { SAMPLE_PRODUCTS } from '../../data/sampleProducts';
+import type { PopularProductDto } from '../../dtos/popularProductsDto';
+import type { ProductService } from '../../services/productService';
 import { loadStaffAccount } from '../../util/adminUser';
 import { readAuthCookie } from '../../util/authCookie';
 import type { LoginSession } from '../../util/loginSession';
@@ -8,20 +10,36 @@ import { findStaffRole, normaliseRole, Role } from '../../util/staffRoles';
 import { buildHomepage } from '../../views/homepage.page';
 import type { BasketController } from './basketController';
 
+/** How many best sellers the homepage conveyor shows. */
+const CONVEYOR_PRODUCT_COUNT = 6;
+
 export class HomeController {
   constructor(
     private readonly backendOrigin: string,
     private readonly loginSession: LoginSession,
     private readonly templates: Environment,
     private readonly basketController: BasketController,
+    private readonly productService?: ProductService,
   ) {}
+
+  /** The conveyor is optional: if products cannot be loaded it is left out. */
+  private async loadConveyorProducts(): Promise<PopularProductDto[]> {
+    if (!this.productService) return [];
+    try {
+      return await this.productService.getPopular(CONVEYOR_PRODUCT_COUNT);
+    } catch (error) {
+      console.error('Unable to load products for the conveyor:', error);
+      return [];
+    }
+  }
 
   show = async (req: Request, res: Response): Promise<void> => {
     res.setHeader('Cache-Control', 'no-store');
     try {
-      const [account, basket] = await Promise.all([
+      const [account, basket, conveyorProducts] = await Promise.all([
         this.loginSession.getAccount(req, res),
         this.basketController.getHeaderBasket(req),
+        this.loadConveyorProducts(),
       ]);
       // Sessions created before roles were stored have no role to read.
       const role = account
@@ -37,7 +55,12 @@ export class HomeController {
         : undefined;
       res.type('html').send(
         this.templates.render('homepage.njk', {
-          ...buildHomepage({ account, products: SAMPLE_PRODUCTS, basket }),
+          ...buildHomepage({
+            account,
+            products: SAMPLE_PRODUCTS,
+            conveyorProducts,
+            basket,
+          }),
           isStaff: role !== undefined,
         }),
       );
