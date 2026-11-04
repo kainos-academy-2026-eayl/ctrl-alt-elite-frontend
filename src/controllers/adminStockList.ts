@@ -55,11 +55,12 @@ const lowOnlyInput = getElement<HTMLInputElement>('#stock-low-only');
 const api = createStockApi();
 
 let products: StockItem[] = [];
+let loaded = false;
+let mutationGeneration = 0;
+let refreshGeneration = 0;
 // Edits survive filtering, refreshes and failed saves so no input is lost.
 const drafts = new Map<string, StockDraft>();
 const busyIds = new Set<string>();
-let mutationGeneration = 0;
-let refreshGeneration = 0;
 let query: StockQuery = readStockQuery(
   new URLSearchParams(window.location.search),
 );
@@ -119,6 +120,7 @@ function restoreFocusedInput(focused: FocusedInput): void {
 }
 
 function render(): void {
+  if (!loaded) return;
   const focused = readFocusedInput();
   const focusedButton =
     document.activeElement instanceof HTMLButtonElement &&
@@ -161,10 +163,14 @@ function focusRow(id: string, selector: string): void {
 // Returns true when the failure was a shared one that has been dealt with.
 function handleSharedFailure(error: unknown): boolean {
   if (error instanceof SessionExpiredError) {
+    loaded = false;
+    refreshGeneration++;
     window.location.assign(loginRedirectFor(window.location));
     return true;
   }
   if (error instanceof AccessDeniedError) {
+    loaded = false;
+    refreshGeneration++;
     clearMessages();
     count.hidden = true;
     results.innerHTML = renderStockAccessDenied();
@@ -174,19 +180,27 @@ function handleSharedFailure(error: unknown): boolean {
 }
 
 async function load(): Promise<void> {
+  loaded = false;
+  const mutation = mutationGeneration;
+  const generation = ++refreshGeneration;
   results.innerHTML = '<p class="admin-empty">Loading inventory&hellip;</p>';
   try {
     const [list, dashboard] = await Promise.all([
       api.listProducts(),
       api.getDashboard(),
     ]);
+    if (mutation !== mutationGeneration || generation !== refreshGeneration)
+      return;
     products = list;
     for (const id of drafts.keys()) {
       if (!list.some((product) => product.id === id)) drafts.delete(id);
     }
     summary.innerHTML = renderSummaryCards(dashboard.summary);
+    loaded = true;
     render();
   } catch (error) {
+    if (mutation !== mutationGeneration || generation !== refreshGeneration)
+      return;
     if (handleSharedFailure(error)) return;
     console.error('Unable to load the inventory:', error);
     count.hidden = true;
@@ -198,19 +212,19 @@ async function load(): Promise<void> {
 async function refresh(): Promise<void> {
   const mutation = mutationGeneration;
   const generation = ++refreshGeneration;
-  const isCurrent = () =>
-    mutation === mutationGeneration && generation === refreshGeneration;
   try {
     const [list, dashboard] = await Promise.all([
       api.listProducts(),
       api.getDashboard(),
     ]);
-    if (!isCurrent()) return;
+    if (mutation !== mutationGeneration || generation !== refreshGeneration)
+      return;
     products = list;
     summary.innerHTML = renderSummaryCards(dashboard.summary);
     render();
   } catch (error) {
-    if (!isCurrent()) return;
+    if (mutation !== mutationGeneration || generation !== refreshGeneration)
+      return;
     if (handleSharedFailure(error)) return;
     console.error('Unable to refresh the inventory:', error);
   }
