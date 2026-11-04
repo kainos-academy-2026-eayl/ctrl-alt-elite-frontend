@@ -217,7 +217,12 @@ describe('role-based staff dashboards', () => {
     });
 
     it('denies sections outside its role', async () => {
-      for (const path of ['/admin/inventory', '/admin/reports']) {
+      for (const path of [
+        '/admin/inventory',
+        '/admin/inventory/new',
+        '/admin/inventory/p-1',
+        '/admin/reports',
+      ]) {
         const res = await get(path, cs);
         assert.equal(res.status, 403, path);
         assert.match(await res.text(), /Access denied/);

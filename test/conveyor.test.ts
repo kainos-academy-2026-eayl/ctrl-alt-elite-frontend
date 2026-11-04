@@ -3,8 +3,24 @@ import { describe, it } from 'vitest';
 import { HIDDEN_HOMEPAGE_PRODUCT_IDS } from '../src/data/hiddenProducts';
 import type { CatalogProduct } from '../src/server/services/catalog-service';
 import { pickHomepageProducts } from '../src/server/services/homepage-products';
+import { ProductService } from '../src/services/productService';
 import { buildHomepage } from '../src/views/homepage.page';
 import { buildProductDetailPage } from '../src/views/product-detail.page';
+
+const POPULAR = [
+  {
+    id: 'a/1',
+    name: 'Kainos Hoodie',
+    price: '8.99',
+    imageUrl: 'data:image/png;base64,AA==',
+  },
+  {
+    id: 'crown',
+    name: 'Crown',
+    price: '9999.00',
+    imageUrl: 'data:image/png;base64,AA==',
+  },
+];
 
 function catalogProduct(
   id: string | number,
@@ -145,5 +161,45 @@ describe('buildProductDetailPage', () => {
     assert.equal(page.basketSummary.itemCount, 0);
     assert.equal(page.addToBasketUrl, '/basket/items');
     assert.equal(page.currentYear, 2026);
+  });
+});
+
+describe('ProductService.getPopular', () => {
+  function fakeFetch(response: Response) {
+    const urls: string[] = [];
+    const fetchImpl: typeof fetch = async (input) => {
+      urls.push(String(input));
+      return response;
+    };
+    return { fetchImpl, urls };
+  }
+
+  it('asks the backend for the given number of popular products', async () => {
+    const { fetchImpl, urls } = fakeFetch(Response.json({ products: POPULAR }));
+    const products = await new ProductService(
+      'http://backend.test',
+      fetchImpl,
+    ).getPopular(6);
+    assert.deepEqual(products, POPULAR);
+    assert.deepEqual(urls, [
+      'http://backend.test/api/products/popular?limit=6',
+    ]);
+  });
+
+  it('throws when the backend fails or sends an unexpected body', async () => {
+    await assert.rejects(
+      new ProductService(
+        'http://backend.test',
+        fakeFetch(new Response('', { status: 500 })).fetchImpl,
+      ).getPopular(6),
+      /status 500/,
+    );
+    await assert.rejects(
+      new ProductService(
+        'http://backend.test',
+        fakeFetch(Response.json({ products: [{ id: 1 }] })).fetchImpl,
+      ).getPopular(6),
+      /unexpected response/,
+    );
   });
 });
