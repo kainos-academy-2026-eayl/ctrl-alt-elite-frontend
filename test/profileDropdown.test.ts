@@ -183,16 +183,25 @@ describe('homepage profile dropdown', () => {
     assert.match(profileHtml, /<title>My Profile \| Ctrl-Alt-Elite<\/title>/);
     assert.match(profileHtml, /<h2>Test Customer<\/h2>/);
     assert.match(profileHtml, /class="profile-preview-avatar"/);
-    assert.match(profileHtml, /Design preview only/);
+    assert.match(profileHtml, /Sign in again to load and save your profile\./);
+    assert.match(
+      profileHtml,
+      /<fieldset class="profile-details-fields" disabled>/,
+    );
     assert.match(profileHtml, /href="\/">Back to home/);
     assert.match(profileHtml, /href="\/assets\/profile\.css"/);
-    assert.doesNotMatch(profileHtml, /{{|{%|<form|<script/);
+    assert.match(profileHtml, /<form action="\/profile" method="post">/);
+    assert.match(
+      profileHtml,
+      /<script src="\/controllers\/script\.js" defer><\/script>/,
+    );
+    assert.doesNotMatch(profileHtml, /{{|{%/);
     const stylesheet = await fetch(`${base}/assets/profile.css`);
     assert.equal(stylesheet.status, 200);
     assert.match(stylesheet.headers.get('content-type') ?? '', /text\/css/);
   });
 
-  it('renders cosmetic profile fields without submission or backend calls', async () => {
+  it('renders disabled profile fields for a legacy session without backend calls', async () => {
     const backendRequest = vi.fn();
     backend.on('request', backendRequest);
     try {
@@ -216,7 +225,6 @@ describe('homepage profile dropdown', () => {
         assert.ok(html.includes(`id="${id}"`));
       }
       for (const [id, type, name, autocomplete] of [
-        ['profile-email', 'email', 'email', 'email'],
         ['profile-phone', 'tel', 'phoneNumber', 'tel'],
         ['profile-address-line-1', 'text', 'addressLine1', 'address-line1'],
         ['profile-address-line-2', 'text', 'addressLine2', 'address-line2'],
@@ -230,6 +238,12 @@ describe('homepage profile dropdown', () => {
         assert.ok(input.includes(`name="${name}"`));
         assert.ok(input.includes(`autocomplete="${autocomplete}"`));
       }
+      const emailInput = html.match(/<input[^>]*id="profile-email"[^>]*>/)?.[0];
+      assert.ok(emailInput);
+      assert.match(emailInput, /type="email"/);
+      assert.match(emailInput, /autocomplete="email"/);
+      assert.match(emailInput, /\breadonly\b/);
+      assert.doesNotMatch(emailInput, /\bname=/);
       assert.match(
         html,
         /type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/,
@@ -240,11 +254,20 @@ describe('homepage profile dropdown', () => {
       );
       assert.match(
         html,
-        /<button[^>]*type="button"[^>]*disabled[^>]*>Save changes<\/button>/,
+        /<button[^>]*type="submit"[^>]*disabled[^>]*>Save changes<\/button>/,
       );
-      assert.match(html, /changes are not saved/);
-      assert.match(html, /pictures are not uploaded or previewed/);
-      assert.doesNotMatch(html, /<form|<script|\/api\/|profileController/);
+      assert.match(html, /<fieldset class="profile-details-fields" disabled>/);
+      assert.match(html, /Sign in again to load and save your profile\./);
+      assert.match(html, /<input[^>]*id="profile-picture"[^>]*disabled/);
+      assert.match(html, /<form action="\/profile" method="post">/);
+      assert.match(
+        html,
+        /<script src="\/controllers\/script\.js" defer><\/script>/,
+      );
+      assert.doesNotMatch(
+        html,
+        /Design preview only|changes are not saved|{{|{%/,
+      );
       assert.equal(backendRequest.mock.calls.length, 0);
     } finally {
       backend.off('request', backendRequest);

@@ -4,10 +4,29 @@ import type { AddressInfo } from 'node:net';
 import { SignJWT } from 'jose';
 import { afterAll, beforeAll, beforeEach, describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
-import { ProfileService } from '../src/server/services/profile-service';
+import {
+  type ProfileDetails,
+  ProfileService,
+} from '../src/server/services/profile-service';
 
 const SECRET = 'profile-autofill-test-secret-at-least-32-bytes';
 const BACKEND_TOKEN = 'test-backend-profile-token';
+
+function makeProfile(overrides: Partial<ProfileDetails> = {}): ProfileDetails {
+  return {
+    id: 'customer-1',
+    username: 'saved-user',
+    firstName: 'Saved',
+    lastName: 'Customer',
+    email: 'saved@example.invalid',
+    addressLine1: null,
+    addressLine2: null,
+    postcode: null,
+    phoneNumber: null,
+    hasPhoto: false,
+    ...overrides,
+  };
+}
 
 async function listen(server: Server): Promise<string> {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -55,13 +74,7 @@ describe('saved profile autofill', () => {
   beforeEach(() => {
     status = 200;
     rawBody = undefined;
-    body = {
-      id: 'customer-1',
-      username: 'saved-user',
-      firstName: 'Saved',
-      lastName: 'Customer',
-      hasPhoto: false,
-    };
+    body = makeProfile();
     requests.length = 0;
   });
 
@@ -79,11 +92,15 @@ describe('saved profile autofill', () => {
 
   it('prefills saved fields on every load and uses only the backend token for identity', async () => {
     for (let visit = 0; visit < 2; visit++) {
-      body = {
+      const profile = makeProfile({
         username: `saved-user-${visit}`,
         firstName: `Saved-${visit}`,
-        lastName: 'Customer',
-      };
+        addressLine1: `${visit + 1} Example Street`,
+        addressLine2: `Flat ${visit + 1}`,
+        postcode: `AB${visit + 1} 2CD`,
+        phoneNumber: `+44 20 1234 567${visit}`,
+      });
+      body = profile;
       const response = await getProfile(
         '/profile?userId=someone-else&firstName=Wrong',
       );
@@ -98,22 +115,37 @@ describe('saved profile autofill', () => {
       assert.match(html, /name="lastName" value="Customer"/);
       assert.doesNotMatch(html, /someone-else|value="Wrong"|Sign in again/);
       assert.ok(!html.includes(BACKEND_TOKEN));
-      for (const id of [
-        'profile-email',
-        'profile-phone',
-        'profile-address-line-1',
-        'profile-address-line-2',
-        'profile-postcode',
+      for (const [id, value] of [
+        ['profile-email', profile.email],
+        ['profile-phone', profile.phoneNumber],
+        ['profile-address-line-1', profile.addressLine1],
+        ['profile-address-line-2', profile.addressLine2],
+        ['profile-postcode', profile.postcode],
       ]) {
         const input = html.match(
           new RegExp(`<input[^>]*id="${id}"[^>]*>`),
         )?.[0];
         assert.ok(input);
-        assert.doesNotMatch(input, /value="[^"]+"/);
+        assert.ok(input.includes(`value="${value}"`));
+        if (id === 'profile-email') {
+          assert.match(input, /\breadonly\b/);
+          assert.doesNotMatch(input, /\bname=/);
+        }
       }
-      assert.match(html, /changes are not saved/);
-      assert.match(html, /<button[^>]*disabled[^>]*>Save changes<\/button>/);
-      assert.doesNotMatch(html, /<form|<script/);
+      assert.match(html, /<form action="\/profile" method="post">/);
+      const saveButton = html.match(/<button[^>]*>Save changes<\/button>/)?.[0];
+      assert.ok(saveButton);
+      assert.match(saveButton, /type="submit"/);
+      assert.doesNotMatch(saveButton, /\bdisabled\b/);
+      assert.match(html, /<fieldset class="profile-details-fields">/);
+      assert.match(
+        html,
+        /<script src="\/controllers\/script\.js" defer><\/script>/,
+      );
+      assert.doesNotMatch(
+        html,
+        /Design preview only|changes are not saved|{{|{%/,
+      );
     }
     assert.deepEqual(
       requests,
@@ -125,12 +157,14 @@ describe('saved profile autofill', () => {
   });
 
   it('renders a null username as empty and retains names up to the backend limit', async () => {
-    body = {
+    body = makeProfile({
       username: null,
       firstName: 'A'.repeat(100),
       lastName: 'B'.repeat(100),
-    };
-    const html = await (await getProfile()).text();
+    });
+    const response = await getProfile();
+    assert.equal(response.status, 200);
+    const html = await response.text();
     assert.match(html, /name="username" value=""/);
     assert.ok(html.includes(`name="firstName" value="${'A'.repeat(100)}"`));
     assert.ok(html.includes(`name="lastName" value="${'B'.repeat(100)}"`));
@@ -140,18 +174,25 @@ describe('saved profile autofill', () => {
   });
 
   it('escapes saved values in input attributes', async () => {
-    body = {
+    body = makeProfile({
       username: '"><script>alert(1)</script>',
       firstName: '<img src=x onerror=alert(1)>',
       lastName: '" autofocus onfocus="alert(1)',
-    };
+      addressLine1: '" onfocus="alert(2)',
+      addressLine2: '<script>alert(3)</script>',
+    });
     const response = await getProfile();
     assert.equal(response.status, 200);
     const html = await response.text();
     assert.match(html, /value="&quot;&gt;&lt;script&gt;/);
     assert.match(html, /value="&lt;img/);
     assert.match(html, /value="&quot; autofocus onfocus=&quot;/);
-    assert.doesNotMatch(html, /<script>|<img src=x|value="" autofocus/);
+    assert.match(html, /value="&quot; onfocus=&quot;alert\(2\)/);
+    assert.match(html, /value="&lt;script&gt;alert\(3\)&lt;\/script&gt;"/);
+    assert.doesNotMatch(
+      html,
+      /<script>|<img src=x|value="" autofocus|value="" onfocus/,
+    );
   });
 
   it('keeps older sessions usable but explicitly asks for a backend login', async (context) => {
@@ -166,9 +207,14 @@ describe('saved profile autofill', () => {
     const html = await response.text();
     assert.match(
       html,
-      /role="alert">Sign in again to load your saved username and names/,
+      /role="alert">Sign in again to load and save your profile\./,
     );
     assert.match(html, /name="firstName" value=""/);
+    assert.match(html, /<fieldset class="profile-details-fields" disabled>/);
+    assert.match(
+      html,
+      /<button[^>]*type="submit"[^>]*disabled[^>]*>Save changes<\/button>/,
+    );
     assert.equal(requests.length, 0);
     assert.equal(warning.mock.calls.length, 1);
   });
@@ -220,12 +266,20 @@ describe('saved profile autofill', () => {
       assert.equal(response.headers.get('location'), '/unavailable');
     }
     status = 200;
-    for (const invalid of [
+    const invalidProfiles = [
       null,
       {},
-      { username: 42, firstName: 'Saved', lastName: 'Customer' },
-      { username: null, firstName: 'Saved' },
-    ]) {
+      { ...makeProfile(), username: 42 },
+      { ...makeProfile(), lastName: undefined },
+      { ...makeProfile(), id: undefined },
+      { ...makeProfile(), email: undefined },
+      { ...makeProfile(), hasPhoto: 'false' },
+      { ...makeProfile(), addressLine1: 42 },
+      { ...makeProfile(), addressLine2: undefined },
+      { ...makeProfile(), postcode: 42 },
+      { ...makeProfile(), phoneNumber: undefined },
+    ];
+    for (const invalid of invalidProfiles) {
       body = invalid;
       const response = await getProfile();
       assert.equal(response.status, 302);
@@ -233,7 +287,7 @@ describe('saved profile autofill', () => {
     }
     rawBody = '{invalid';
     assert.equal((await getProfile()).headers.get('location'), '/unavailable');
-    assert.equal(error.mock.calls.length, 8);
+    assert.equal(error.mock.calls.length, 3 + invalidProfiles.length + 1);
   });
 
   it('propagates network failures instead of returning an empty profile', async (context) => {
