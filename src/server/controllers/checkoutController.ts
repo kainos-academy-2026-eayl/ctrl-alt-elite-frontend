@@ -422,6 +422,7 @@ export class CheckoutController {
     if (recentOrder) {
       const result = await recentOrder.catch(() => null);
       if (result) {
+        clearBasketCookie(res);
         return {
           kind: 'redirect',
           location: `/checkout/confirmation/${encodeURIComponent(result.order.id)}`,
