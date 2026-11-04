@@ -255,7 +255,25 @@ export class BasketController {
   };
 
   /** The basket for the header count on other pages; null if there is none. */
-  getHeaderBasket = async (req: Request): Promise<BasketResponseDto | null> => {
+  // The site navigation and the page itself both ask for the header basket, so
+  // a request loads it only once.
+  private readonly headerBaskets = new WeakMap<
+    Request,
+    Promise<BasketResponseDto | null>
+  >();
+
+  getHeaderBasket = (req: Request): Promise<BasketResponseDto | null> => {
+    let basket = this.headerBaskets.get(req);
+    if (!basket) {
+      basket = this.loadHeaderBasket(req);
+      this.headerBaskets.set(req, basket);
+    }
+    return basket;
+  };
+
+  private loadHeaderBasket = async (
+    req: Request,
+  ): Promise<BasketResponseDto | null> => {
     const basketId = readBasketCookie(req.headers.cookie);
     if (basketId === null) {
       return null;

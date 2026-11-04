@@ -414,60 +414,12 @@ h1 {
     width: min(100% - 1.5rem, 1120px);
   }
 
-  .header-content {
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.5rem;
-    min-height: 4.5rem;
-    padding-block: 0.75rem;
-  }
-
   .brand {
     font-size: 1rem;
   }
 
-  .primary-nav {
-    width: 100%;
-    justify-content: center;
-  }
-
   .brand-mark {
     width: 2.2rem;
-  }
-
-  .home-page .header-content {
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-
-  .home-page .brand {
-    min-width: 0;
-  }
-
-  .home-page .brand > span:last-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .home-page .primary-nav {
-    width: auto;
-    justify-content: flex-end;
-    flex-shrink: 0;
-  }
-
-  .home-page .account-label {
-    display: none;
-  }
-
-  .home-page .account-name {
-    display: block;
-    max-width: 5rem;
-  }
-
-  .home-page .brand-mark {
-    flex-shrink: 0;
   }
 
   main {

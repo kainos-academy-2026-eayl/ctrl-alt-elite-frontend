@@ -1211,13 +1211,9 @@ describe('frontend routes', () => {
       assert.match(html, /10 products/);
     });
 
-    it('renders one category toggle per backend category and tags product cards', async () => {
+    it('has no category buttons in the page, but still tags product cards', async () => {
       const html = await (await fetch(`${base}/products`)).text();
-      const filters = [...html.matchAll(/data-category-filter="([^"]+)"/g)].map(
-        (match) => match[1],
-      );
-      assert.deepEqual(filters, ['Test category', 'Audio', 'Photography']);
-      assert.equal((html.match(/aria-pressed="false"/g) ?? []).length, 3);
+      assert.doesNotMatch(html, /data-category-filter|category-filters/);
       assert.equal(
         (html.match(/data-product-card data-category=/g) ?? []).length,
         10,

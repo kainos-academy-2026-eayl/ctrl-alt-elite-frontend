@@ -64,7 +64,26 @@ export class LoginSession {
     });
   }
 
-  async getAccount(
+  // The site navigation and the page both read the account, so a request
+  // verifies its login cookie only once.
+  private readonly accounts = new WeakMap<
+    Request,
+    Promise<{ name: string; role?: string } | null>
+  >();
+
+  getAccount(
+    req: Request,
+    res: Response,
+  ): Promise<{ name: string; role?: string } | null> {
+    let account = this.accounts.get(req);
+    if (!account) {
+      account = this.readAccount(req, res);
+      this.accounts.set(req, account);
+    }
+    return account;
+  }
+
+  private async readAccount(
     req: Request,
     res: Response,
   ): Promise<{ name: string; role?: string } | null> {

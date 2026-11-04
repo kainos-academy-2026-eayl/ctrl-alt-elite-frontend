@@ -6,37 +6,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Browse the Ctrl-Alt-Elite product catalog.">
     <title>Product catalog | Ctrl-Alt-Elite</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <link rel="stylesheet" href="/assets/basket.css">
+    <link rel="stylesheet" href="/assets/search.css">
+    <link rel="stylesheet" href="/assets/nav.css">
     <link rel="stylesheet" href="/product-catalog/product_catalog.css">
     <script src="/controllers/product_catalog.js" defer></script>
+    <script src="/controllers/script.js" defer></script>
 </head>
 
 <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <header class="site-header">
-        <div class="header-inner">
-            <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">Ctrl-Alt-Elite</a>
-            <p class="basket-count" id="basketCount" aria-live="polite">Basket (0)</p>
+        <div class="page-width header-content">
+            <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
+                <span class="brand-mark" aria-hidden="true">C</span>
+                <span>Ctrl-Alt-Elite</span>
+            </a>
+            {% include "_siteNav.njk" %}
         </div>
     </header>
 
-    <main class="catalog-main">
+    <main class="catalog-main" id="main-content">
         <section class="catalog-toolbar" aria-labelledby="catalogTitle">
-            <div>
-                <p class="eyebrow">Shop</p>
-                <h1 id="catalogTitle">Product catalog</h1>
-                <p class="catalog-summary">Browse the latest products from Ctrl-Alt-Elite.</p>
-            </div>
+            <h1 id="catalogTitle">{{ selectedCategory or "All products" }}</h1>
+            <p class="catalog-summary" id="resultsCount" aria-live="polite">{{ products.length }} {{ "product" if products.length == 1 else "products" }}</p>
         </section>
-
-        {% if categories.length %}
-        <div class="category-filters" role="group" aria-label="Filter by category">
-            {% for category in categories %}
-            <button class="button button-secondary category-filter" type="button" data-category-filter="{{ category }}"
-                aria-pressed="false" aria-controls="productGrid">{{ category }}</button>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <p class="results-count" id="resultsCount" aria-live="polite">{{ products.length }} products</p>
 
         <section class="product-grid" id="productGrid" aria-label="Products">
             {% if productError %}

@@ -73,6 +73,11 @@ async function close(server: Server): Promise<void> {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 }
 
+/** The page content only: the site navigation has its own search and logout forms. */
+function profileMain(html: string): string {
+  return /<main[\s\S]*<\/main>/.exec(html)?.[0] ?? '';
+}
+
 describe('homepage profile dropdown', () => {
   let backend: Server;
   let frontend: Server;
@@ -184,9 +189,11 @@ describe('homepage profile dropdown', () => {
     assert.match(profileHtml, /<h2>Test Customer<\/h2>/);
     assert.match(profileHtml, /class="profile-preview-avatar"/);
     assert.match(profileHtml, /Design preview only/);
-    assert.match(profileHtml, /href="\/">Back to home/);
+    assert.match(profileHtml, /aria-label="Main navigation"/);
+    assert.match(profileHtml, /href="\/">Home<\/a>/);
     assert.match(profileHtml, /href="\/assets\/profile\.css"/);
-    assert.doesNotMatch(profileHtml, /{{|{%|<form|<script/);
+    assert.doesNotMatch(profileHtml, /{{|{%|<script/);
+    assert.doesNotMatch(profileMain(profileHtml), /<form/);
     const stylesheet = await fetch(`${base}/assets/profile.css`);
     assert.equal(stylesheet.status, 200);
     assert.match(stylesheet.headers.get('content-type') ?? '', /text\/css/);
@@ -227,7 +234,8 @@ describe('homepage profile dropdown', () => {
       );
       assert.match(html, /changes are not saved/);
       assert.match(html, /pictures are not uploaded or previewed/);
-      assert.doesNotMatch(html, /<form|<script|\/api\/|profileController/);
+      assert.doesNotMatch(html, /<script|\/api\/|profileController/);
+      assert.doesNotMatch(profileMain(html), /<form/);
       assert.equal(backendRequest.mock.calls.length, 0);
     } finally {
       backend.off('request', backendRequest);

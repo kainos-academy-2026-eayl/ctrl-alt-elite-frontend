@@ -31,7 +31,11 @@ export class AccountController {
 
   showRegister = (_req: Request, res: Response): void => {
     try {
-      res.type('html').send(this.templates.render('register.njk'));
+      res.type('html').send(
+        this.templates.render('register.njk', {
+          currentYear: new Date().getFullYear(),
+        }),
+      );
     } catch (error) {
       console.error('Unable to load the register page:', error);
       res.redirect('/unavailable');

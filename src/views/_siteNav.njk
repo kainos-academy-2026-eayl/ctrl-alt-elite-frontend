@@ -1,0 +1,75 @@
+{#
+  Customer site navigation, rendered by layout.njk inside the header. Its data
+  (account, categories, basket count, current page) comes from siteNav(); see
+  src/server/siteNavigation.ts. Staff dashboards use admin/layout.njk instead.
+#}
+{% set fallbackNav = { currentPath: "", categories: [], accountName: "Account", basketSummary: { itemCount: 0, itemCountText: "0 items" } } %}
+{% set nav = siteNav() if siteNav else fallbackNav %}
+{% set summary = basketSummary or nav.basketSummary %}
+{% set path = nav.currentPath %}
+{% set onShopPage = path == "/products" or path.startsWith("/products/") %}
+<div class="site-nav">
+  <a class="nav-link basket-icon-link site-nav-basket" href="/basket"{% if path == "/basket" %} aria-current="page"{% endif %}>
+    <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
+    </svg>
+    <span class="basket-visually-hidden">Basket, {{ summary.itemCountText }}</span>
+    <span class="basket-badge" aria-hidden="true">{{ summary.itemCount }}</span>
+  </a>
+
+  <input class="site-nav-check" type="checkbox" id="site-nav-check" aria-controls="site-nav-panel" data-nav-toggle>
+  <label class="site-nav-toggle" for="site-nav-check">
+    <span class="site-nav-toggle-bars" aria-hidden="true"></span>
+    <span class="basket-visually-hidden">Menu</span>
+  </label>
+
+  <nav class="site-nav-panel" id="site-nav-panel" aria-label="Main navigation">
+    <ul class="site-nav-links">
+      <li><a class="site-nav-link" href="/"{% if path == "/" %} aria-current="page"{% endif %}>Home</a></li>
+      <li><a class="site-nav-link" href="/products"{% if onShopPage and not nav.currentCategory %} aria-current="page"{% endif %}>Shop</a></li>
+      {% if nav.categories.length %}
+      <li>
+        <details class="site-nav-dropdown" data-nav-dropdown>
+          <summary class="site-nav-link{% if nav.currentCategory %} is-active{% endif %}">Categories</summary>
+          <ul class="site-nav-dropdown-list">
+            <li><a class="site-nav-dropdown-link" href="/products">All products</a></li>
+            {% for category in nav.categories %}
+            <li><a class="site-nav-dropdown-link" href="/products?category={{ category | urlencode }}"{% if category == nav.currentCategory %} aria-current="page"{% endif %}>{{ category }}</a></li>
+            {% endfor %}
+          </ul>
+        </details>
+      </li>
+      {% endif %}
+    </ul>
+
+    {% include "_searchForm.njk" %}
+
+    <details class="account-menu" data-account-menu data-nav-dropdown>
+      <summary aria-label="{{ nav.accountName }} options">
+        <svg class="account-avatar" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
+          <circle cx="32" cy="32" r="32" fill="#dcfce7" />
+          <circle cx="32" cy="24" r="11" fill="#14532d" />
+          <path d="M12 57a20 20 0 0 1 40 0" fill="#14532d" />
+        </svg>
+        <span class="account-label{% if nav.isAuthenticated %} account-name{% endif %}">{{ nav.accountName }}</span>
+      </summary>
+      <ul class="account-menu-list">
+        {% if nav.isAuthenticated %}
+        <li><a class="account-menu-link" href="/profile"{% if path == "/profile" %} aria-current="page"{% endif %}>My Profile</a></li>
+        {% if nav.isStaff %}
+        <li><a class="account-menu-link" href="/dashboard">Dashboard</a></li>
+        {% endif %}
+        <li>
+          <form action="/logout" method="post">
+            <button class="account-menu-link account-menu-button" type="submit">Logout</button>
+          </form>
+        </li>
+        {% else %}
+        <li><a class="account-menu-link" href="/login"{% if path == "/login" %} aria-current="page"{% endif %}>Login</a></li>
+        <li><a class="account-menu-link" href="/register"{% if path == "/register" %} aria-current="page"{% endif %}>Register</a></li>
+        {% endif %}
+        <li><a class="account-menu-link" href="/account/support"{% if path.startsWith("/account/support") %} aria-current="page"{% endif %}>Support</a></li>
+      </ul>
+    </details>
+  </nav>
+</div>
