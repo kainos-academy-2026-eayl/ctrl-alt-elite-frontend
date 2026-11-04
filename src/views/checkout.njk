@@ -79,28 +79,8 @@
         {{ textField("phone", "Phone number", values, fieldErrors, type="tel", autocomplete="tel", hint="A UK number, for example 07700 900123", width="medium", maxlength=20, inputmode="tel") }}
 
         <h3 class="checkout-subheading">Home address</h3>
-        <p class="checkout-hint">Enter your postcode and choose Find address, or type your address in below.</p>
-        <div class="checkout-postcode">
-          {{ textField("postcode", "Postcode", values, fieldErrors, autocomplete="postal-code", width="short", maxlength=8) }}
-          <button class="checkout-secondary-button" type="submit" name="action" value="find-address" formnovalidate>Find address</button>
-        </div>
-
-        {% if addresses.length %}
-        <div class="checkout-field{% if fieldErrors.selectedAddress %} checkout-field-error{% endif %}">
-          <fieldset class="checkout-fieldset" id="selectedAddress"{% if fieldErrors.selectedAddress %} aria-describedby="selectedAddress-error"{% endif %}>
-            <legend class="checkout-label">Choose your address</legend>
-            {% if fieldErrors.selectedAddress %}<p class="checkout-error-message" id="selectedAddress-error"><span class="basket-visually-hidden">Error:</span> {{ fieldErrors.selectedAddress }}</p>{% endif %}
-            {% for address in addresses %}
-            <div class="checkout-radio">
-              <input id="address-{{ address.index }}" type="radio" name="selectedAddress" value="{{ address.index }}" />
-              <label for="address-{{ address.index }}">{{ address.label }}</label>
-            </div>
-            {% endfor %}
-          </fieldset>
-          <button class="checkout-secondary-button" type="submit" name="action" value="use-address" formnovalidate>Use this address</button>
-        </div>
-        {% endif %}
-
+        <p class="checkout-hint">Enter your address below. We will check that your postcode exists.</p>
+        {{ textField("postcode", "Postcode", values, fieldErrors, autocomplete="postal-code", width="short", maxlength=8) }}
         {{ textField("addressLine1", "Address line 1", values, fieldErrors, autocomplete="address-line1", maxlength=100) }}
         {{ textField("addressLine2", "Address line 2", values, fieldErrors, autocomplete="address-line2", optional=true, maxlength=100) }}
         {{ textField("town", "Town or city", values, fieldErrors, autocomplete="address-level2", width="medium", maxlength=60) }}
@@ -167,8 +147,10 @@
         {% if not payment.canAfford %}
         <p class="basket-alert" role="alert">Your credit balance is not enough to pay for this order. Remove some items from your basket or choose a cheaper delivery option.</p>
         {% endif %}
+        {% if not orderOutcomeUnknown %}
         <input type="hidden" name="confirmedTotalPence" value="{{ payment.totalPence }}" />
         <button class="basket-button checkout-submit" type="submit" name="action" value="place-order"{% if not payment.canAfford %} disabled{% endif %}>Checkout</button>
+        {% endif %}
         {% endif %}
       </section>
     </form>

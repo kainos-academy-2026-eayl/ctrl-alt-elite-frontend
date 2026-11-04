@@ -6,11 +6,6 @@ import type {
   OrderResultDto,
 } from '../../dtos/checkoutDto';
 import { renderErrorPage } from '../../middleware/errorHandler';
-import type {
-  AddressLookupService,
-  LookedUpAddress,
-} from '../../services/addressLookupService';
-import { normalisePostcode } from '../../services/addressLookupService';
 import {
   type BasketService,
   BasketServiceError,
@@ -29,6 +24,7 @@ import {
   type CheckoutFieldError,
   type CheckoutForm,
   type CheckoutValues,
+  normalisePostcode,
   normaliseUkPhone,
   readCheckoutForm,
   validateDelivery,
@@ -47,7 +43,6 @@ const POSTCODE_NOT_FOUND_MESSAGE =
   'We could not find that postcode. Check it and try again.';
 const POSTCODE_UNAVAILABLE_MESSAGE =
   'We could not check your postcode right now. Please try again in a moment.';
-const CHOOSE_ADDRESS_MESSAGE = 'Choose your address from the list';
 const TOTAL_CHANGED_MESSAGE =
   'Your basket or its prices have changed. Check your new order total and press Checkout again.';
 // Long enough to catch a double-click or a refresh, short enough to forget.
@@ -72,13 +67,12 @@ type LoadedCheckout =
  * Every step is a normal form post, so checkout works without JavaScript.
  */
 export class CheckoutController {
-  /** Orders placed (or being placed) for each basket, to stop double orders. */
+  /** Order requests for each basket, including ambiguous outcomes. */
   private readonly ordersByBasket = new Map<string, Promise<OrderResultDto>>();
 
   constructor(
     private readonly checkoutService: CheckoutService,
     private readonly basketService: BasketService,
-    private readonly addressLookup: AddressLookupService,
     private readonly loginSession: LoginSession,
     private readonly postcodeService: PostcodeService,
   ) {}
@@ -109,12 +103,6 @@ export class CheckoutController {
     const form = readCheckoutForm(req.body);
     const page: StepPage = { basket, account, values: form.values };
     switch (form.action) {
-      case 'find-address':
-        await this.findAddress(res, page);
-        return;
-      case 'use-address':
-        await this.useAddress(res, page, form);
-        return;
       case 'continue-to-delivery':
       case 'edit-delivery':
       case 'continue-to-payment':
@@ -168,30 +156,6 @@ export class CheckoutController {
     );
   };
 
-  private async findAddress(res: Response, page: StepPage): Promise<void> {
-    const problem = await this.checkPostcode(page.values);
-    if (problem) {
-      this.renderPostcodeProblem(res, page, problem);
-      return;
-    }
-    let addresses: LookedUpAddress[];
-    try {
-      addresses = await this.addressLookup.findAddresses(page.values.postcode);
-    } catch (error) {
-      if (!(error instanceof PostcodeServiceError)) throw error;
-      this.renderPostcodeProblem(res, page, error);
-      return;
-    }
-    this.render(res, 200, {
-      ...page,
-      values: {
-        ...page.values,
-        postcode: addresses[0]?.postcode ?? page.values.postcode,
-      },
-      addresses,
-    });
-  }
-
   /**
    * Returns null for a real postcode, a field error for a badly formed or
    * unknown one, or the error if postcodes cannot be checked right now.
@@ -227,44 +191,6 @@ export class CheckoutController {
       return;
     }
     this.render(res, 400, { ...page, step: 'details', errors: [problem] });
-  }
-
-  /** Copies the chosen looked-up address into the address fields. */
-  private async useAddress(
-    res: Response,
-    page: StepPage,
-    form: CheckoutForm,
-  ): Promise<void> {
-    let addresses: LookedUpAddress[];
-    try {
-      addresses = await this.addressLookup.findAddresses(page.values.postcode);
-    } catch (error) {
-      if (!(error instanceof PostcodeServiceError)) throw error;
-      this.renderPostcodeProblem(res, page, error);
-      return;
-    }
-    const chosen: LookedUpAddress | undefined =
-      form.selectedAddress === null
-        ? undefined
-        : addresses[form.selectedAddress];
-    if (!chosen) {
-      this.render(res, 400, {
-        ...page,
-        addresses,
-        errors: [{ field: 'selectedAddress', message: CHOOSE_ADDRESS_MESSAGE }],
-      });
-      return;
-    }
-    this.render(res, 200, {
-      ...page,
-      values: {
-        ...page.values,
-        addressLine1: chosen.line1,
-        addressLine2: '',
-        town: chosen.town,
-        postcode: chosen.postcode,
-      },
-    });
   }
 
   /** Checks each finished step in turn and shows the first one with errors. */
@@ -358,7 +284,8 @@ export class CheckoutController {
         this.render(res, 503, {
           ...page,
           notice:
-            'Sorry, we could not place your order. You have not been charged. Please try again.',
+            'We could not confirm whether your order was placed. Please contact support before trying again.',
+          orderOutcomeUnknown: true,
         });
       }
       return;
@@ -406,7 +333,14 @@ export class CheckoutController {
           RECENT_ORDER_MS,
         ).unref();
       },
-      () => this.ordersByBasket.delete(basket.id),
+      (error: unknown) => {
+        if (
+          error instanceof CheckoutServiceError &&
+          (error.isRejected || error.isUnauthenticated)
+        ) {
+          this.ordersByBasket.delete(basket.id);
+        }
+      },
     );
     return order;
   }
@@ -420,13 +354,21 @@ export class CheckoutController {
     // A basket that was just ordered goes to its confirmation, not checkout.
     const recentOrder = this.ordersByBasket.get(basketId);
     if (recentOrder) {
-      const result = await recentOrder.catch(() => null);
-      if (result) {
+      try {
+        const result = await recentOrder;
         clearBasketCookie(res);
         return {
           kind: 'redirect',
           location: `/checkout/confirmation/${encodeURIComponent(result.order.id)}`,
         };
+      } catch (error) {
+        if (
+          !(error instanceof CheckoutServiceError) ||
+          (!error.isRejected && !error.isUnauthenticated)
+        ) {
+          return { kind: 'unavailable' };
+        }
+        this.ordersByBasket.delete(basketId);
       }
     }
 

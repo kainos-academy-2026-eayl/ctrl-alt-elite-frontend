@@ -1,5 +1,3 @@
-import { normalisePostcode } from '../services/addressLookupService';
-
 /*
  * Reads and checks the checkout form. The form posts every field on every
  * step (earlier steps as hidden inputs), so nothing is stored between steps.
@@ -22,8 +20,6 @@ export type CheckoutField = (typeof CHECKOUT_FIELDS)[number];
 export type CheckoutValues = Record<CheckoutField, string>;
 
 export const CHECKOUT_ACTIONS = [
-  'find-address',
-  'use-address',
   'continue-to-delivery',
   'edit-details',
   'continue-to-payment',
@@ -34,17 +30,23 @@ export const CHECKOUT_ACTIONS = [
 export type CheckoutAction = (typeof CHECKOUT_ACTIONS)[number];
 
 export interface CheckoutFieldError {
-  field: CheckoutField | 'selectedAddress';
+  field: CheckoutField;
   message: string;
 }
 
 export interface CheckoutForm {
   values: CheckoutValues;
   action: CheckoutAction;
-  /** Index of the looked-up address the customer picked, if any. */
-  selectedAddress: number | null;
   /** The order total (pence) shown on the payment step when Checkout was pressed. */
   confirmedTotalPence: number | null;
+}
+
+const UK_POSTCODE = /^([A-Z]{1,2})(\d[A-Z\d]?)\s*(\d[A-Z]{2})$/;
+
+/** "bt71nn" becomes "BT7 1NN"; returns null if it is not a UK postcode. */
+export function normalisePostcode(postcode: string): string | null {
+  const match = UK_POSTCODE.exec(postcode.trim().toUpperCase());
+  return match ? `${match[1]}${match[2]} ${match[3]}` : null;
 }
 
 const MAX_LENGTHS: Record<CheckoutField, number> = {
@@ -111,14 +113,12 @@ export function readCheckoutForm(body: unknown): CheckoutForm {
     values[field] = readText(fields, field);
   }
   const action = readText(fields, 'action');
-  const selected = readText(fields, 'selectedAddress');
   const confirmedTotal = readText(fields, 'confirmedTotalPence');
   return {
     values,
     action: (CHECKOUT_ACTIONS as readonly string[]).includes(action)
       ? (action as CheckoutAction)
       : 'edit-details',
-    selectedAddress: /^\d{1,2}$/.test(selected) ? Number(selected) : null,
     confirmedTotalPence: /^\d{1,9}$/.test(confirmedTotal)
       ? Number(confirmedTotal)
       : null,

@@ -19,7 +19,6 @@ import { StatusController } from './server/controllers/status-controller';
 import { SupportController } from './server/controllers/support-controller';
 import { createAdminRouter } from './server/routes/admin';
 import { CatalogService } from './server/services/catalog-service';
-import { AddressLookupService } from './services/addressLookupService';
 import { BasketService } from './services/basketService';
 import { CheckoutService } from './services/checkoutService';
 import { PostcodeService } from './services/postcodeService';
@@ -85,7 +84,6 @@ export function createApp(
   const checkoutController = new CheckoutController(
     checkoutService,
     basketService,
-    new AddressLookupService(postcodeService),
     loginSession,
     postcodeService,
   );

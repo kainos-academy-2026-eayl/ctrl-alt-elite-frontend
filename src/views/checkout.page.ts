@@ -4,7 +4,6 @@ import type {
   DeliveryOptionDto,
   OrderResultDto,
 } from '../dtos/checkoutDto';
-import type { LookedUpAddress } from '../services/addressLookupService';
 import {
   type CheckoutFieldError,
   type CheckoutValues,
@@ -64,7 +63,7 @@ export interface CheckoutPage {
   fieldErrors: Partial<Record<string, string>>;
   /** A message from the backend, such as not enough credit. */
   notice: string;
-  addresses: { index: number; label: string }[];
+  orderOutcomeUnknown: boolean;
   homeDeliveryOptions: DeliveryOptionView[];
   collectionOptions: DeliveryOptionView[];
   /** Your details and address, once step 1 is complete. */
@@ -96,7 +95,7 @@ export interface CheckoutPageInput {
   values?: CheckoutValues;
   errors?: readonly CheckoutFieldError[];
   notice?: string;
-  addresses?: readonly LookedUpAddress[];
+  orderOutcomeUnknown?: boolean;
   deliveryOptions?: readonly DeliveryOptionDto[];
   now: Date;
 }
@@ -130,7 +129,7 @@ export function buildCheckoutPage({
   values,
   errors = [],
   notice = '',
-  addresses = [],
+  orderOutcomeUnknown = false,
   deliveryOptions = [],
   now,
 }: CheckoutPageInput): CheckoutPage {
@@ -169,10 +168,7 @@ export function buildCheckoutPage({
       errors.map((error) => [error.field, error.message]),
     ),
     notice,
-    addresses: addresses.map((address, index) => ({
-      index,
-      label: `${address.line1}, ${address.town}, ${address.postcode}`,
-    })),
+    orderOutcomeUnknown,
     homeDeliveryOptions: deliveryOptions
       .filter((option) => option.kind === 'delivery')
       .map((option) => toDeliveryView(option, selectedId)),

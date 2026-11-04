@@ -14,15 +14,12 @@ import {
 import { createApp } from '../src/app';
 import type { PlaceOrderRequestDto } from '../src/dtos/checkoutDto';
 import {
-  AddressLookupService,
-  normalisePostcode,
-} from '../src/services/addressLookupService';
-import {
   PostcodeService,
   PostcodeServiceError,
 } from '../src/services/postcodeService';
 import {
   isValidEmail,
+  normalisePostcode,
   normaliseUkPhone,
   readCheckoutForm,
   validateDelivery,
@@ -66,12 +63,6 @@ function fakePostcodesIo(req: Request): Response {
   });
 }
 
-/** A PostcodeService that answers from REAL_POSTCODES without the network. */
-function fakePostcodeService(): PostcodeService {
-  return new PostcodeService(POSTCODES_ORIGIN, async (input) =>
-    fakePostcodesIo(new Request(input)),
-  );
-}
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 const ORDER_ID = 'dcfea2c5-bd8f-4297-91dd-7f791e7e07e3';
 const TOKEN = 'customer.jwt.token';
@@ -368,51 +359,21 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     assert.match(html, /id="firstName" name="firstName" type="text" value=""/);
     assert.match(html, /id="email" name="email" type="email" value=""/);
     assert.match(html, /id="phone" name="phone" type="tel" value=""/);
-    assert.match(html, /value="find-address" formnovalidate>Find address/);
+    assert.match(html, /id="addressLine1" name="addressLine1"/);
+    assert.doesNotMatch(
+      html,
+      /Find address|Choose your address|selectedAddress/,
+    );
     assert.match(html, /value="continue-to-delivery">Continue to delivery/);
     assert.match(html, /2 × Desk Lamp/);
     assert.doesNotMatch(html, /<script/);
   });
 
-  it('finds addresses for a postcode and copies the chosen one into the form', async () => {
-    const found = await postCheckout({ ...DETAILS, action: 'find-address' });
-    assert.equal(found.status, 200);
-    const foundHtml = await found.text();
-    assert.match(foundHtml, /Choose your address/);
-    assert.equal((foundHtml.match(/name="selectedAddress"/g) ?? []).length, 6);
-    assert.match(foundHtml, /, Belfast, BT1 1AA<\/label>/);
-    assert.match(
-      foundHtml,
-      /id="postcode" name="postcode" type="text" value="BT1 1AA"/,
-    );
-
-    const used = await postCheckout({
-      ...DETAILS,
-      addressLine1: '',
-      town: '',
-      selectedAddress: '2',
-      action: 'use-address',
-    });
-    const usedHtml = await used.text();
-    const [chosen] = (
-      await new AddressLookupService(fakePostcodeService()).findAddresses(
-        'BT1 1AA',
-      )
-    ).slice(2);
-    assert.match(
-      usedHtml,
-      new RegExp(
-        `id="addressLine1" name="addressLine1" type="text" value="${chosen?.line1}"`,
-      ),
-    );
-    assert.match(usedHtml, /id="town" name="town" type="text" value="Belfast"/);
-  });
-
-  it('explains a bad postcode or a missing address choice', async () => {
+  it('keeps manually entered addresses and rejects invalid postcodes', async () => {
     const badPostcode = await postCheckout({
       ...DETAILS,
       postcode: 'nope',
-      action: 'find-address',
+      action: 'continue-to-delivery',
     });
     assert.equal(badPostcode.status, 400);
     assert.match(
@@ -420,24 +381,28 @@ describe('checkout (server-rendered, no JavaScript)', () => {
       /<a href="#postcode">Enter a real UK postcode, like BT1 1AA<\/a>/,
     );
 
-    const noChoice = await postCheckout({ ...DETAILS, action: 'use-address' });
-    assert.equal(noChoice.status, 400);
-    assert.match(await noChoice.text(), /Choose your address from the list/);
+    const manualAddress = await postCheckout({
+      ...DETAILS,
+      action: 'continue-to-delivery',
+    });
+    assert.equal(manualAddress.status, 200);
+    assert.match(
+      await manualAddress.text(),
+      /1 High Street<br \/>Belfast<br \/>BT1 1AA/,
+    );
   });
 
   it('only accepts postcodes that really exist', async () => {
-    for (const action of ['find-address', 'continue-to-delivery']) {
-      const res = await postCheckout({
-        ...DETAILS,
-        postcode: 'ZZ99 9ZZ',
-        action,
-      });
-      assert.equal(res.status, 400);
-      assert.match(
-        await res.text(),
-        /<a href="#postcode">We could not find that postcode\. Check it and try again\.<\/a>/,
-      );
-    }
+    const res = await postCheckout({
+      ...DETAILS,
+      postcode: 'ZZ99 9ZZ',
+      action: 'continue-to-delivery',
+    });
+    assert.equal(res.status, 400);
+    assert.match(
+      await res.text(),
+      /<a href="#postcode">We could not find that postcode\. Check it and try again\.<\/a>/,
+    );
   });
 
   it('asks you to try again if postcodes cannot be checked', async () => {
@@ -576,7 +541,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     assert.match(html, /value="place-order" disabled>Checkout/);
   });
 
-  it('places the order, clears the basket and shows the confirmation', async () => {
+  it('clears the basket on placement and cached redirect, then shows confirmation', async () => {
     const res = await postCheckout({
       ...DETAILS,
       deliveryOption: 'express',
@@ -607,6 +572,20 @@ describe('checkout (server-rendered, no JavaScript)', () => {
         deliveryOption: 'express',
       },
     ]);
+
+    const retry = await postCheckout({
+      ...DETAILS,
+      deliveryOption: 'express',
+      confirmedTotalPence: '5497',
+      action: 'place-order',
+    });
+    assert.equal(retry.status, 303);
+    assert.equal(
+      retry.headers.get('location'),
+      `/checkout/confirmation/${ORDER_ID}`,
+    );
+    assert.match(retry.headers.getSetCookie().join('\n'), /^basket_id=;/m);
+    assert.equal(backend.orders.length, 1);
 
     const page = await fetchFrontend(
       `${base}/checkout/confirmation/${ORDER_ID}`,
@@ -691,6 +670,28 @@ describe('checkout (server-rendered, no JavaScript)', () => {
       /role="alert">Your credit balance of £10\.00 is not enough to pay £54\.97\.<\/p>/,
     );
     assert.match(html, /value="place-order">Checkout/);
+  });
+
+  it('does not offer a retry when the order outcome is unknown', async () => {
+    backend.orderStatus = 503;
+    const form = {
+      ...DETAILS,
+      deliveryOption: 'express',
+      confirmedTotalPence: '5497',
+      action: 'place-order',
+    };
+    const uncertain = await postCheckout(form);
+    assert.equal(uncertain.status, 503);
+    const html = await uncertain.text();
+    assert.match(
+      html,
+      /We could not confirm whether your order was placed\. Please contact support before trying again\./,
+    );
+    assert.doesNotMatch(html, /value="place-order"/);
+
+    const retry = await postCheckout(form);
+    assert.equal(retry.status, 503);
+    assert.equal(backend.orders.length, 1);
   });
 
   it('sends guests who post the form back to the login prompt', async () => {
@@ -804,12 +805,16 @@ describe('checkout form checks', () => {
       ...DETAILS,
       firstName: '  Sam  ',
       action: 'hack',
-      selectedAddress: '3',
     });
     assert.equal(form.values.firstName, 'Sam');
     assert.equal(form.action, 'edit-details');
-    assert.equal(form.selectedAddress, 3);
     assert.equal(readCheckoutForm(null).values.email, '');
+  });
+
+  it('normalises UK postcodes', () => {
+    assert.equal(normalisePostcode(' bt71nn '), 'BT7 1NN');
+    assert.equal(normalisePostcode('SW1A 1AA'), 'SW1A 1AA');
+    assert.equal(normalisePostcode('12345'), null);
   });
 
   it('accepts good details and explains bad ones', () => {
@@ -874,34 +879,6 @@ describe('checkout form checks', () => {
     const values = readCheckoutForm({ deliveryOption: 'express' }).values;
     assert.deepEqual(validateDelivery(values, ['standard', 'express']), []);
     assert.equal(validateDelivery(values, ['standard']).length, 1);
-  });
-});
-
-describe('AddressLookupService', () => {
-  it('normalises UK postcodes', () => {
-    assert.equal(normalisePostcode(' bt71nn '), 'BT7 1NN');
-    assert.equal(normalisePostcode('SW1A 1AA'), 'SW1A 1AA');
-    assert.equal(normalisePostcode('12345'), null);
-  });
-
-  it('returns the same six addresses in the real town every time', async () => {
-    resetBackend();
-    const lookup = new AddressLookupService(fakePostcodeService());
-    const first = await lookup.findAddresses('bt7 1nn');
-    assert.equal(first.length, 6);
-    assert.deepEqual(first, await lookup.findAddresses('BT71NN'));
-    assert.ok(first.every((address) => address.postcode === 'BT7 1NN'));
-    assert.ok(first.every((address) => address.town === 'Belfast'));
-    assert.ok(first.every((address) => /^\d+ /.test(address.line1)));
-    // London council areas use the London post town.
-    assert.equal((await lookup.findAddresses('SW1A 1AA'))[0]?.town, 'London');
-  });
-
-  it('finds no addresses for postcodes that do not exist', async () => {
-    resetBackend();
-    const lookup = new AddressLookupService(fakePostcodeService());
-    assert.deepEqual(await lookup.findAddresses('ZZ99 9ZZ'), []);
-    assert.deepEqual(await lookup.findAddresses('nope'), []);
   });
 });
 
