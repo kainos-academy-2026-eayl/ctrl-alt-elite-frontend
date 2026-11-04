@@ -118,6 +118,17 @@ function restoreFocusedInput(focused: FocusedInput): void {
 
 function render(): void {
   const focused = readFocusedInput();
+  const focusedButton =
+    document.activeElement instanceof HTMLButtonElement &&
+    results.contains(document.activeElement)
+      ? document.activeElement
+      : null;
+  const action = [
+    'data-edit-stock',
+    'data-save-stock',
+    'data-cancel-stock',
+    'data-out-of-stock',
+  ].find((attribute) => focusedButton?.hasAttribute(attribute));
   const matching = filterStock(products, query);
   count.textContent =
     matching.length === products.length
@@ -128,7 +139,14 @@ function render(): void {
     matching.length === 0
       ? renderStockEmpty(hasStockFilters(query))
       : renderStockTable(matching, drafts, busyIds);
-  if (focused) restoreFocusedInput(focused);
+  if (focused) {
+    restoreFocusedInput(focused);
+  } else if (action && focusedButton) {
+    const id = focusedButton.getAttribute(action);
+    Array.from(results.querySelectorAll<HTMLButtonElement>(`button[${action}]`))
+      .find((button) => button.getAttribute(action) === id)
+      ?.focus();
+  }
 }
 
 function focusRow(id: string, selector: string): void {
