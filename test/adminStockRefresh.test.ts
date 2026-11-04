@@ -101,7 +101,7 @@ async function setup() {
     },
     fetch(url: string, init: { method: string; body: string }) {
       const response = deferred<Response>();
-      if (init.method === 'PUT') writes.push({ response, body: init.body });
+      if (init.method === 'PATCH') writes.push({ response, body: init.body });
       else if (url.endsWith('/dashboard')) dashboards.push(response);
       else lists.push(response);
       return response.promise;
