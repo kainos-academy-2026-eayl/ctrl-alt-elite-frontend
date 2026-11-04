@@ -23,6 +23,7 @@ import { DASHBOARD_WIDGETS } from './util/adminSettings';
 import { loadAdminFirstName, loadAdminProfile } from './util/adminUser';
 import { createApiProxy } from './util/apiProxy';
 import { clearAuthCookie, readAuthCookie } from './util/authCookie';
+import { clearBasketCookie, clearBasketNotice } from './util/basketCookie';
 import { createCustomerGuard } from './util/customerGuard';
 import { CUSTOMER_SORT_OPTIONS } from './util/customers';
 import { LoginSession } from './util/loginSession';
@@ -192,6 +193,9 @@ export function createApp(
     res.setHeader('Cache-Control', 'no-store');
     clearAuthCookie(res);
     loginSession.clear(res);
+    // Logging out empties the basket, so the next person starts afresh.
+    clearBasketCookie(res);
+    clearBasketNotice(res);
     res.redirect(303, '/login');
   });
 

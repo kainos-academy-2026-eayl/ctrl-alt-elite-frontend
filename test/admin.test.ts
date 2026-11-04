@@ -133,6 +133,25 @@ describe('admin portal pages', () => {
       assert.match(cookie, /HttpOnly/i);
     });
 
+    it('empties the basket on logout', async () => {
+      const res = await fetch(`${base}/logout`, {
+        method: 'POST',
+        headers: {
+          origin: base,
+          cookie:
+            'auth_token=admin-token; basket_id=6f1c2f0e-6a8e-4c43-9a51-3f3c9b8f4b11',
+        },
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 303);
+      const cookies = res.headers.getSetCookie();
+      const basket = cookies.find((value) => value.startsWith('basket_id='));
+      assert.ok(basket, 'the basket cookie is cleared');
+      assert.match(basket, /^basket_id=;/);
+      assert.match(basket, /Expires=Thu, 01 Jan 1970/);
+      assert.ok(cookies.some((value) => value.startsWith('basket_notice=;')));
+    });
+
     it('rejects cross-origin logout submissions without clearing the auth cookie', async () => {
       const res = await fetch(`${base}/logout`, {
         method: 'POST',
