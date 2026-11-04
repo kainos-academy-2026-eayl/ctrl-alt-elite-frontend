@@ -202,3 +202,28 @@
     flex-direction: column;
   }
 }
+
+.profile-credit {
+  margin: 1.5rem 0 0;
+  padding: 1rem;
+  border: 1px solid #86efac;
+  border-radius: 0.5rem;
+}
+
+.profile-credit-label {
+  margin: 0;
+  color: #14532d;
+  font-size: 1rem;
+}
+
+.profile-credit-amount {
+  margin: 0.25rem 0;
+  color: #14532d;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.profile-credit-copy {
+  margin: 0;
+  line-height: 1.5;
+}

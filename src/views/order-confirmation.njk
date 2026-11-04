@@ -1,0 +1,77 @@
+{% extends "layout.njk" %}
+
+{% block title %}Order confirmed | Ctrl-Alt-Elite{% endblock %}
+{% block description %}Your order has been placed.{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/assets/basket.css" />
+<link rel="stylesheet" href="/assets/checkout.css" />
+{% endblock %}
+
+{% block navigation %}
+<nav class="primary-nav" aria-label="Main navigation">
+  <a class="nav-link basket-icon-link" href="/basket">
+    <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
+    </svg>
+    <span class="basket-visually-hidden">Basket, {{ basketSummary.itemCountText }}</span>
+    <span class="basket-badge" aria-hidden="true">{{ basketSummary.itemCount }}</span>
+  </a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="page-width checkout" aria-labelledby="confirmation-heading">
+  <div class="checkout-confirmation-banner">
+    <h1 id="confirmation-heading">Order confirmed</h1>
+    <p>Thank you{% if firstName %}, {{ firstName }}{% endif %}! You have successfully made an order.</p>
+    <p>Order number<br /><strong class="checkout-order-number">{{ orderNumber }}</strong></p>
+  </div>
+
+  <p>Placed on {{ orderDate }}.</p>
+
+  <section class="checkout-panel" aria-labelledby="order-items-heading">
+    <h2 id="order-items-heading">Your order</h2>
+    <table class="basket-table">
+      <caption class="basket-visually-hidden">Items in your order</caption>
+      <thead>
+        <tr>
+          <th scope="col">Product</th>
+          <th scope="col">Unit price</th>
+          <th scope="col">Quantity</th>
+          <th scope="col">Line total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in lines %}
+        <tr>
+          <th scope="row">{{ line.name }}</th>
+          <td data-label="Unit price">{{ line.unitPrice }}</td>
+          <td data-label="Quantity">{{ line.quantity }}</td>
+          <td data-label="Line total" class="basket-line-total">{{ line.lineTotal }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <dl class="checkout-summary-list checkout-payment">
+      <div><dt>Items</dt><dd>{{ itemsTotal }}</dd></div>
+      <div><dt>Delivery</dt><dd>{{ deliveryPrice }}</dd></div>
+      <div class="checkout-payment-total"><dt>Paid from credit</dt><dd>{{ total }}</dd></div>
+      <div><dt>Remaining credit balance</dt><dd>{{ creditBalance }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="checkout-panel" aria-labelledby="order-delivery-heading">
+    <h2 id="order-delivery-heading">Delivery details</h2>
+    <dl class="checkout-summary-list">
+      {% if delivery %}<div><dt>Delivery</dt><dd>{{ delivery.name }}, {{ delivery.description }}</dd></div>{% endif %}
+      <div><dt>Name</dt><dd>{{ contact.name }}</dd></div>
+      <div><dt>Email</dt><dd>{{ contact.email }}</dd></div>
+      <div><dt>Phone</dt><dd>{{ contact.phone }}</dd></div>
+      <div><dt>Address</dt><dd>{% for line in addressLines %}{{ line }}{% if not loop.last %}<br />{% endif %}{% endfor %}</dd></div>
+    </dl>
+  </section>
+
+  <a class="basket-button" href="/">Continue shopping</a>
+</section>
+{% endblock %}

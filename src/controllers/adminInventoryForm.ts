@@ -133,7 +133,8 @@ function mountForm(existing: Product | undefined, categories: string[]): void {
     const current = readForm();
     if (imageInput.files?.length && !imageDataUrl) {
       showFieldErrors({
-        image: 'Wait for the selected image to finish loading, or choose another file.',
+        image:
+          'Wait for the selected image to finish loading, or choose another file.',
       });
       imageInput.focus();
       return;

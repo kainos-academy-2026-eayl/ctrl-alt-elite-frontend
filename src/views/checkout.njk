@@ -1,7 +1,12 @@
 {% extends "layout.njk" %}
 
-{% block title %}Ctrl-Alt-Elite | Checkout{% endblock %}
-{% block description %}Review the items selected for checkout.{% endblock %}
+{% block title %}{% if errors.length %}Error: {% endif %}Checkout | Ctrl-Alt-Elite{% endblock %}
+{% block description %}Enter your details, choose delivery and pay for your order.{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/assets/basket.css" />
+<link rel="stylesheet" href="/assets/checkout.css" />
+{% endblock %}
 
 {% block navigation %}
 <nav class="primary-nav" aria-label="Main navigation">
@@ -15,39 +20,169 @@
 </nav>
 {% endblock %}
 
+{% macro textField(name, label, values, fieldErrors, type="text", autocomplete="", hint="", optional=false, width="") %}
+<div class="checkout-field{% if fieldErrors[name] %} checkout-field-error{% endif %}">
+  <label class="checkout-label" for="{{ name }}">{{ label }}{% if optional %} (optional){% endif %}</label>
+  {% if hint %}<p class="checkout-hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
+  {% if fieldErrors[name] %}<p class="checkout-error-message" id="{{ name }}-error"><span class="basket-visually-hidden">Error:</span> {{ fieldErrors[name] }}</p>{% endif %}
+  <input class="checkout-input{% if width %} checkout-input-{{ width }}{% endif %}" id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ values[name] }}"{% if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}{% if not optional %} required{% endif %}{% if fieldErrors[name] %} aria-invalid="true"{% endif %}{% if hint or fieldErrors[name] %} aria-describedby="{% if hint %}{{ name }}-hint{% endif %}{% if hint and fieldErrors[name] %} {% endif %}{% if fieldErrors[name] %}{{ name }}-error{% endif %}"{% endif %} />
+</div>
+{% endmacro %}
+
+{% macro hiddenFields(names, values) %}
+{% for name in names %}<input type="hidden" name="{{ name }}" value="{{ values[name] }}" />
+{% endfor %}
+{% endmacro %}
+
+{% set detailFields = ["firstName", "lastName", "email", "phone", "postcode", "addressLine1", "addressLine2", "town"] %}
+
 {% block content %}
-<section class="page-width basket" aria-labelledby="checkout-heading">
+<section class="page-width checkout" aria-labelledby="checkout-heading">
   <h1 id="checkout-heading">Checkout</h1>
-  <p>Review the items selected for checkout.</p>
 
-  <table class="basket-table">
-    <caption class="basket-visually-hidden">Items selected for checkout</caption>
-    <thead>
-      <tr>
-        <th scope="col">Product</th>
-        <th scope="col">Unit price</th>
-        <th scope="col">Quantity</th>
-        <th scope="col">Line total</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for line in lines %}
-      <tr>
-        <th scope="row">{{ line.name }}</th>
-        <td data-label="Unit price">{{ line.unitPrice }}</td>
-        <td data-label="Quantity">{{ line.quantity }}</td>
-        <td data-label="Line total" class="basket-line-total">{{ line.lineTotal }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-
-  <div class="basket-summary">
-    <p class="basket-total">
-      Total ({{ basketSummary.itemCountText }}):
-      <strong>{{ total }}</strong>
-    </p>
-    <a class="basket-button" href="/basket">Return to basket</a>
+  {% if isGuest %}
+  <div class="checkout-panel checkout-login">
+    <h2>Log in to check out</h2>
+    <p>Orders are paid from the credit balance on your account, so please log in or create an account first. Your basket will be kept.</p>
+    <div class="checkout-actions">
+      <a class="basket-button" href="{{ loginUrl }}">Log in</a>
+      <a class="checkout-secondary-button" href="{{ registerUrl }}">Create an account</a>
+    </div>
+    <p class="checkout-login-basket">Your basket: {{ itemCountText }}, {{ itemsTotal }}</p>
   </div>
+  {% else %}
+
+  {% if errors.length %}
+  <div class="checkout-error-summary" role="alert" aria-labelledby="error-summary-heading" tabindex="-1">
+    <h2 id="error-summary-heading">There is a problem</h2>
+    <ul>
+      {% for error in errors %}
+      <li><a href="{{ error.href }}">{{ error.message }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% if notice %}
+  <p class="basket-alert checkout-notice" role="alert">{{ notice }}</p>
+  {% endif %}
+
+  <div class="checkout-layout">
+    <form class="checkout-form" action="{{ checkoutUrl }}" method="post">
+
+      {# Step 1: your details and address #}
+      <section class="checkout-panel" aria-labelledby="details-heading">
+        <h2 id="details-heading" class="checkout-step-heading"><span class="checkout-step-number" aria-hidden="true">1</span> Your details</h2>
+        {% if step == "details" %}
+        {{ textField("firstName", "First name", values, fieldErrors, autocomplete="given-name") }}
+        {{ textField("lastName", "Last name", values, fieldErrors, autocomplete="family-name") }}
+        {{ textField("email", "Email address", values, fieldErrors, type="email", autocomplete="email") }}
+        {{ textField("phone", "Phone number", values, fieldErrors, type="tel", autocomplete="tel", hint="For example, 07700 900123", width="medium") }}
+
+        <h3 class="checkout-subheading">Home address</h3>
+        <p class="checkout-hint">Enter your postcode and choose Find address, or type your address in below.</p>
+        <div class="checkout-postcode">
+          {{ textField("postcode", "Postcode", values, fieldErrors, autocomplete="postal-code", width="short") }}
+          <button class="checkout-secondary-button" type="submit" name="action" value="find-address" formnovalidate>Find address</button>
+        </div>
+
+        {% if addresses.length %}
+        <div class="checkout-field{% if fieldErrors.selectedAddress %} checkout-field-error{% endif %}">
+          <fieldset class="checkout-fieldset" id="selectedAddress"{% if fieldErrors.selectedAddress %} aria-describedby="selectedAddress-error"{% endif %}>
+            <legend class="checkout-label">Choose your address</legend>
+            {% if fieldErrors.selectedAddress %}<p class="checkout-error-message" id="selectedAddress-error"><span class="basket-visually-hidden">Error:</span> {{ fieldErrors.selectedAddress }}</p>{% endif %}
+            {% for address in addresses %}
+            <div class="checkout-radio">
+              <input id="address-{{ address.index }}" type="radio" name="selectedAddress" value="{{ address.index }}" />
+              <label for="address-{{ address.index }}">{{ address.label }}</label>
+            </div>
+            {% endfor %}
+          </fieldset>
+          <button class="checkout-secondary-button" type="submit" name="action" value="use-address" formnovalidate>Use this address</button>
+        </div>
+        {% endif %}
+
+        {{ textField("addressLine1", "Address line 1", values, fieldErrors, autocomplete="address-line1") }}
+        {{ textField("addressLine2", "Address line 2", values, fieldErrors, autocomplete="address-line2", optional=true) }}
+        {{ textField("town", "Town or city", values, fieldErrors, autocomplete="address-level2", width="medium") }}
+        {{ hiddenFields(["deliveryOption"], values) }}
+        <button class="basket-button" type="submit" name="action" value="continue-to-delivery">Continue to delivery</button>
+        {% else %}
+        {{ hiddenFields(detailFields, values) }}
+        <dl class="checkout-summary-list">
+          <div><dt>Name</dt><dd>{{ detailsSummary.name }}</dd></div>
+          <div><dt>Email</dt><dd>{{ detailsSummary.email }}</dd></div>
+          <div><dt>Phone</dt><dd>{{ detailsSummary.phone }}</dd></div>
+          <div><dt>Address</dt><dd>{% for line in detailsSummary.addressLines %}{{ line }}{% if not loop.last %}<br />{% endif %}{% endfor %}</dd></div>
+        </dl>
+        <button class="checkout-change" type="submit" name="action" value="edit-details" formnovalidate>Change<span class="basket-visually-hidden"> your details</span></button>
+        {% endif %}
+      </section>
+
+      {# Step 2: delivery #}
+      <section class="checkout-panel{% if step == 'details' %} checkout-panel-upcoming{% endif %}" aria-labelledby="delivery-heading">
+        <h2 id="delivery-heading" class="checkout-step-heading"><span class="checkout-step-number" aria-hidden="true">2</span> Delivery</h2>
+        {% if step == "delivery" %}
+        <div class="checkout-field{% if fieldErrors.deliveryOption %} checkout-field-error{% endif %}">
+          <fieldset class="checkout-fieldset" id="deliveryOption"{% if fieldErrors.deliveryOption %} aria-describedby="deliveryOption-error"{% endif %}>
+            <legend class="checkout-label">How would you like to get your order?</legend>
+            {% if fieldErrors.deliveryOption %}<p class="checkout-error-message" id="deliveryOption-error"><span class="basket-visually-hidden">Error:</span> {{ fieldErrors.deliveryOption }}</p>{% endif %}
+            <h3 class="checkout-subheading">Home delivery</h3>
+            {% for option in homeDeliveryOptions %}
+            <div class="checkout-radio">
+              <input id="delivery-{{ option.id }}" type="radio" name="deliveryOption" value="{{ option.id }}"{% if option.isChecked %} checked{% endif %} />
+              <label for="delivery-{{ option.id }}"><strong>{{ option.name }}</strong> ({{ option.description }}) <span class="checkout-option-price">{{ option.price }}</span></label>
+            </div>
+            {% endfor %}
+            <h3 class="checkout-subheading">Collect from a drop-off point</h3>
+            {% for option in collectionOptions %}
+            <div class="checkout-radio">
+              <input id="delivery-{{ option.id }}" type="radio" name="deliveryOption" value="{{ option.id }}"{% if option.isChecked %} checked{% endif %} />
+              <label for="delivery-{{ option.id }}"><strong>{{ option.name }}</strong>, {{ option.description }} <span class="checkout-option-price">{{ option.price }}</span></label>
+            </div>
+            {% endfor %}
+          </fieldset>
+        </div>
+        <button class="basket-button" type="submit" name="action" value="continue-to-payment">Continue to payment</button>
+        {% elif step == "payment" %}
+        {{ hiddenFields(["deliveryOption"], values) }}
+        <dl class="checkout-summary-list">
+          <div><dt>Delivery</dt><dd>{{ deliverySummary.name }}, {{ deliverySummary.description }} ({{ deliverySummary.price }})</dd></div>
+        </dl>
+        <button class="checkout-change" type="submit" name="action" value="edit-delivery" formnovalidate>Change<span class="basket-visually-hidden"> delivery</span></button>
+        {% endif %}
+      </section>
+
+      {# Step 3: payment from the account's credit balance #}
+      <section class="checkout-panel{% if step != 'payment' %} checkout-panel-upcoming{% endif %}" aria-labelledby="payment-heading">
+        <h2 id="payment-heading" class="checkout-step-heading"><span class="checkout-step-number" aria-hidden="true">3</span> Payment</h2>
+        {% if step == "payment" %}
+        <p>Your order will be paid from the credit balance on your account.</p>
+        <dl class="checkout-summary-list checkout-payment">
+          <div><dt>Credit balance</dt><dd>{{ payment.creditBalance }}</dd></div>
+          <div><dt>Items</dt><dd>{{ payment.itemsTotal }}</dd></div>
+          <div><dt>Delivery</dt><dd>{{ payment.deliveryPrice }}</dd></div>
+          <div class="checkout-payment-total"><dt>Order total</dt><dd>{{ payment.total }}</dd></div>
+          <div><dt>Balance after this order</dt><dd>{{ payment.balanceAfter }}</dd></div>
+        </dl>
+        {% if not payment.canAfford %}
+        <p class="basket-alert" role="alert">Your credit balance is not enough to pay for this order. Remove some items from your basket or choose a cheaper delivery option.</p>
+        {% endif %}
+        <button class="basket-button checkout-submit" type="submit" name="action" value="place-order"{% if not payment.canAfford %} disabled{% endif %}>Checkout</button>
+        {% endif %}
+      </section>
+    </form>
+
+    <aside class="checkout-panel checkout-basket" aria-labelledby="basket-summary-heading">
+      <h2 id="basket-summary-heading">Your basket</h2>
+      <ul class="checkout-lines">
+        {% for line in lines %}
+        <li><span>{{ line.quantity }} × {{ line.name }}</span><span>{{ line.lineTotal }}</span></li>
+        {% endfor %}
+      </ul>
+      <p class="checkout-basket-total"><span>Items ({{ itemCountText }})</span><strong>{{ itemsTotal }}</strong></p>
+      <a href="/basket">Edit basket</a>
+    </aside>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}

@@ -96,6 +96,14 @@ function isLegacyCustomer(payload: unknown): boolean {
   );
 }
 
+// Pages a login may return to. Anything else is ignored, so the login page
+// cannot be used to send people to another website.
+const RETURN_PATHS = new Set(['/checkout']);
+
+function readReturnTo(value: unknown): string {
+  return typeof value === 'string' && RETURN_PATHS.has(value) ? value : '';
+}
+
 export class LoginController {
   constructor(
     private readonly backendOrigin: string,
@@ -107,11 +115,12 @@ export class LoginController {
     status = 200,
     email = '',
     errorMessage = '',
+    returnTo = '',
   ): void {
     res.setHeader('Cache-Control', 'no-store');
     res.render(
       'login',
-      { email, errorMessage, currentYear: new Date().getFullYear() },
+      { email, errorMessage, returnTo, currentYear: new Date().getFullYear() },
       (error: Error | null, html: string) => {
         if (error) {
           console.error('Unable to load the login page:', error);
@@ -123,8 +132,8 @@ export class LoginController {
     );
   }
 
-  show = (_req: Request, res: Response): void => {
-    this.render(res);
+  show = (req: Request, res: Response): void => {
+    this.render(res, 200, '', '', readReturnTo(req.query.returnTo));
   };
 
   submit = async (req: Request, res: Response): Promise<void> => {
@@ -146,9 +155,16 @@ export class LoginController {
       'password' in body && typeof body.password === 'string'
         ? body.password
         : '';
+    const returnTo = 'returnTo' in body ? readReturnTo(body.returnTo) : '';
 
     if (!email || email.length > 254 || !password || password.length > 128) {
-      this.render(res, 400, email, 'Please enter your email and password.');
+      this.render(
+        res,
+        400,
+        email,
+        'Please enter your email and password.',
+        returnTo,
+      );
       return;
     }
 
@@ -180,6 +196,7 @@ export class LoginController {
         502,
         email,
         'Unable to reach the server. Please try again later.',
+        returnTo,
       );
       return;
     }
@@ -193,6 +210,7 @@ export class LoginController {
           403,
           email,
           'Your account role is not recognised. Please contact support.',
+          returnTo,
         );
         return;
       }
@@ -210,6 +228,7 @@ export class LoginController {
           502,
           email,
           'Unable to confirm your login. Please try again.',
+          returnTo,
         );
         return;
       }
@@ -218,12 +237,18 @@ export class LoginController {
       } else {
         clearAuthCookie(res);
       }
-      res.redirect(303, destination);
+      res.redirect(303, returnTo || destination);
     } else if (response.status === 401) {
-      this.render(res, 401, email, 'Incorrect email or password.');
+      this.render(res, 401, email, 'Incorrect email or password.', returnTo);
     } else {
       console.error('Backend login failed with status:', response.status);
-      this.render(res, 502, email, 'Unable to log in. Please try again later.');
+      this.render(
+        res,
+        502,
+        email,
+        'Unable to log in. Please try again later.',
+        returnTo,
+      );
     }
   };
 }
