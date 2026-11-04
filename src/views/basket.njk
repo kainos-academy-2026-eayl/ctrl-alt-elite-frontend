@@ -27,6 +27,7 @@
 {% block content %}
 <section class="page-width basket" aria-labelledby="basket-heading">
   <h1 id="basket-heading" tabindex="-1"{% if focusTarget == "heading" %} autofocus{% endif %}>Your basket</h1>
+  <p><a class="basket-button" href="/products">Back to products</a></p>
 
   {% if notice %}
   <p class="basket-notice{% if notice.isError %} basket-notice--error{% endif %}" role="{% if notice.isError %}alert{% else %}status{% endif %}">{{ notice.message }}</p>
@@ -37,7 +38,6 @@
   {% elif isEmpty %}
   <div class="basket-empty">
     <p>Your basket is empty.</p>
-    <a class="basket-button" href="/">Browse products</a>
   </div>
   {% else %}
   <table class="basket-table">

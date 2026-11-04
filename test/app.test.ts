@@ -1074,6 +1074,10 @@ describe('frontend routes', () => {
         /<h1 id="basket-heading" tabindex="-1">Your basket<\/h1>/,
       );
       assert.match(html, /Your basket is empty\./);
+      assert.match(
+        html,
+        /<a class="basket-button" href="\/products">Back to products<\/a>/,
+      );
       assert.doesNotMatch(html, /<script/);
     });
 
@@ -1095,6 +1099,10 @@ describe('frontend routes', () => {
         new RegExp(`${product.name} added to your basket`),
       );
       assert.match(page.html, /<span class="basket-quantity__value">1<\/span>/);
+      assert.match(
+        page.html,
+        /<a class="basket-button" href="\/products">Back to products<\/a>/,
+      );
 
       const increased = await post(productPath, cookies, { change: '1' });
       assert.equal(increased.status, 303);
