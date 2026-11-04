@@ -2,7 +2,8 @@ import type { Request, Response } from 'express';
 import { clearAuthCookie, setAuthCookie } from '../../util/authCookie';
 import type { LoginSession } from '../../util/loginSession';
 
-import { landingPathForRole, normaliseRole } from '../../util/staffRoles';
+import { isAdminPath, safeReturnPath } from '../../util/returnPath';
+import { landingPathForRole, normaliseRole, Role } from '../../util/staffRoles';
 
 function extractRole(payload: unknown): string | undefined {
   if (typeof payload !== 'object' || payload === null) return undefined;
@@ -109,9 +110,10 @@ export class LoginController {
     errorMessage = '',
   ): void {
     res.setHeader('Cache-Control', 'no-store');
+    const returnTo = safeReturnPath(res.locals.returnTo) ?? '';
     res.render(
       'login',
-      { email, errorMessage, currentYear: new Date().getFullYear() },
+      { email, errorMessage, returnTo, currentYear: new Date().getFullYear() },
       (error: Error | null, html: string) => {
         if (error) {
           console.error('Unable to load the login page:', error);
@@ -123,7 +125,8 @@ export class LoginController {
     );
   }
 
-  show = (_req: Request, res: Response): void => {
+  show = (req: Request, res: Response): void => {
+    res.locals.returnTo = req.query.returnTo;
     this.render(res);
   };
 
@@ -134,6 +137,9 @@ export class LoginController {
     }
 
     const body: unknown = req.body;
+    if (typeof body === 'object' && body !== null && 'returnTo' in body) {
+      res.locals.returnTo = body.returnTo;
+    }
     if (typeof body !== 'object' || body === null) {
       this.render(res, 400, '', 'Please enter your email and password.');
       return;
@@ -218,7 +224,13 @@ export class LoginController {
       } else {
         clearAuthCookie(res);
       }
-      res.redirect(303, destination);
+      const returnTo = safeReturnPath(res.locals.returnTo);
+      res.redirect(
+        303,
+        returnTo && isAdminPath(returnTo) === (role !== Role.CUSTOMER)
+          ? returnTo
+          : destination,
+      );
     } else if (response.status === 401) {
       this.render(res, 401, email, 'Incorrect email or password.');
     } else {

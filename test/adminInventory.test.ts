@@ -432,7 +432,7 @@ describe('inventory pages', () => {
     const res = await fetch(`${base}/admin/inventory`, admin);
     assert.equal(res.status, 200);
     const html = await res.text();
-    assert.match(html, /<h1>Inventory<\/h1>/);
+    assert.match(html, /<h1>Products<\/h1>/);
     assert.match(html, /href="\/admin\/inventory\/new"/);
     assert.match(html, /\/controllers\/adminInventory\.js/);
     assert.match(html, /data-inventory-results/);
