@@ -68,7 +68,7 @@ export function createStockApi({
 }: StockApiOptions = {}) {
   async function send(
     path: string,
-    method: 'GET' | 'PUT',
+    method: 'GET' | 'PATCH',
     payload?: unknown,
   ): Promise<Record<string, unknown>> {
     let response: Response;
@@ -148,13 +148,13 @@ export function createStockApi({
 
     async updateStock(id: string, update: StockUpdate): Promise<StockItem> {
       return readProduct(
-        await send(`/${encodeURIComponent(id)}/stock`, 'PUT', update),
+        await send(`/${encodeURIComponent(id)}/stock`, 'PATCH', update),
       );
     },
 
     async setOutOfStock(id: string, outOfStock: boolean): Promise<StockItem> {
       return readProduct(
-        await send(`/${encodeURIComponent(id)}/out-of-stock`, 'PUT', {
+        await send(`/${encodeURIComponent(id)}/out-of-stock`, 'PATCH', {
           outOfStock,
         }),
       );

@@ -466,7 +466,7 @@ describe('stock API client', () => {
       updated,
     );
     assert.equal(calls[0]?.url, '/api/admin/inventory/p%201/stock');
-    assert.equal(calls[0]?.init.method, 'PUT');
+    assert.equal(calls[0]?.init.method, 'PATCH');
     assert.deepEqual(JSON.parse(String(calls[0]?.init.body)), {
       stock: 9,
       lowStockThreshold: 2,

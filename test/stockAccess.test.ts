@@ -270,7 +270,7 @@ describe('inventory management access', () => {
             return;
           }
           const match = url.match(/^\/api\/admin\/inventory\/([^/]+)\/stock$/);
-          if (req.method === 'PUT' && match) {
+          if (req.method === 'PATCH' && match) {
             const payload = JSON.parse(body) as {
               stock: number;
               lowStockThreshold?: number;
@@ -386,7 +386,7 @@ describe('inventory management access', () => {
       );
 
       const update = await fetch(`${base}/api/admin/inventory/p-2/stock`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { cookie: cookies, 'content-type': 'application/json' },
         body: JSON.stringify({ stock: 40, lowStockThreshold: 10 }),
       });
@@ -415,7 +415,7 @@ describe('inventory management access', () => {
         'content-type': 'application/json',
       };
       const invalid = await fetch(`${base}/api/admin/inventory/p-1/stock`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers,
         body: JSON.stringify({ stock: -5 }),
       });
@@ -424,7 +424,7 @@ describe('inventory management access', () => {
       assert.equal(body.errors[0]?.field, 'stock');
 
       const missing = await fetch(`${base}/api/admin/inventory/nope/stock`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers,
         body: JSON.stringify({ stock: 5 }),
       });
