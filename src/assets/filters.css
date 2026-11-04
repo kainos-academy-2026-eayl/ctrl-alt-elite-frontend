@@ -1,0 +1,304 @@
+/* Filter and sort dropdown (src/views/_filterPanel.njk), used on search results
+   and the product catalogue. Self-contained so it works with either page. */
+
+.filters {
+  margin: 0 0 1.25rem;
+}
+
+.filters-panel {
+  position: relative;
+  display: inline-block;
+}
+
+.filters-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111827;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  transition:
+    border-color 0.15s ease-in-out,
+    background-color 0.15s ease-in-out;
+}
+
+.filters-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.filters-toggle:hover,
+.filters-panel[open] > .filters-toggle {
+  border-color: #15803d;
+  background: #f0fdf4;
+}
+
+.filters-icon {
+  color: #15803d;
+}
+
+.filters-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #15803d;
+  color: #ffffff;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+/* The dropdown card. */
+.filters-form {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 20;
+  box-sizing: border-box;
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+.filters-groups {
+  margin-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.filters-group {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.filters-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 0.1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.filters-group-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.filters-group-title {
+  color: #111827;
+  font-weight: 600;
+}
+
+.filters-group-value {
+  margin-left: auto;
+  overflow: hidden;
+  color: #6b7280;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A chevron that points down when closed and up when open. */
+.filters-group-toggle::after {
+  content: "";
+  flex-shrink: 0;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin: 0 0.2rem 0.2rem 0;
+  border-right: 2px solid #6b7280;
+  border-bottom: 2px solid #6b7280;
+  transform: rotate(45deg);
+  transition: transform 0.15s ease-in-out;
+}
+
+.filters-group[open] > .filters-group-toggle::after {
+  margin-bottom: -0.2rem;
+  transform: rotate(-135deg);
+}
+
+.filters-group-toggle:hover .filters-group-title {
+  color: #15803d;
+}
+
+.filters-group-body {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.1rem 0.9rem;
+  border: 0;
+}
+
+/* Long category lists scroll inside the card instead of stretching it. */
+.filters-scroll {
+  max-height: 15rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.filters-heading {
+  display: block;
+  margin-bottom: 0.5rem;
+  padding: 0;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.filters-select,
+.filters-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+}
+
+.filters-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.45rem;
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.filters-choice input {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #15803d;
+}
+
+.filters-count {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.filters-hint {
+  margin: 0.75rem 0 0.4rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.filters-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.filters-range label {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.filters-actions {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.filters-apply {
+  padding: 0.55rem 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: #15803d;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filters-apply:hover {
+  background: #14532d;
+}
+
+.filters-clear {
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.filters-clear:hover {
+  color: #111827;
+}
+
+.filters-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.filters-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.filters-chip span[aria-hidden="true"] {
+  color: #6b7280;
+}
+
+.filters-chip:hover {
+  background: #e5e7eb;
+}
+
+.filters-toggle:focus-visible,
+.filters-group-toggle:focus-visible,
+.filters-select:focus-visible,
+.filters-input:focus-visible,
+.filters-choice input:focus-visible,
+.filters-apply:focus-visible,
+.filters-chip:focus-visible,
+.filters-clear:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.filters-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* On small screens the card sits in the page instead of floating over it. */
+@media (max-width: 640px) {
+  .filters-panel {
+    display: block;
+  }
+
+  .filters-form {
+    position: static;
+    width: 100%;
+    margin-top: 0.5rem;
+    box-shadow: none;
+  }
+}

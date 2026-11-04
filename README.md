@@ -10,7 +10,8 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /profile` | Signed-in profile design preview ([src/views/profile.njk](src/views/profile.njk)) with a picture picker, username, first and second names, pronouns and a short description. Cosmetic only: no controller, profile API calls, picture upload/preview or saving. |
 | `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/server/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
 | `GET /products/:id` | Product page, rendered on the server with no client-side JavaScript: [ProductDetailController](src/server/controllers/productDetailController.ts) → [CatalogService](src/server/services/catalog-service.ts) (calls the backend `/api/products/:id`) → [product-detail.page.ts](src/views/product-detail.page.ts) → [product-detail.njk](src/views/product-detail.njk). Has an "Add to Basket" form; unknown products show a 404 page. |
-| `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/server/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms. |
+| `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/server/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms and a **Filter & sort** dropdown (see below). |
+| `GET /products` | Product catalogue ([product.njk](src/views/product.njk)), loaded from the backend `/api/products` by [CatalogController](src/server/controllers/catalog-controller.ts). Has the same **Filter & sort** dropdown as search, and **View details** links to each product page. |
 | `POST /basket/items` | "Add to Basket" form (`productId`), then redirects to `/basket` |
 | `POST /basket/items/:productId` | Quantity +/− form (`change` = `1` or `-1`), then redirects to `/basket` |
 | `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
@@ -36,6 +37,20 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
+
+### Filter & sort (search and catalogue)
+
+[_filterPanel.njk](src/views/_filterPanel.njk) is a `<details>` dropdown with a GET form, so it works without JavaScript and every filtered page has a shareable URL. [productFilters.ts](src/util/productFilters.ts) reads the query, sends it to the backend (which does the filtering and sorting) and builds the panel from the backend's `facets`.
+
+| Query parameter | What it does |
+| --- | --- |
+| `sort` | `recommended` (default), `price-asc`, `price-desc`, `newest`, `oldest`, `most-bought`, `name-asc`, `name-desc` |
+| `stock=in`, `stock=out` | In stock and/or out of stock |
+| `category` (repeatable) | Any of the ticked categories |
+| `price` | A quick band: `under-10`, `10-25`, `25-50`, `50-plus` |
+| `minPrice`, `maxPrice` | A custom range in pounds; replaces `price` |
+
+Each option shows how many results it would give, active filters are shown as removable tags, and **Clear all** removes every filter and goes back to the default sort, **Recommended**, but keeps the search term.
 
 ### Login flow
 
