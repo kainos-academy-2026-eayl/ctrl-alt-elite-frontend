@@ -79,5 +79,22 @@
 
   .search-input {
     flex: 1;
+    min-width: 0;
+  }
+
+  /* The homepage header keeps the logo, account and basket on one row, so the
+     search box wraps onto its own full-width row instead of widening the page. */
+  .home-page .header-content {
+    flex-wrap: wrap;
+  }
+
+  .home-page .primary-nav {
+    flex-wrap: wrap;
+    width: 100%;
+    flex-shrink: 1;
+  }
+
+  .home-page .primary-nav .search-form {
+    order: 1;
   }
 }
