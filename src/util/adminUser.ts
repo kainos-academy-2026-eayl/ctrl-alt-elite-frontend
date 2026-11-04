@@ -1,4 +1,4 @@
-const DEFAULT_ADMIN_ROLE = 'Administrator';
+import { findStaffRole, type StaffRole } from './staffRoles';
 
 export interface AdminProfile {
   name: string;
@@ -81,14 +81,20 @@ export async function loadAdminFirstName(
 const ADMIN_PROFILE_PATH = '/api/admin/profile';
 
 function formatRole(role: string): string {
-  return role.toLowerCase() === 'admin' ? DEFAULT_ADMIN_ROLE : role;
+  return findStaffRole(role)?.label ?? role;
 }
 
-// Never throws: the settings page shows an error message when this returns null.
-export async function loadAdminProfile(
+export interface StaffAccount {
+  profile: AdminProfile;
+  // Undefined when the backend reports a role this portal has no dashboard for.
+  role: StaffRole | undefined;
+}
+
+// Never throws: returns null when the backend cannot confirm who is signed in.
+export async function loadStaffAccount(
   backendOrigin: string,
   token: string | null,
-): Promise<AdminProfile | null> {
+): Promise<StaffAccount | null> {
   if (!token) return null;
 
   try {
@@ -108,9 +114,20 @@ export async function loadAdminProfile(
     const email = readText(record, 'email');
     const role = readText(record, 'role');
     if (!name || !email || !role) return null;
-    return { name, email, role: formatRole(role) };
+    return {
+      profile: { name, email, role: formatRole(role) },
+      role: findStaffRole(role),
+    };
   } catch (error) {
     console.error('Unable to load the admin profile:', error);
     return null;
   }
+}
+
+// Never throws: the settings page shows an error message when this returns null.
+export async function loadAdminProfile(
+  backendOrigin: string,
+  token: string | null,
+): Promise<AdminProfile | null> {
+  return (await loadStaffAccount(backendOrigin, token))?.profile ?? null;
 }

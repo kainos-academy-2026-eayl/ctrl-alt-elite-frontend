@@ -1,0 +1,15 @@
+<li class="product-card">
+  <img class="product-image" src="{{ product.imageUrl }}" alt="{{ product.name }}" width="160" height="120" />
+  <h3>{{ product.name }}</h3>
+  <p class="product-description">{{ product.description }}</p>
+  <p class="product-price">{{ product.price }}</p>
+  {% if product.isInStock %}
+  <p class="product-availability product-availability-in-stock">In Stock</p>
+  <form action="{{ addToBasketUrl }}" method="post">
+    <input type="hidden" name="productId" value="{{ product.id }}" />
+    <button type="submit" class="basket-button">Add to Basket</button>
+  </form>
+  {% else %}
+  <p class="product-availability product-availability-out-of-stock">Out of Stock</p>
+  {% endif %}
+</li>

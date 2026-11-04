@@ -212,16 +212,15 @@ describe('admin settings page', () => {
     assert.doesNotMatch(html, /data-settings-profile-error/);
   });
 
-  it('shows an error message when the profile cannot be loaded', async () => {
+  it('redirects to the unavailable page when the profile cannot be loaded', async () => {
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
     try {
-      const { status, html } = await getSettings(brokenToken);
-      assert.equal(status, 200);
-      assert.match(
-        html,
-        /role="alert" data-settings-profile-error>Unable to load/,
-      );
-      assert.doesNotMatch(html, /data-settings-profile>/);
+      const res = await fetch(`${base}/admin/settings`, {
+        headers: { cookie: `auth_token=${brokenToken}` },
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 302);
+      assert.equal(res.headers.get('location'), '/unavailable');
     } finally {
       errorLog.mockRestore();
     }

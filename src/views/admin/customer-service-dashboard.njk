@@ -1,0 +1,23 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<header class="admin-page-header">
+  <h1>Welcome{% if firstName %}, {{ firstName }}{% endif %}</h1>
+  <p class="admin-subtitle">Customer Service Dashboard. Everything you need to support customers and manage their requests.</p>
+</header>
+
+<section aria-labelledby="shortcuts-heading">
+  <h2 id="shortcuts-heading" class="visually-hidden">Customer service tools</h2>
+  <div class="admin-grid">
+    {% for shortcut in shortcuts %}
+    <section class="admin-card" aria-labelledby="shortcut-{{ loop.index }}-heading" data-shortcut="{{ shortcut.label }}">
+      <h2 id="shortcut-{{ loop.index }}-heading">{{ shortcut.label }}</h2>
+      <p class="admin-subtitle">{{ shortcut.description }}</p>
+      <ul class="admin-action-list">
+        <li><a class="admin-action" href="{{ shortcut.href }}">Open {{ shortcut.label }}</a></li>
+      </ul>
+    </section>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

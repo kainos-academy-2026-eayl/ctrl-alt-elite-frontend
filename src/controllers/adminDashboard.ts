@@ -2,6 +2,7 @@ import {
   buildNotifications,
   buildSystemStatus,
   loadDashboardCustomerData,
+  loadProductCount,
   renderActivity,
   renderNotifications,
   renderSystemStatus,
@@ -9,6 +10,15 @@ import {
 import { createApiCustomerSource } from './customerApi';
 
 const DASHBOARD_TIMEOUT_MS = 3000;
+
+async function updateProductCount(): Promise<void> {
+  const count = await loadProductCount(undefined, DASHBOARD_TIMEOUT_MS);
+  if (count === null) return;
+  const productsValue = document.querySelector(
+    '[data-summary-card="Products"]',
+  );
+  if (productsValue) productsValue.textContent = String(count);
+}
 
 async function updateDashboard(): Promise<void> {
   const data = await loadDashboardCustomerData(
@@ -37,3 +47,4 @@ async function updateDashboard(): Promise<void> {
 }
 
 void updateDashboard();
+void updateProductCount();

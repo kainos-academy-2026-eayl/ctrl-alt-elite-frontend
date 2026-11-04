@@ -41,6 +41,10 @@ describe('buildErrorPage', () => {
     });
   });
 
+  it('explains a 404 as page not found', () => {
+    assert.equal(buildErrorPage(404).title, 'Page not found');
+  });
+
   it('explains a 503 as temporarily unavailable', () => {
     assert.equal(buildErrorPage(503).title, 'Service temporarily unavailable');
   });

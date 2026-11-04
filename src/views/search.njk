@@ -1,0 +1,44 @@
+{#
+  KAN-23 Product search results. Rendered on the server: SearchController
+  calls the backend search and search.page.ts builds the data shown here.
+#}
+{% extends "layout.njk" %}
+
+{% block title %}Ctrl-Alt-Elite | Search{% endblock %}
+{% block description %}Search Ctrl-Alt-Elite products by name or category.{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/assets/basket.css" />
+<link rel="stylesheet" href="/assets/search.css" />
+{% endblock %}
+
+{% block navigation %}
+<nav class="primary-nav" aria-label="Main navigation">
+  {% include "_searchForm.njk" %}
+  <a class="nav-link basket-icon-link" href="/basket">
+    <svg class="basket-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2h3.3l.9 2H22l-3.6 8.4a2 2 0 0 1-1.8 1.2H8.1l-1 1.8V16h12v2H5.3a1.3 1.3 0 0 1-1.1-2l1.4-2.6L2.7 4H1V2Z" />
+    </svg>
+    <span class="basket-visually-hidden">Basket, {{ basketSummary.itemCountText }}</span>
+    <span class="basket-badge" aria-hidden="true">{{ basketSummary.itemCount }}</span>
+  </a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="page-width products search-results" aria-labelledby="search-heading">
+  <h1 id="search-heading" class="search-heading">Search results</h1>
+  {% if errorMessage %}
+  <p class="basket-alert" role="alert">{{ errorMessage }}</p>
+  {% else %}
+  <p class="search-message" role="status">{{ statusMessage }}</p>
+  {% endif %}
+  {% if products.length %}
+  <ul class="product-grid">
+    {% for product in products %}
+    {% include "_productCard.njk" %}
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

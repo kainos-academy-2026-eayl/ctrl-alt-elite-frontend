@@ -1,0 +1,37 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<header class="admin-page-header inventory-header">
+  <div>
+    <h1>Inventory</h1>
+    <p class="admin-subtitle" data-total-products hidden></p>
+  </div>
+  <a class="customer-button inventory-add" href="/admin/inventory/new">Add product</a>
+</header>
+
+<p class="admin-success" role="status" hidden data-inventory-notice></p>
+<p class="admin-error" role="alert" hidden data-inventory-error></p>
+
+<form class="customer-toolbar" action="/admin/inventory" method="get" role="search">
+  <div class="customer-field customer-field-search">
+    <label for="inventory-search">Search by name or category</label>
+    <input id="inventory-search" name="q" type="search" maxlength="200" autocomplete="off" />
+  </div>
+  <div class="customer-field">
+    <label for="inventory-category">Category</label>
+    <select id="inventory-category" name="category">
+      <option value="">All categories</option>
+    </select>
+  </div>
+  <button class="customer-button" type="submit">Apply</button>
+</form>
+
+<div data-inventory-results aria-live="polite">
+  <p class="admin-empty">Loading products&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to manage the inventory.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminInventory.js" defer></script>
+{% endblock %}

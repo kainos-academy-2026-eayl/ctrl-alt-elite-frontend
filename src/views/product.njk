@@ -57,9 +57,11 @@
                             data-product-name="{{ product.name }}" data-product-category="{{ product.category }}"
                             data-product-price="{{ product.priceLabel }}" data-product-image="{{ product.image }}"
                             data-product-description="{{ product.description }}">View details</button>
-                        <button class="button button-primary" type="button" data-add-to-basket="{{ product.id }}"
-                            {% if not product.available %} disabled{% endif %}>Add to
-                            basket</button>
+                        <form action="/basket/items" method="post">
+                            <input type="hidden" name="productId" value="{{ product.id }}" />
+                            <button class="button button-primary" type="submit" {% if not product.available %}
+                                disabled{% endif %}>Add to basket</button>
+                        </form>
                     </div>
                 </div>
             </article>
@@ -68,6 +70,7 @@
             {% endfor %}
             {% endif %}
         </section>
+        <button class="cta-button" onclick="location.href='/'">Go Home</button>
     </main>
 
     <dialog class="details-dialog" id="productDetails" aria-labelledby="detailsName">

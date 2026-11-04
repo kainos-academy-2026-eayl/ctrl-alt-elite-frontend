@@ -1,0 +1,14 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<a class="admin-back-link" href="/admin/inventory"><span aria-hidden="true">&larr;</span> Back to inventory</a>
+
+<div data-product-page aria-live="polite">
+  <p class="admin-empty">Loading product&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to manage products.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminInventoryForm.js" defer></script>
+{% endblock %}
