@@ -349,7 +349,7 @@ describe('inventory views', () => {
       new Map(),
       new Set(),
     );
-    assert.doesNotMatch(html, /<img src=x|<script>/);
+    assert.doesNotMatch(html, /<(?:img src=x|script)\b/i);
     assert.match(html, /&lt;img src=x/);
   });
 
