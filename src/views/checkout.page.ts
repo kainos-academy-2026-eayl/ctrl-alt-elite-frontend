@@ -83,6 +83,8 @@ export interface CheckoutPage {
     total: string;
     balanceAfter: string;
     canAfford: boolean;
+    /** Sent back with Checkout, so a changed basket is never charged unseen. */
+    totalPence: number;
   } | null;
 }
 
@@ -195,6 +197,7 @@ export function buildCheckoutPage({
           total: formatPrice(totalPence),
           balanceAfter: formatPrice(Math.max(creditPence - totalPence, 0)),
           canAfford: creditPence >= totalPence,
+          totalPence,
         }
       : null,
   };

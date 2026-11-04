@@ -20,12 +20,12 @@
 </nav>
 {% endblock %}
 
-{% macro textField(name, label, values, fieldErrors, type="text", autocomplete="", hint="", optional=false, width="") %}
+{% macro textField(name, label, values, fieldErrors, type="text", autocomplete="", hint="", optional=false, width="", maxlength="", inputmode="") %}
 <div class="checkout-field{% if fieldErrors[name] %} checkout-field-error{% endif %}">
   <label class="checkout-label" for="{{ name }}">{{ label }}{% if optional %} (optional){% endif %}</label>
   {% if hint %}<p class="checkout-hint" id="{{ name }}-hint">{{ hint }}</p>{% endif %}
   {% if fieldErrors[name] %}<p class="checkout-error-message" id="{{ name }}-error"><span class="basket-visually-hidden">Error:</span> {{ fieldErrors[name] }}</p>{% endif %}
-  <input class="checkout-input{% if width %} checkout-input-{{ width }}{% endif %}" id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ values[name] }}"{% if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}{% if not optional %} required{% endif %}{% if fieldErrors[name] %} aria-invalid="true"{% endif %}{% if hint or fieldErrors[name] %} aria-describedby="{% if hint %}{{ name }}-hint{% endif %}{% if hint and fieldErrors[name] %} {% endif %}{% if fieldErrors[name] %}{{ name }}-error{% endif %}"{% endif %} />
+  <input class="checkout-input{% if width %} checkout-input-{{ width }}{% endif %}" id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ values[name] }}"{% if maxlength %} maxlength="{{ maxlength }}"{% endif %}{% if inputmode %} inputmode="{{ inputmode }}"{% endif %}{% if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}{% if not optional %} required{% endif %}{% if fieldErrors[name] %} aria-invalid="true"{% endif %}{% if hint or fieldErrors[name] %} aria-describedby="{% if hint %}{{ name }}-hint{% endif %}{% if hint and fieldErrors[name] %} {% endif %}{% if fieldErrors[name] %}{{ name }}-error{% endif %}"{% endif %} />
 </div>
 {% endmacro %}
 
@@ -73,15 +73,15 @@
       <section class="checkout-panel" aria-labelledby="details-heading">
         <h2 id="details-heading" class="checkout-step-heading"><span class="checkout-step-number" aria-hidden="true">1</span> Your details</h2>
         {% if step == "details" %}
-        {{ textField("firstName", "First name", values, fieldErrors, autocomplete="given-name") }}
-        {{ textField("lastName", "Last name", values, fieldErrors, autocomplete="family-name") }}
-        {{ textField("email", "Email address", values, fieldErrors, type="email", autocomplete="email") }}
-        {{ textField("phone", "Phone number", values, fieldErrors, type="tel", autocomplete="tel", hint="For example, 07700 900123", width="medium") }}
+        {{ textField("firstName", "First name", values, fieldErrors, autocomplete="given-name", maxlength=100) }}
+        {{ textField("lastName", "Last name", values, fieldErrors, autocomplete="family-name", maxlength=100) }}
+        {{ textField("email", "Email address", values, fieldErrors, type="email", autocomplete="email", maxlength=254, hint="For example, name@example.com") }}
+        {{ textField("phone", "Phone number", values, fieldErrors, type="tel", autocomplete="tel", hint="A UK number, for example 07700 900123", width="medium", maxlength=20, inputmode="tel") }}
 
         <h3 class="checkout-subheading">Home address</h3>
         <p class="checkout-hint">Enter your postcode and choose Find address, or type your address in below.</p>
         <div class="checkout-postcode">
-          {{ textField("postcode", "Postcode", values, fieldErrors, autocomplete="postal-code", width="short") }}
+          {{ textField("postcode", "Postcode", values, fieldErrors, autocomplete="postal-code", width="short", maxlength=8) }}
           <button class="checkout-secondary-button" type="submit" name="action" value="find-address" formnovalidate>Find address</button>
         </div>
 
@@ -101,9 +101,9 @@
         </div>
         {% endif %}
 
-        {{ textField("addressLine1", "Address line 1", values, fieldErrors, autocomplete="address-line1") }}
-        {{ textField("addressLine2", "Address line 2", values, fieldErrors, autocomplete="address-line2", optional=true) }}
-        {{ textField("town", "Town or city", values, fieldErrors, autocomplete="address-level2", width="medium") }}
+        {{ textField("addressLine1", "Address line 1", values, fieldErrors, autocomplete="address-line1", maxlength=100) }}
+        {{ textField("addressLine2", "Address line 2", values, fieldErrors, autocomplete="address-line2", optional=true, maxlength=100) }}
+        {{ textField("town", "Town or city", values, fieldErrors, autocomplete="address-level2", width="medium", maxlength=60) }}
         {{ hiddenFields(["deliveryOption"], values) }}
         <button class="basket-button" type="submit" name="action" value="continue-to-delivery">Continue to delivery</button>
         {% else %}
@@ -167,6 +167,7 @@
         {% if not payment.canAfford %}
         <p class="basket-alert" role="alert">Your credit balance is not enough to pay for this order. Remove some items from your basket or choose a cheaper delivery option.</p>
         {% endif %}
+        <input type="hidden" name="confirmedTotalPence" value="{{ payment.totalPence }}" />
         <button class="basket-button checkout-submit" type="submit" name="action" value="place-order"{% if not payment.canAfford %} disabled{% endif %}>Checkout</button>
         {% endif %}
       </section>

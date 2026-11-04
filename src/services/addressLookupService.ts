@@ -1,8 +1,10 @@
 /*
- * A stand-in for a real postcode address finder (such as getAddress.io), which
- * would need a paid API key. Any valid UK postcode returns the same six sample
- * addresses every time, on a street chosen from the postcode.
+ * Finds the addresses for a real UK postcode. The postcode and its town are
+ * checked with PostcodeService; the house numbers and street are generated
+ * from the postcode, so a postcode always gives the same addresses.
  */
+
+import type { PostcodeService } from './postcodeService';
 
 export interface LookedUpAddress {
   line1: string;
@@ -21,21 +23,11 @@ const STREETS = [
   'Orchard Close',
 ];
 
-// Postcode area (the leading letters) to town. Unknown areas use a sample town.
-const TOWNS: Record<string, string> = {
-  B: 'Birmingham',
-  BS: 'Bristol',
-  BT: 'Belfast',
-  CF: 'Cardiff',
+// Postal towns for areas where the council name differs from the post town.
+const POST_TOWNS: Record<string, string> = {
   E: 'London',
   EC: 'London',
-  EH: 'Edinburgh',
-  G: 'Glasgow',
-  L: 'Liverpool',
-  LS: 'Leeds',
-  M: 'Manchester',
   N: 'London',
-  NE: 'Newcastle upon Tyne',
   NW: 'London',
   SE: 'London',
   SW: 'London',
@@ -46,28 +38,36 @@ const TOWNS: Record<string, string> = {
 const UK_POSTCODE = /^([A-Z]{1,2})(\d[A-Z\d]?)\s*(\d[A-Z]{2})$/;
 const HOUSE_NUMBERS = [1, 2, 3, 4, 5, 6];
 
-/** "bt11aa" becomes "BT1 1AA"; returns null if it is not a UK postcode. */
+/** "bt71nn" becomes "BT7 1NN"; returns null if it is not a UK postcode. */
 export function normalisePostcode(postcode: string): string | null {
   const match = UK_POSTCODE.exec(postcode.trim().toUpperCase());
   return match ? `${match[1]}${match[2]} ${match[3]}` : null;
 }
 
 export class AddressLookupService {
-  /** Returns no addresses for anything that is not a valid UK postcode. */
+  constructor(private readonly postcodeService: PostcodeService) {}
+
+  /**
+   * Returns no addresses if the postcode is badly formed or does not exist.
+   * Throws PostcodeServiceError if the postcode cannot be checked right now.
+   */
   async findAddresses(postcode: string): Promise<LookedUpAddress[]> {
     const normalised = normalisePostcode(postcode);
     if (!normalised) return [];
-    const area = normalised.match(/^[A-Z]+/)?.[0] ?? '';
-    const hash = [...normalised].reduce(
+    const real = await this.postcodeService.findPostcode(normalised);
+    if (!real) return [];
+
+    const area = real.postcode.match(/^[A-Z]+/)?.[0] ?? '';
+    const hash = [...real.postcode].reduce(
       (sum, character) => sum + character.charCodeAt(0),
       0,
     );
     const street = STREETS[hash % STREETS.length] as string;
-    const town = TOWNS[area] ?? 'Sampletown';
+    const town = POST_TOWNS[area] ?? real.district;
     return HOUSE_NUMBERS.map((number) => ({
       line1: `${number} ${street}`,
       town,
-      postcode: normalised,
+      postcode: real.postcode,
     }));
   }
 }

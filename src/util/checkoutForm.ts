@@ -43,6 +43,8 @@ export interface CheckoutForm {
   action: CheckoutAction;
   /** Index of the looked-up address the customer picked, if any. */
   selectedAddress: number | null;
+  /** The order total (pence) shown on the payment step when Checkout was pressed. */
+  confirmedTotalPence: number | null;
 }
 
 const MAX_LENGTHS: Record<CheckoutField, number> = {
@@ -57,8 +59,35 @@ const MAX_LENGTHS: Record<CheckoutField, number> = {
   deliveryOption: 20,
 };
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const UK_PHONE = /^(?:0|\+44)\d{9,10}$/;
+// The same pattern the backend's validator (zod) uses, so both agree.
+const EMAIL =
+  /^(?:[A-Za-z0-9_'+-]+\.)*[A-Za-z0-9_'+-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/;
+const PHONE_CHARACTERS = /^[\d\s+().-]+$/;
+// UK numbers in national form: 01 has 9 or 10 digits after the 0, 08 has 9
+// or 10, and 02, 03, 07 and 09 have 10.
+const UK_PHONE = /^0(?:1\d{8,9}|[2379]\d{9}|8\d{8,9})$/;
+
+/**
+ * "+44 (0)7700 900-123" becomes "07700900123". Returns null if the number is
+ * too long, has other characters or is not a valid UK number.
+ */
+export function normaliseUkPhone(phone: string): string | null {
+  if (phone.length > MAX_LENGTHS.phone || !PHONE_CHARACTERS.test(phone)) {
+    return null;
+  }
+  const national = phone
+    .replace(/^\s*\+44\s*\(0\)/, '+44')
+    .replace(/[\s().-]/g, '')
+    .replace(/^(?:\+44|0044)/, '0');
+  return UK_PHONE.test(national) ? national : null;
+}
+
+export function isValidEmail(email: string): boolean {
+  const [local = ''] = email.split('@');
+  return (
+    email.length <= MAX_LENGTHS.email && local.length <= 64 && EMAIL.test(email)
+  );
+}
 
 export function emptyCheckoutValues(): CheckoutValues {
   return Object.fromEntries(
@@ -83,12 +112,16 @@ export function readCheckoutForm(body: unknown): CheckoutForm {
   }
   const action = readText(fields, 'action');
   const selected = readText(fields, 'selectedAddress');
+  const confirmedTotal = readText(fields, 'confirmedTotalPence');
   return {
     values,
     action: (CHECKOUT_ACTIONS as readonly string[]).includes(action)
       ? (action as CheckoutAction)
       : 'edit-details',
     selectedAddress: /^\d{1,2}$/.test(selected) ? Number(selected) : null,
+    confirmedTotalPence: /^\d{1,9}$/.test(confirmedTotal)
+      ? Number(confirmedTotal)
+      : null,
   };
 }
 
@@ -129,7 +162,7 @@ export function validateDetails(values: CheckoutValues): CheckoutFieldError[] {
       : { field: 'lastName', message: 'Enter your last name' },
     !values.email
       ? { field: 'email', message: 'Enter your email address' }
-      : values.email.length > MAX_LENGTHS.email || !EMAIL.test(values.email)
+      : !isValidEmail(values.email)
         ? {
             field: 'email',
             message:
@@ -138,10 +171,11 @@ export function validateDetails(values: CheckoutValues): CheckoutFieldError[] {
         : null,
     !values.phone
       ? { field: 'phone', message: 'Enter your phone number' }
-      : !UK_PHONE.test(values.phone.replace(/[\s\-()]/g, ''))
+      : !normaliseUkPhone(values.phone)
         ? {
             field: 'phone',
-            message: 'Enter a UK phone number, like 07700 900123',
+            message:
+              'Enter a UK phone number using only numbers, like 07700 900123',
           }
         : null,
     validatePostcode(values),

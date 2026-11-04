@@ -18,12 +18,60 @@ import {
   normalisePostcode,
 } from '../src/services/addressLookupService';
 import {
+  PostcodeService,
+  PostcodeServiceError,
+} from '../src/services/postcodeService';
+import {
+  isValidEmail,
+  normaliseUkPhone,
   readCheckoutForm,
   validateDelivery,
   validateDetails,
 } from '../src/util/checkoutForm';
 
 const BACKEND_ORIGIN = 'https://backend.example.test';
+const POSTCODES_ORIGIN = 'https://api.postcodes.io';
+/** Postcodes the fake postcodes.io knows, with their council area. */
+const REAL_POSTCODES: Record<string, string> = {
+  BT11AA: 'Belfast',
+  BT71NN: 'Belfast',
+  BT95AB: 'Belfast',
+  SW1A1AA: 'Westminster',
+  // A real postcode with no council area: postcodes.io sends null for it.
+  BT11AB: '',
+};
+
+function fakePostcodesIo(req: Request): Response {
+  if (backend.isPostcodesDown) {
+    throw new TypeError('fetch failed');
+  }
+  const key = decodeURIComponent(
+    new URL(req.url).pathname.replace('/postcodes/', ''),
+  );
+  const district = REAL_POSTCODES[key];
+  if (district === undefined) {
+    return Response.json(
+      { status: 404, error: 'Postcode not found' },
+      { status: 404 },
+    );
+  }
+  const postcode = `${key.slice(0, -3)} ${key.slice(-3)}`;
+  return Response.json({
+    status: 200,
+    result: {
+      postcode,
+      admin_district: district || null,
+      country: 'Northern Ireland',
+    },
+  });
+}
+
+/** A PostcodeService that answers from REAL_POSTCODES without the network. */
+function fakePostcodeService(): PostcodeService {
+  return new PostcodeService(POSTCODES_ORIGIN, async (input) =>
+    fakePostcodesIo(new Request(input)),
+  );
+}
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 const ORDER_ID = 'dcfea2c5-bd8f-4297-91dd-7f791e7e07e3';
 const TOKEN = 'customer.jwt.token';
@@ -101,6 +149,7 @@ interface FakeBackend {
   orders: PlaceOrderRequestDto[];
   /** Holds POST /api/orders open until released, to test double submits. */
   holdOrders: Promise<void> | null;
+  isPostcodesDown: boolean;
 }
 
 let backend: FakeBackend;
@@ -118,6 +167,7 @@ function resetBackend(): void {
     isAccountExpired: false,
     orders: [],
     holdOrders: null,
+    isPostcodesDown: false,
   };
 }
 
@@ -220,6 +270,9 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     resetBackend();
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const req = new Request(input, init);
+      if (new URL(req.url).origin === POSTCODES_ORIGIN) {
+        return fakePostcodesIo(req);
+      }
       assert.equal(new URL(req.url).origin, BACKEND_ORIGIN);
       return handleBackend(req);
     });
@@ -342,7 +395,9 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     });
     const usedHtml = await used.text();
     const [chosen] = (
-      await new AddressLookupService().findAddresses('BT1 1AA')
+      await new AddressLookupService(fakePostcodeService()).findAddresses(
+        'BT1 1AA',
+      )
     ).slice(2);
     assert.match(
       usedHtml,
@@ -368,6 +423,56 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     const noChoice = await postCheckout({ ...DETAILS, action: 'use-address' });
     assert.equal(noChoice.status, 400);
     assert.match(await noChoice.text(), /Choose your address from the list/);
+  });
+
+  it('only accepts postcodes that really exist', async () => {
+    for (const action of ['find-address', 'continue-to-delivery']) {
+      const res = await postCheckout({
+        ...DETAILS,
+        postcode: 'ZZ99 9ZZ',
+        action,
+      });
+      assert.equal(res.status, 400);
+      assert.match(
+        await res.text(),
+        /<a href="#postcode">We could not find that postcode\. Check it and try again\.<\/a>/,
+      );
+    }
+  });
+
+  it('asks you to try again if postcodes cannot be checked', async () => {
+    backend.isPostcodesDown = true;
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await postCheckout({
+      ...DETAILS,
+      postcode: 'BT9 5AB',
+      action: 'continue-to-delivery',
+    });
+    assert.equal(res.status, 503);
+    assert.match(
+      await res.text(),
+      /We could not check your postcode right now\. Please try again in a moment\./,
+    );
+    assert.equal(errorLog.mock.calls.length, 1);
+  });
+
+  it('rejects email addresses and phone numbers that are not valid', async () => {
+    const res = await postCheckout({
+      ...DETAILS,
+      email: 'sam@example',
+      phone: '07700 9OO123',
+      action: 'continue-to-delivery',
+    });
+    assert.equal(res.status, 400);
+    const html = await res.text();
+    assert.match(
+      html,
+      /<a href="#email">Enter an email address in the correct format/,
+    );
+    assert.match(
+      html,
+      /<a href="#phone">Enter a UK phone number using only numbers/,
+    );
   });
 
   it('lists every missing detail before moving on', async () => {
@@ -475,6 +580,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     const res = await postCheckout({
       ...DETAILS,
       deliveryOption: 'express',
+      confirmedTotalPence: '5497',
       action: 'place-order',
     });
     assert.equal(res.status, 303);
@@ -490,7 +596,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
           firstName: 'Sam',
           lastName: 'Jones',
           email: 'sam@example.com',
-          phone: '07700 900123',
+          phone: '07700900123',
         },
         address: {
           line1: '1 High Street',
@@ -505,7 +611,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     const page = await fetchFrontend(
       `${base}/checkout/confirmation/${ORDER_ID}`,
       {
-        headers: { cookie: `auth_token=${TOKEN}` },
+        headers: { cookie: LOGIN_COOKIES },
       },
     );
     assert.equal(page.status, 200);
@@ -531,6 +637,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     const form = {
       ...DETAILS,
       deliveryOption: 'standard',
+      confirmedTotalPence: '4998',
       action: 'place-order',
     };
     const first = postCheckout(form);
@@ -548,6 +655,25 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     assert.equal(backend.orders.length, 1);
   });
 
+  it('never charges a total the customer has not seen', async () => {
+    // The payment step showed £49.98, but express delivery makes it £54.97.
+    const res = await postCheckout({
+      ...DETAILS,
+      deliveryOption: 'express',
+      confirmedTotalPence: '4998',
+      action: 'place-order',
+    });
+    assert.equal(res.status, 409);
+    const html = await res.text();
+    assert.match(html, /Your basket or its prices have changed/);
+    assert.match(html, /<dt>Order total<\/dt><dd>£54\.97<\/dd>/);
+    assert.match(
+      html,
+      /<input type="hidden" name="confirmedTotalPence" value="5497" \/>/,
+    );
+    assert.equal(backend.orders.length, 0);
+  });
+
   it('shows the backend’s reason when it refuses the order', async () => {
     backend.orderStatus = 409;
     backend.orderMessage =
@@ -555,6 +681,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     const res = await postCheckout({
       ...DETAILS,
       deliveryOption: 'express',
+      confirmedTotalPence: '5497',
       action: 'place-order',
     });
     assert.equal(res.status, 409);
@@ -593,9 +720,17 @@ describe('checkout (server-rendered, no JavaScript)', () => {
   it('shows a 404 for an order that is not yours and asks guests to log in', async () => {
     const missing = await fetchFrontend(
       `${base}/checkout/confirmation/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa`,
-      { headers: { cookie: `auth_token=${TOKEN}` } },
+      { headers: { cookie: LOGIN_COOKIES } },
     );
     assert.equal(missing.status, 404);
+
+    // A backend token without the site login session is not enough.
+    const tokenOnly = await fetchFrontend(
+      `${base}/checkout/confirmation/${ORDER_ID}`,
+      { redirect: 'manual', headers: { cookie: `auth_token=${TOKEN}` } },
+    );
+    assert.equal(tokenOnly.status, 303);
+    assert.equal(tokenOnly.headers.get('location'), '/login');
 
     const guest = await fetchFrontend(
       `${base}/checkout/confirmation/${ORDER_ID}`,
@@ -698,6 +833,43 @@ describe('checkout form checks', () => {
     );
   });
 
+  it('only accepts valid email addresses', () => {
+    for (const email of ['sam@example.com', 'sam.jones+shop@mail.co.uk']) {
+      assert.equal(isValidEmail(email), true, email);
+    }
+    for (const email of [
+      'sam@example',
+      'sam@@example.com',
+      '.sam@example.com',
+      'sam..jones@example.com',
+      'sam jones@example.com',
+      'sam@-example.com',
+      `${'a'.repeat(65)}@example.com`,
+    ]) {
+      assert.equal(isValidEmail(email), false, email);
+    }
+  });
+
+  it('only accepts UK phone numbers made of numbers', () => {
+    assert.equal(normaliseUkPhone('07700 900123'), '07700900123');
+    assert.equal(normaliseUkPhone('+44 (0)7700 900-123'), '07700900123');
+    assert.equal(normaliseUkPhone('+447700900123'), '07700900123');
+    assert.equal(normaliseUkPhone('028 9012 3456'), '02890123456');
+    assert.equal(normaliseUkPhone('0800 123 456'), '0800123456');
+    for (const phone of [
+      '07700 9OO123',
+      '0770090012',
+      '077009001234',
+      '+1 202 555 0123',
+      '12345',
+      '07700#900123',
+      // Valid digits, but longer than the 20 characters the backend accepts.
+      '0 7 7 0 0 9 0 0 1 2 3',
+    ]) {
+      assert.equal(normaliseUkPhone(phone), null, phone);
+    }
+  });
+
   it('only accepts the delivery options the backend offers', () => {
     const values = readCheckoutForm({ deliveryOption: 'express' }).values;
     assert.deepEqual(validateDelivery(values, ['standard', 'express']), []);
@@ -712,17 +884,56 @@ describe('AddressLookupService', () => {
     assert.equal(normalisePostcode('12345'), null);
   });
 
-  it('returns the same six sample addresses for a postcode every time', async () => {
-    const lookup = new AddressLookupService();
+  it('returns the same six addresses in the real town every time', async () => {
+    resetBackend();
+    const lookup = new AddressLookupService(fakePostcodeService());
     const first = await lookup.findAddresses('bt7 1nn');
     assert.equal(first.length, 6);
     assert.deepEqual(first, await lookup.findAddresses('BT71NN'));
     assert.ok(first.every((address) => address.postcode === 'BT7 1NN'));
     assert.ok(first.every((address) => address.town === 'Belfast'));
-    assert.equal(
-      (await lookup.findAddresses('ZZ99 9ZZ'))[0]?.town,
-      'Sampletown',
-    );
+    assert.ok(first.every((address) => /^\d+ /.test(address.line1)));
+    // London council areas use the London post town.
+    assert.equal((await lookup.findAddresses('SW1A 1AA'))[0]?.town, 'London');
+  });
+
+  it('finds no addresses for postcodes that do not exist', async () => {
+    resetBackend();
+    const lookup = new AddressLookupService(fakePostcodeService());
+    assert.deepEqual(await lookup.findAddresses('ZZ99 9ZZ'), []);
     assert.deepEqual(await lookup.findAddresses('nope'), []);
+  });
+});
+
+describe('PostcodeService', () => {
+  it('checks each postcode once and reports when postcodes.io is down', async () => {
+    resetBackend();
+    const calls: string[] = [];
+    const service = new PostcodeService(POSTCODES_ORIGIN, async (input) => {
+      calls.push(String(input));
+      return fakePostcodesIo(new Request(input));
+    });
+    assert.deepEqual(await service.findPostcode('bt7 1nn'), {
+      postcode: 'BT7 1NN',
+      district: 'Belfast',
+    });
+    assert.deepEqual(await service.findPostcode('BT7 1NN'), {
+      postcode: 'BT7 1NN',
+      district: 'Belfast',
+    });
+    assert.equal(await service.findPostcode('ZZ99 9ZZ'), null);
+    assert.deepEqual(calls, [
+      'https://api.postcodes.io/postcodes/BT71NN',
+      'https://api.postcodes.io/postcodes/ZZ999ZZ',
+    ]);
+
+    // No council area: a wider area is used instead.
+    assert.deepEqual(await service.findPostcode('BT1 1AB'), {
+      postcode: 'BT1 1AB',
+      district: 'Northern Ireland',
+    });
+
+    backend.isPostcodesDown = true;
+    await assert.rejects(service.findPostcode('BT1 1AA'), PostcodeServiceError);
   });
 });

@@ -29,6 +29,7 @@ export class CheckoutServiceError extends Error {
     return this.status === 401;
   }
 
+  /** No such order for this customer; an invalid order id (400) counts too. */
   get isNotFound(): boolean {
     return this.status === 404 || this.status === 400;
   }

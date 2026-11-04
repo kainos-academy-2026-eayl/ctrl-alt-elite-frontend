@@ -19,11 +19,17 @@ import {
   type CheckoutService,
   CheckoutServiceError,
 } from '../../services/checkoutService';
+import {
+  type PostcodeService,
+  PostcodeServiceError,
+} from '../../services/postcodeService';
 import { readAuthCookie } from '../../util/authCookie';
 import { clearBasketCookie, readBasketCookie } from '../../util/basketCookie';
 import {
+  type CheckoutFieldError,
   type CheckoutForm,
   type CheckoutValues,
+  normaliseUkPhone,
   readCheckoutForm,
   validateDelivery,
   validateDetails,
@@ -37,9 +43,13 @@ import {
   type CheckoutPageInput,
 } from '../../views/checkout.page';
 
-const NO_ADDRESSES_MESSAGE =
-  'We could not find any addresses for that postcode. Enter your address below.';
+const POSTCODE_NOT_FOUND_MESSAGE =
+  'We could not find that postcode. Check it and try again.';
+const POSTCODE_UNAVAILABLE_MESSAGE =
+  'We could not check your postcode right now. Please try again in a moment.';
 const CHOOSE_ADDRESS_MESSAGE = 'Choose your address from the list';
+const TOTAL_CHANGED_MESSAGE =
+  'Your basket or its prices have changed. Check your new order total and press Checkout again.';
 // Long enough to catch a double-click or a refresh, short enough to forget.
 const RECENT_ORDER_MS = 10 * 60 * 1000;
 
@@ -70,6 +80,7 @@ export class CheckoutController {
     private readonly basketService: BasketService,
     private readonly addressLookup: AddressLookupService,
     private readonly loginSession: LoginSession,
+    private readonly postcodeService: PostcodeService,
   ) {}
 
   show = async (req: Request, res: Response): Promise<void> => {
@@ -117,8 +128,9 @@ export class CheckoutController {
 
   showConfirmation = async (req: Request, res: Response): Promise<void> => {
     res.setHeader('Cache-Control', 'no-store');
+    const session = await this.loginSession.getAccount(req, res);
     const token = readAuthCookie(req.headers.cookie);
-    if (!token) {
+    if (!session || !token) {
       res.redirect(303, '/login');
       return;
     }
@@ -157,24 +169,64 @@ export class CheckoutController {
   };
 
   private async findAddress(res: Response, page: StepPage): Promise<void> {
-    const error = validatePostcode(page.values);
-    if (error) {
-      this.render(res, 400, { ...page, errors: [error] });
+    const problem = await this.checkPostcode(page.values);
+    if (problem) {
+      this.renderPostcodeProblem(res, page, problem);
       return;
     }
-    const addresses = await this.addressLookup.findAddresses(
-      page.values.postcode,
-    );
-    const values = {
-      ...page.values,
-      postcode: normalisePostcode(page.values.postcode) ?? page.values.postcode,
-    };
+    let addresses: LookedUpAddress[];
+    try {
+      addresses = await this.addressLookup.findAddresses(page.values.postcode);
+    } catch (error) {
+      if (!(error instanceof PostcodeServiceError)) throw error;
+      this.renderPostcodeProblem(res, page, error);
+      return;
+    }
     this.render(res, 200, {
       ...page,
-      values,
+      values: {
+        ...page.values,
+        postcode: addresses[0]?.postcode ?? page.values.postcode,
+      },
       addresses,
-      notice: addresses.length === 0 ? NO_ADDRESSES_MESSAGE : '',
     });
+  }
+
+  /**
+   * Returns null for a real postcode, a field error for a badly formed or
+   * unknown one, or the error if postcodes cannot be checked right now.
+   */
+  private async checkPostcode(
+    values: CheckoutValues,
+  ): Promise<CheckoutFieldError | PostcodeServiceError | null> {
+    const formatError = validatePostcode(values);
+    if (formatError) return formatError;
+    try {
+      const real = await this.postcodeService.findPostcode(values.postcode);
+      return real
+        ? null
+        : { field: 'postcode', message: POSTCODE_NOT_FOUND_MESSAGE };
+    } catch (error) {
+      if (error instanceof PostcodeServiceError) return error;
+      throw error;
+    }
+  }
+
+  private renderPostcodeProblem(
+    res: Response,
+    page: StepPage,
+    problem: CheckoutFieldError | Error,
+  ): void {
+    if (problem instanceof Error) {
+      console.error('Unable to check the postcode:', problem);
+      this.render(res, 503, {
+        ...page,
+        step: 'details',
+        notice: POSTCODE_UNAVAILABLE_MESSAGE,
+      });
+      return;
+    }
+    this.render(res, 400, { ...page, step: 'details', errors: [problem] });
   }
 
   /** Copies the chosen looked-up address into the address fields. */
@@ -183,9 +235,14 @@ export class CheckoutController {
     page: StepPage,
     form: CheckoutForm,
   ): Promise<void> {
-    const addresses = await this.addressLookup.findAddresses(
-      page.values.postcode,
-    );
+    let addresses: LookedUpAddress[];
+    try {
+      addresses = await this.addressLookup.findAddresses(page.values.postcode);
+    } catch (error) {
+      if (!(error instanceof PostcodeServiceError)) throw error;
+      this.renderPostcodeProblem(res, page, error);
+      return;
+    }
     const chosen: LookedUpAddress | undefined =
       form.selectedAddress === null
         ? undefined
@@ -226,6 +283,11 @@ export class CheckoutController {
       this.render(res, 400, { ...page, values, errors: detailsErrors });
       return;
     }
+    const postcodeProblem = await this.checkPostcode(values);
+    if (postcodeProblem) {
+      this.renderPostcodeProblem(res, { ...page, values }, postcodeProblem);
+      return;
+    }
 
     let deliveryOptions: DeliveryOptionDto[];
     try {
@@ -258,6 +320,20 @@ export class CheckoutController {
     }
     if (form.action === 'continue-to-payment') {
       this.render(res, 200, { ...deliveryPage, step: 'payment' });
+      return;
+    }
+
+    // Charge only the total the customer saw. If another tab changed the
+    // basket, or a price changed, show the new total instead.
+    const deliveryPence =
+      deliveryOptions.find((option) => option.id === values.deliveryOption)
+        ?.pricePence ?? 0;
+    if (form.confirmedTotalPence !== page.basket.totalPence + deliveryPence) {
+      this.render(res, 409, {
+        ...deliveryPage,
+        step: 'payment',
+        notice: TOTAL_CHANGED_MESSAGE,
+      });
       return;
     }
     await this.placeOrder(res, { ...deliveryPage, step: 'payment' }, token);
@@ -312,7 +388,7 @@ export class CheckoutController {
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email,
-        phone: values.phone,
+        phone: normaliseUkPhone(values.phone) ?? values.phone,
       },
       address: {
         line1: values.addressLine1,

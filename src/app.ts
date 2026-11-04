@@ -21,6 +21,7 @@ import { CatalogService } from './server/services/catalog-service';
 import { AddressLookupService } from './services/addressLookupService';
 import { BasketService } from './services/basketService';
 import { CheckoutService } from './services/checkoutService';
+import { PostcodeService } from './services/postcodeService';
 import { ProductService } from './services/productService';
 import { createApiProxy } from './util/apiProxy';
 import { createCustomerGuard } from './util/customerGuard';
@@ -79,11 +80,13 @@ export function createApp(
   const basketService = new BasketService(backendOrigin);
   const basketController = new BasketController(basketService);
   const checkoutService = new CheckoutService(backendOrigin);
+  const postcodeService = new PostcodeService();
   const checkoutController = new CheckoutController(
     checkoutService,
     basketService,
-    new AddressLookupService(),
+    new AddressLookupService(postcodeService),
     loginSession,
+    postcodeService,
   );
 
   // noCache is a loader option, so it must be set on the loader to take effect.
