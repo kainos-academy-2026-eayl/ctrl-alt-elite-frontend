@@ -172,6 +172,50 @@ describe('CatalogService.getProducts', () => {
   });
 });
 
+describe('CatalogService.getCategories', () => {
+  const service = new CatalogService(BACKEND_ORIGIN);
+  const fetchMock = vi.fn<typeof fetch>();
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('shares an in-flight category refresh across concurrent requests', async () => {
+    let resolveResponse: (response: Response) => void = () => {};
+    fetchMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveResponse = resolve;
+      }),
+    );
+
+    const requests = [
+      service.getCategories(0),
+      service.getCategories(0),
+      service.getCategories(0),
+    ];
+
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      new URL('/api/products', BACKEND_ORIGIN),
+      {
+        headers: { accept: 'application/json' },
+        signal: expect.any(AbortSignal),
+      },
+    );
+    resolveResponse(Response.json({ products: [PRODUCT] }));
+
+    await expect(Promise.all(requests)).resolves.toEqual([
+      ['Audio'],
+      ['Audio'],
+      ['Audio'],
+    ]);
+  });
+});
+
 describe('CatalogService.getProduct', () => {
   const service = new CatalogService(BACKEND_ORIGIN);
   const fetchMock = vi.fn<typeof fetch>();

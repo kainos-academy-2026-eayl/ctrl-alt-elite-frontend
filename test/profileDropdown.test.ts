@@ -192,7 +192,10 @@ describe('homepage profile dropdown', () => {
     assert.match(profileHtml, /aria-label="Main navigation"/);
     assert.match(profileHtml, /href="\/">Home<\/a>/);
     assert.match(profileHtml, /href="\/assets\/profile\.css"/);
-    assert.doesNotMatch(profileHtml, /{{|{%|<script/);
+    assert.doesNotMatch(profileHtml, /{{|{%/);
+    assert.deepEqual(profileHtml.match(/<script\b[^>]*>/g), [
+      '<script src="/controllers/script.js" defer>',
+    ]);
     assert.doesNotMatch(profileMain(profileHtml), /<form/);
     const stylesheet = await fetch(`${base}/assets/profile.css`);
     assert.equal(stylesheet.status, 200);
@@ -234,7 +237,10 @@ describe('homepage profile dropdown', () => {
       );
       assert.match(html, /changes are not saved/);
       assert.match(html, /pictures are not uploaded or previewed/);
-      assert.doesNotMatch(html, /<script|\/api\/|profileController/);
+      assert.doesNotMatch(html, /\/api\/|profileController/);
+      assert.deepEqual(html.match(/<script\b[^>]*>/g), [
+        '<script src="/controllers/script.js" defer>',
+      ]);
       assert.doesNotMatch(profileMain(html), /<form/);
       assert.equal(backendRequest.mock.calls.length, 0);
     } finally {

@@ -54,7 +54,12 @@ const GUEST_NAVIGATION: SiteNavigation = {
 const navigationStore = new AsyncLocalStorage<SiteNavigation>();
 
 function isCustomerPage(req: Request): boolean {
-  if (req.method !== 'GET') return false;
+  if (
+    req.method !== 'GET' &&
+    !(req.method === 'POST' && req.path === '/login')
+  ) {
+    return false;
+  }
   return !EXCLUDED_PREFIXES.some(
     (prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`),
   );
@@ -84,7 +89,9 @@ async function buildNavigation(
   const [account, categories, basket] = await Promise.all([
     dependencies.loginSession.getAccount(req, res),
     dependencies.catalogService.getCategories(),
-    dependencies.getHeaderBasket(req),
+    req.path === '/basket' || req.path === '/checkout'
+      ? null
+      : dependencies.getHeaderBasket(req),
   ]);
   return {
     isAuthenticated: account !== null,
@@ -106,6 +113,7 @@ export function createSiteNavigationMiddleware(
       next();
       return;
     }
+    res.setHeader('Cache-Control', 'no-store');
     let navigation = GUEST_NAVIGATION;
     try {
       navigation = await buildNavigation(dependencies, req, res);

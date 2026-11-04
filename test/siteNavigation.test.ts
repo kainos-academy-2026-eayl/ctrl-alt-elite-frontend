@@ -31,6 +31,7 @@ describe('customer site navigation', () => {
   let frontend: Server;
   let base: string;
   let productRequests = 0;
+  let basketRequests = 0;
   let productsAvailable = true;
 
   beforeAll(async () => {
@@ -57,6 +58,9 @@ describe('customer site navigation', () => {
           JSON.stringify(productsAvailable ? { products: PRODUCTS } : {}),
         );
         return;
+      }
+      if (req.url?.startsWith('/api/baskets/')) {
+        basketRequests += 1;
       }
       res.statusCode = 404;
       res.end('{}');
@@ -89,7 +93,8 @@ describe('customer site navigation', () => {
       '/login',
       '/register',
     ]) {
-      const nav = navOf(await page(path));
+      const html = await page(path);
+      const nav = navOf(html);
       assert.match(nav, /aria-label="Main navigation"/, path);
       assert.match(nav, /href="\/"[^>]*>Home<\/a>/, path);
       assert.match(nav, /href="\/products"[^>]*>Shop<\/a>/, path);
@@ -98,7 +103,58 @@ describe('customer site navigation', () => {
       assert.match(nav, /href="\/login"/, path);
       assert.match(nav, /class="nav-link basket-icon-link/, path);
       assert.match(nav, /class="site-nav-check" type="checkbox"/, path);
+      assert.equal(
+        html.match(/<script src="\/controllers\/script\.js" defer><\/script>/g)
+          ?.length,
+        1,
+        path,
+      );
     }
+  });
+
+  it('does not cache pages that render customer navigation', async () => {
+    for (const path of [
+      '/',
+      '/products',
+      '/products/p1',
+      '/search?q=mug',
+      '/basket',
+      '/login',
+      '/register',
+    ]) {
+      const res = await fetch(`${base}${path}`, { redirect: 'manual' });
+      assert.equal(res.headers.get('cache-control'), 'no-store', path);
+    }
+  });
+
+  it('includes navigation data on failed login submissions', async () => {
+    const res = await fetch(`${base}/login`, {
+      method: 'POST',
+      headers: {
+        origin: base,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ email: 'ada@example.com', password: 'bad' }),
+      redirect: 'manual',
+    });
+
+    assert.equal(res.status, 502);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    assert.match(navOf(await res.text()), /Kitchen &amp; Home/);
+  });
+
+  it('loads basket data only once on basket and checkout pages', async () => {
+    const cookie = 'basket_id=00000000-0000-4000-8000-000000000001';
+    const beforeBasket = basketRequests;
+    await fetch(`${base}/basket`, { headers: { cookie } });
+    assert.equal(basketRequests - beforeBasket, 1);
+
+    const beforeCheckout = basketRequests;
+    await fetch(`${base}/checkout`, {
+      headers: { cookie },
+      redirect: 'manual',
+    });
+    assert.equal(basketRequests - beforeCheckout, 1);
   });
 
   it('lists the product categories as links, escaping their names', async () => {

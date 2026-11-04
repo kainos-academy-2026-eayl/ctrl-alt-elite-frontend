@@ -36,6 +36,12 @@ function catalogueItem(id: string, name: string, stock = 10) {
   };
 }
 
+function assertOnlySharedNavigationScript(html: string): void {
+  assert.deepEqual(html.match(/<script\b[^>]*>/g), [
+    '<script src="/controllers/script.js" defer>',
+  ]);
+}
+
 const FEATURED_IDS = [
   'feat-1',
   'feat-2',
@@ -463,8 +469,8 @@ describe('frontend routes', () => {
     });
   });
 
-  describe('product pages (no JavaScript)', () => {
-    it('shows a product page with an Add to Basket form and no scripts', async () => {
+  describe('product pages (server-rendered)', () => {
+    it('shows a product page with an Add to Basket form', async () => {
       const res = await fetch(`${base}/products/hoodie-1`);
       assert.equal(res.status, 200);
       const html = await res.text();
@@ -475,7 +481,7 @@ describe('frontend routes', () => {
         html,
         /<input type="hidden" name="productId" value="hoodie-1" \/>/,
       );
-      assert.doesNotMatch(html, /<script/);
+      assertOnlySharedNavigationScript(html);
     });
 
     it('disables Add to Basket for a product that is out of stock', async () => {
@@ -546,8 +552,8 @@ describe('frontend routes', () => {
     });
   });
 
-  describe('GET /search (server-rendered, no JavaScript)', () => {
-    it('shows matching products with Add to Basket forms and no scripts', async () => {
+  describe('GET /search (server-rendered)', () => {
+    it('shows matching products with Add to Basket forms', async () => {
       const res = await fetch(`${base}/search?q=shirt`);
       assert.equal(res.status, 200);
       const html = await res.text();
@@ -560,7 +566,7 @@ describe('frontend routes', () => {
       );
       assert.doesNotMatch(html, /value="shirt-2"/);
       assert.match(html, /Out of Stock/);
-      assert.doesNotMatch(html, /<script/);
+      assertOnlySharedNavigationScript(html);
     });
 
     it('explains when the closest match is shown and keeps the search term', async () => {
@@ -1065,7 +1071,7 @@ describe('frontend routes', () => {
       return { res, html: await res.text() };
     }
 
-    it('renders an empty basket page with no scripts', async () => {
+    it('renders an empty basket page with only the shared navigation script', async () => {
       const { res, html } = await getBasketPage('');
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
@@ -1074,7 +1080,7 @@ describe('frontend routes', () => {
         /<h1 id="basket-heading" tabindex="-1">Your basket<\/h1>/,
       );
       assert.match(html, /Your basket is empty\./);
-      assert.doesNotMatch(html, /<script/);
+      assertOnlySharedNavigationScript(html);
     });
 
     it('adds, updates and removes items with form posts and redirects', async () => {
@@ -1132,7 +1138,7 @@ describe('frontend routes', () => {
       assert.match(checkoutHtml, /<h1 id="checkout-heading">Checkout<\/h1>/);
       assert.match(checkoutHtml, new RegExp(product.name));
       assert.match(checkoutHtml, /Total \(2 items\)/);
-      assert.doesNotMatch(checkoutHtml, /<script/);
+      assertOnlySharedNavigationScript(checkoutHtml);
 
       const removed = await post(`${productPath}/remove`, cookies);
       assert.equal(removed.status, 303);
