@@ -206,21 +206,38 @@ describe('homepage profile dropdown', () => {
         ['profile-username', 'Username'],
         ['profile-first-name', 'First name'],
         ['profile-second-name', 'Second name'],
-        ['profile-pronouns', 'Pronouns'],
-        ['profile-description', 'About you'],
+        ['profile-email', 'Email address'],
+        ['profile-phone', 'Phone number'],
+        ['profile-address-line-1', 'Address line 1'],
+        ['profile-address-line-2', 'Address line 2'],
+        ['profile-postcode', 'Postcode'],
       ]) {
         assert.ok(html.includes(`for="${id}">${label}</label>`));
         assert.ok(html.includes(`id="${id}"`));
+      }
+      for (const [id, type, name, autocomplete] of [
+        ['profile-email', 'email', 'email', 'email'],
+        ['profile-phone', 'tel', 'phoneNumber', 'tel'],
+        ['profile-address-line-1', 'text', 'addressLine1', 'address-line1'],
+        ['profile-address-line-2', 'text', 'addressLine2', 'address-line2'],
+        ['profile-postcode', 'text', 'postcode', 'postal-code'],
+      ]) {
+        const input = html.match(
+          new RegExp(`<input[^>]*id="${id}"[^>]*>`),
+        )?.[0];
+        assert.ok(input, `Missing profile input: ${id}`);
+        assert.ok(input.includes(`type="${type}"`));
+        assert.ok(input.includes(`name="${name}"`));
+        assert.ok(input.includes(`autocomplete="${autocomplete}"`));
       }
       assert.match(
         html,
         /type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/,
       );
-      for (const pronouns of ['he/him', 'she/her', 'they/them', 'other']) {
-        assert.ok(html.includes(`<option value="${pronouns}">`));
-      }
-      assert.match(html, /<option value="">Prefer not to say<\/option>/);
-      assert.match(html, /<textarea[^>]*maxlength="200"/);
+      assert.doesNotMatch(
+        html,
+        /profile-pronouns|profile-description|<select|<textarea/,
+      );
       assert.match(
         html,
         /<button[^>]*type="button"[^>]*disabled[^>]*>Save changes<\/button>/,

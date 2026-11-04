@@ -141,6 +141,18 @@ summary:focus-visible {
 .account-avatar {
   flex-shrink: 0;
   border-radius: 50%;
+  object-fit: cover;
+}
+
+.account-menu [hidden] {
+  display: none;
+}
+
+.account-profile-error {
+  margin: 0.5rem;
+  max-width: 16rem;
+  color: #475569;
+  font-size: 0.85rem;
 }
 
 .account-label {

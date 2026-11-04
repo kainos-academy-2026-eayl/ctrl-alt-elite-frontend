@@ -7,7 +7,8 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). A looping CSS-only conveyor shows the best sellers from the backend `/api/products/popular` (via [ProductService](src/services/productService.ts)); each card links to its product page. The "Featured products" list still uses temporary products from [src/data/sampleProducts.ts](src/data/sampleProducts.ts) until the product ticket is complete. |
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
 | `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
-| `GET /profile` | Signed-in profile design preview ([src/views/profile.njk](src/views/profile.njk)) with a picture picker, username, first and second names, pronouns and a short description. Cosmetic only: no controller, profile API calls, picture upload/preview or saving. |
+| `GET /profile` | Signed-in profile ([src/views/profile.njk](src/views/profile.njk)). [AccountController](src/server/controllers/account-controller.ts) uses [ProfileService](src/server/services/profile-service.ts) to load saved username, names, email, address and phone from authenticated `GET /api/profile`. Username is display-only; email is the read-only login identifier. Older sessions without a backend token show a sign-in notice with editing disabled. Rejected authentication clears the session and redirects to login; API outages redirect to `/unavailable`. |
+| `POST /profile` | Same-origin protected form save through backend `PATCH /api/profile`. Preserves submitted values on validation/conflict errors, refreshes the displayed account name without extending login expiry, and redirects after success. Optional address/phone/username fields may be cleared; first and last names are required. |
 | `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/server/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
 | `GET /products/:id` | Product page, rendered on the server with no client-side JavaScript: [ProductDetailController](src/server/controllers/productDetailController.ts) → [CatalogService](src/server/services/catalog-service.ts) (calls the backend `/api/products/:id`) → [product-detail.page.ts](src/views/product-detail.page.ts) → [product-detail.njk](src/views/product-detail.njk). Has an "Add to Basket" form; unknown products show a 404 page. |
 | `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/server/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms. |
@@ -36,6 +37,16 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
+
+Profile pictures are loaded, previewed, uploaded and removed by the existing
+[browser script](src/controllers/script.ts). Uploads go through the authenticated
+API proxy as raw JPG, PNG or WebP bytes (20 MiB and 16 megapixels maximum).
+Picture changes are saved separately from the details form. The homepage dropdown
+loads the current display name and picture, with a default avatar when no picture
+is saved and an explicit notice if profile data cannot be loaded.
+JavaScript is required for picture changes, but the details form works without it.
+The backend profile contact-details migration must be applied before using these
+fields; email cannot be changed through the profile API.
 
 ### Login flow
 
