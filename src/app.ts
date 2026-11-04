@@ -86,12 +86,13 @@ export function createApp(
   );
 
   const productService = new ProductService(backendOrigin);
+  const catalogService = new CatalogService(backendOrigin);
   const homeController = new HomeController(
     backendOrigin,
     loginSession,
     adminTemplates,
     basketController,
-    productService,
+    catalogService,
   );
   const accountController = new AccountController(loginSession, adminTemplates);
   const supportController = new SupportController();
@@ -113,7 +114,6 @@ export function createApp(
       { index: false },
     ),
   );
-  const catalogService = new CatalogService(backendOrigin);
   const catalogController = new CatalogController(catalogService);
   app.get('/products', catalogController.showProducts);
 

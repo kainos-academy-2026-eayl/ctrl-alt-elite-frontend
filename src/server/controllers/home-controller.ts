@@ -1,17 +1,18 @@
 import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
-import { SAMPLE_PRODUCTS } from '../../data/sampleProducts';
-import type { PopularProductDto } from '../../dtos/popularProductsDto';
-import type { ProductService } from '../../services/productService';
 import { loadStaffAccount } from '../../util/adminUser';
 import { readAuthCookie } from '../../util/authCookie';
 import type { LoginSession } from '../../util/loginSession';
 import { findStaffRole, normaliseRole, Role } from '../../util/staffRoles';
 import { buildHomepage } from '../../views/homepage.page';
+import type { CatalogService } from '../services/catalog-service';
+import {
+  type HomepageProducts,
+  pickHomepageProducts,
+} from '../services/homepage-products';
 import type { BasketController } from './basketController';
 
-/** How many best sellers the homepage conveyor shows. */
-const CONVEYOR_PRODUCT_COUNT = 6;
+const NO_PRODUCTS: HomepageProducts = { featured: [], conveyor: [] };
 
 export class HomeController {
   constructor(
@@ -19,27 +20,28 @@ export class HomeController {
     private readonly loginSession: LoginSession,
     private readonly templates: Environment,
     private readonly basketController: BasketController,
-    private readonly productService?: ProductService,
+    private readonly catalogService?: CatalogService,
   ) {}
 
-  /** The conveyor is optional: if products cannot be loaded it is left out. */
-  private async loadConveyorProducts(): Promise<PopularProductDto[]> {
-    if (!this.productService) return [];
+  /** If the catalogue cannot be loaded, the homepage is shown without products. */
+  private async loadHomepageProducts(): Promise<HomepageProducts> {
+    if (!this.catalogService) return NO_PRODUCTS;
     try {
-      return await this.productService.getPopular(CONVEYOR_PRODUCT_COUNT);
+      const { products } = await this.catalogService.getProducts();
+      return pickHomepageProducts(products);
     } catch (error) {
-      console.error('Unable to load products for the conveyor:', error);
-      return [];
+      console.error('Unable to load products for the homepage:', error);
+      return NO_PRODUCTS;
     }
   }
 
   show = async (req: Request, res: Response): Promise<void> => {
     res.setHeader('Cache-Control', 'no-store');
     try {
-      const [account, basket, conveyorProducts] = await Promise.all([
+      const [account, basket, { featured, conveyor }] = await Promise.all([
         this.loginSession.getAccount(req, res),
         this.basketController.getHeaderBasket(req),
-        this.loadConveyorProducts(),
+        this.loadHomepageProducts(),
       ]);
       // Sessions created before roles were stored have no role to read.
       const role = account
@@ -57,8 +59,8 @@ export class HomeController {
         this.templates.render('homepage.njk', {
           ...buildHomepage({
             account,
-            products: SAMPLE_PRODUCTS,
-            conveyorProducts,
+            products: featured,
+            conveyorProducts: conveyor,
             basket,
           }),
           isStaff: role !== undefined,
