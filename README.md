@@ -37,6 +37,41 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
 
+### Order history API contract (backend pending)
+
+[OrderService](src/server/services/order-service.ts) exposes
+`getOrders(token)` and sends `GET /api/orders` to `BACKEND_ORIGIN` with
+`Accept: application/json` and `Authorization: Bearer <token>`. It does not
+send a request body or a customer ID; the backend must authenticate the token
+and return only that customer's orders, including their `products` relation.
+The backend endpoint is not implemented yet, and the service is not wired to
+a page route.
+
+The agreed response shape is:
+
+```json
+{
+  "orders": [
+    {
+      "id": "order-1",
+      "order_total": 52.5,
+      "order_status": "COMPLETED",
+      "createdAt": "2026-11-04T12:00:00.000Z",
+      "delivery_price_pence": 250,
+      "products": [
+        { "product_id": "product-1", "amount": 2, "unit_price_pence": 2500 }
+      ]
+    }
+  ]
+}
+```
+
+Return `{ "orders": [] }` for a customer with no orders. Fields retain the
+schema names; prices ending in `_pence` remain integer pence. Additional
+checkout fields may be present or null and are preserved. The service rejects
+malformed responses and non-success HTTP statuses rather than treating them as
+an empty history.
+
 ### Login flow
 
 Nunjucks is registered as Express's `.njk` view engine in [src/app.ts](src/app.ts),
