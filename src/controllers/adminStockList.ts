@@ -58,6 +58,8 @@ let products: StockItem[] = [];
 // Edits survive filtering, refreshes and failed saves so no input is lost.
 const drafts = new Map<string, StockDraft>();
 const busyIds = new Set<string>();
+let mutationGeneration = 0;
+let refreshGeneration = 0;
 let query: StockQuery = readStockQuery(
   new URLSearchParams(window.location.search),
 );
@@ -194,15 +196,21 @@ async function load(): Promise<void> {
 
 // Quietly brings the list and the summary counts up to date after a change.
 async function refresh(): Promise<void> {
+  const mutation = mutationGeneration;
+  const generation = ++refreshGeneration;
+  const isCurrent = () =>
+    mutation === mutationGeneration && generation === refreshGeneration;
   try {
     const [list, dashboard] = await Promise.all([
       api.listProducts(),
       api.getDashboard(),
     ]);
+    if (!isCurrent()) return;
     products = list;
     summary.innerHTML = renderSummaryCards(dashboard.summary);
     render();
   } catch (error) {
+    if (!isCurrent()) return;
     if (handleSharedFailure(error)) return;
     console.error('Unable to refresh the inventory:', error);
   }
@@ -260,10 +268,12 @@ async function save(id: string): Promise<void> {
   draft.errors = {};
   draft.formError = '';
   draft.saving = true;
+  mutationGeneration++;
   render();
 
   try {
     const updated = await api.updateStock(id, validation.value);
+    mutationGeneration++;
     replaceProduct(updated);
     drafts.delete(id);
     render();
@@ -306,9 +316,11 @@ async function setOutOfStock(id: string, outOfStock: boolean): Promise<void> {
   }
 
   busyIds.add(id);
+  mutationGeneration++;
   render();
   try {
     const updated = await api.setOutOfStock(id, outOfStock);
+    mutationGeneration++;
     replaceProduct(updated);
     busyIds.delete(id);
     render();
