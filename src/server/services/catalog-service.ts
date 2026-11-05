@@ -75,6 +75,7 @@ const CATEGORIES_TIMEOUT_MS = 2_000;
 export class CatalogService {
   private categoriesCache: { categories: string[]; expiresAt: number } | null =
     null;
+  private categoriesRefresh: Promise<string[]> | null = null;
 
   constructor(private readonly backendOrigin: string) {}
 
@@ -87,6 +88,20 @@ export class CatalogService {
     if (this.categoriesCache && this.categoriesCache.expiresAt > now) {
       return this.categoriesCache.categories;
     }
+    if (this.categoriesRefresh) return this.categoriesRefresh;
+
+    const refresh = this.refreshCategories(now);
+    this.categoriesRefresh = refresh;
+    try {
+      return await refresh;
+    } finally {
+      if (this.categoriesRefresh === refresh) {
+        this.categoriesRefresh = null;
+      }
+    }
+  }
+
+  private async refreshCategories(now: number): Promise<string[]> {
     try {
       const response = await fetch(
         new URL('/api/products', this.backendOrigin),

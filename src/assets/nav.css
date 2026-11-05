@@ -33,6 +33,7 @@
 }
 
 .site-nav-check {
+  display: none;
   position: absolute;
   width: 1px;
   height: 1px;
@@ -200,6 +201,10 @@
 
 /* Below this width the links collapse behind the menu button. */
 @media (max-width: 960px) {
+  .site-nav-check {
+    display: block;
+  }
+
   .header-content {
     flex-flow: row wrap;
     gap: 0.5rem 0.75rem;
