@@ -101,12 +101,16 @@
       <ul class="product-grid">
         {% for product in products %}
         <li class="product-card">
+          <img class="product-image featured-image" src="{{ product.imageUrl }}" alt="" width="160" height="120" />
           <h3>{{ product.name }}</h3>
           <p class="product-price">{{ product.price }}</p>
-          <form action="{{ addToBasketUrl }}" method="post">
-            <input type="hidden" name="productId" value="{{ product.id }}" />
-            <button type="submit" class="basket-button">Add to Basket</button>
-          </form>
+          <div class="product-actions">
+            <a class="details-button" href="{{ product.detailsUrl }}">View details<span class="basket-visually-hidden"> of {{ product.name }}</span></a>
+            <form action="{{ addToBasketUrl }}" method="post">
+              <input type="hidden" name="productId" value="{{ product.id }}" />
+              <button type="submit" class="basket-button">Add to Basket</button>
+            </form>
+          </div>
         </li>
         {% endfor %}
       </ul>

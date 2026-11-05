@@ -73,15 +73,18 @@ describe('admin portal pages', () => {
       const before = checks;
       const { status, res } = await get('/admin', '');
       assert.equal(status, 303);
-      assert.equal(res.headers.get('location'), '/login');
+      assert.equal(res.headers.get('location'), '/login?returnTo=%2Fadmin');
       assert.equal(checks, before);
     });
 
-    it('redirects expired or invalid tokens to the login page', async () => {
+    it('redirects expired or invalid tokens to the login page and keeps the intended page', async () => {
       for (const path of ['/admin', '/admin/customers/abc']) {
         const { status, res } = await get(path, 'expired-token');
         assert.equal(status, 303);
-        assert.equal(res.headers.get('location'), '/login');
+        assert.equal(
+          res.headers.get('location'),
+          `/login?returnTo=${encodeURIComponent(path)}`,
+        );
       }
     });
 

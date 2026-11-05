@@ -1,0 +1,44 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<header class="admin-page-header">
+  <h1>Inventory</h1>
+  <p class="admin-subtitle" data-stock-count aria-live="polite" hidden></p>
+</header>
+
+<p class="admin-success" role="status" hidden data-stock-notice></p>
+<p class="admin-error" role="alert" hidden data-stock-error></p>
+
+<div class="stock-summary" data-stock-summary></div>
+
+<form class="customer-toolbar" action="/admin/stock" method="get" role="search" data-stock-filters>
+  <div class="customer-field customer-field-search">
+    <label for="stock-search">Search by name</label>
+    <input id="stock-search" name="q" type="search" maxlength="200" autocomplete="off" />
+  </div>
+  <div class="customer-field">
+    <label for="stock-status">Status</label>
+    <select id="stock-status" name="status">
+      <option value="">All statuses</option>
+      {% for status in statuses %}
+      <option value="{{ status.value }}">{{ status.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="customer-field stock-toggle">
+    <label for="stock-low-only">
+      <input id="stock-low-only" name="low" type="checkbox" value="1" />
+      Low stock only
+    </label>
+  </div>
+</form>
+
+<div data-stock-results>
+  <p class="admin-empty">Loading inventory&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to manage the inventory.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminStockList.js" defer></script>
+{% endblock %}

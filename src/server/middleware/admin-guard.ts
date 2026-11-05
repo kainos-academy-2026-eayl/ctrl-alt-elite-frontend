@@ -1,6 +1,11 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { type AdminProfile, loadStaffAccount } from '../../util/adminUser';
+import {
+  type AdminProfile,
+  loadStaffAccount,
+  type StaffAccount,
+} from '../../util/adminUser';
 import { readAuthCookie } from '../../util/authCookie';
+import { loginUrl } from '../../util/returnPath';
 import {
   hasPermission,
   type StaffPermission,
@@ -26,7 +31,7 @@ export function createAdminGuard(backendOrigin: string): RequestHandler {
 
     const token = readAuthCookie(req.headers.cookie);
     if (!token) {
-      res.redirect(303, '/login');
+      res.redirect(303, loginUrl(req.originalUrl));
       return;
     }
 
@@ -45,8 +50,18 @@ export function createAdminGuard(backendOrigin: string): RequestHandler {
       return;
     }
 
+    let account: StaffAccount | null = null;
+    if (status === 403) {
+      // Roles without customer access, such as inventory managers, cannot pass
+      // the probe above, so their backend-confirmed role decides instead.
+      account = await loadStaffAccount(backendOrigin, token);
+      if (account?.role && !hasPermission(account.role, 'customers')) {
+        status = 200;
+      }
+    }
+
     if (status === 200) {
-      const account = await loadStaffAccount(backendOrigin, token);
+      account ??= await loadStaffAccount(backendOrigin, token);
       if (!account) {
         res.redirect('/unavailable');
         return;
@@ -62,7 +77,7 @@ export function createAdminGuard(backendOrigin: string): RequestHandler {
       res.locals.staff = { profile: account.profile, role: account.role };
       next();
     } else if (status === 401) {
-      res.redirect(303, '/login');
+      res.redirect(303, loginUrl(req.originalUrl));
     } else if (status === 403) {
       sendAccessDenied(
         res,

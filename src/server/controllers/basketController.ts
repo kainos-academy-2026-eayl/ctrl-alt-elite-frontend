@@ -96,42 +96,6 @@ export class BasketController {
     });
   };
 
-  showCheckout = async (req: Request, res: Response): Promise<void> => {
-    res.setHeader('Cache-Control', 'no-store');
-    const basketId = readBasketCookie(req.headers.cookie);
-    if (basketId === null) {
-      res.redirect(303, '/basket');
-      return;
-    }
-
-    let basket: BasketResponseDto;
-    try {
-      basket = await this.basketService.getBasket(basketId);
-    } catch (error) {
-      this.redirectAfterFailedUpdate(res, error);
-      return;
-    }
-    if (basket.items.length === 0) {
-      res.redirect(303, '/basket');
-      return;
-    }
-
-    const page = buildBasketPage({
-      basket,
-      notice: null,
-      loadErrorMessage: '',
-      now: new Date(),
-    });
-    res.render('checkout', page, (error: Error | null, html: string) => {
-      if (error) {
-        console.error('Unable to load the checkout page:', error);
-        this.renderUnavailablePage(res);
-        return;
-      }
-      res.type('html').send(html);
-    });
-  };
-
   startCheckout = async (req: Request, res: Response): Promise<void> => {
     res.setHeader('Cache-Control', 'no-store');
     const basketId = readBasketCookie(req.headers.cookie);

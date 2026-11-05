@@ -56,6 +56,12 @@ export function createAdminRouter(
     requirePermission('inventory'),
     controller.showEditProduct,
   );
+  router.get(
+    '/stock/dashboard',
+    requireDashboardRole('INVENTORY_MANAGEMENT'),
+    controller.showStockDashboard,
+  );
+  router.get('/stock', requirePermission('stock'), controller.showStock);
   router.get('/:section', controller.showModule);
 
   return router;

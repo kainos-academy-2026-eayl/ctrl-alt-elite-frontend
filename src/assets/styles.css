@@ -259,9 +259,40 @@ h1 {
   font-weight: 700;
 }
 
-.product-card button:focus-visible {
+.product-card button:focus-visible,
+.details-button:focus-visible {
   outline: 3px solid #22c55e;
   outline-offset: 3px;
+}
+
+/* Featured cards on the homepage use a smaller, centred image. */
+.product-image.featured-image {
+  width: 10rem;
+  align-self: center;
+}
+
+.product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+/* A secondary action next to the green Add to Basket button. */
+.details-button {
+  display: inline-block;
+  padding: calc(0.75rem - 2px) calc(1.5rem - 2px);
+  border: 2px solid #15803d;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #14532d;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.details-button:hover {
+  background: #dcfce7;
 }
 
 .ticket-status {

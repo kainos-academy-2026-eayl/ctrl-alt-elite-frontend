@@ -1,0 +1,32 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<header class="admin-page-header">
+  <h1>Inventory Dashboard</h1>
+  <p class="admin-subtitle">Stock levels across the catalogue, loaded live.</p>
+</header>
+
+<div data-stock-state aria-live="polite">
+  <p class="admin-empty">Loading inventory&hellip;</p>
+</div>
+
+<div data-stock-content hidden>
+  <section aria-labelledby="stock-summary-heading">
+    <h2 id="stock-summary-heading" class="visually-hidden">Summary</h2>
+    <div data-stock-summary></div>
+  </section>
+
+  <section class="admin-card stock-low-card" aria-labelledby="stock-low-heading">
+    <div class="admin-card-header">
+      <h2 id="stock-low-heading">Low-stock products</h2>
+      <a href="/admin/stock?low=1">Manage stock</a>
+    </div>
+    <div data-stock-low></div>
+  </section>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to view the inventory.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminStockDashboard.js" defer></script>
+{% endblock %}
