@@ -109,7 +109,7 @@ export function createApp(
   const accountController = new AccountController(
     loginSession,
     adminTemplates,
-    checkoutService,
+    new ProfileService(backendOrigin),
   );
   const supportController = new SupportController();
   const statusController = new StatusController(adminTemplates);
