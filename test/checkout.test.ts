@@ -197,11 +197,28 @@ async function handleBackend(req: Request): Promise<Response> {
       token: TOKEN,
     });
   }
-  if (!isLoggedIn || backend.isAccountExpired) {
+  if (
+    !isLoggedIn ||
+    (backend.isAccountExpired && pathname !== '/api/profile')
+  ) {
     return Response.json(
       { message: 'Authentication required.' },
       { status: 401 },
     );
+  }
+  if (pathname === '/api/profile') {
+    return Response.json({
+      id: 'customer-1',
+      username: null,
+      firstName: 'Sam',
+      lastName: 'Jones',
+      email: 'sam@example.com',
+      addressLine1: null,
+      addressLine2: null,
+      postcode: null,
+      phoneNumber: null,
+      hasPhoto: false,
+    });
   }
   if (pathname === '/api/account') {
     return Response.json({
@@ -748,16 +765,36 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     });
     assert.equal(res.status, 200);
     const html = await res.text();
-    assert.match(html, /<h3 class="profile-credit-label">Credit balance<\/h3>/);
+    assert.match(
+      html,
+      /<h3 class="profile-credit-label" id="profile-credit-heading">Credit balance<\/h3>/,
+    );
     assert.match(html, /<p class="profile-credit-amount">£445\.03<\/p>/);
 
+    backend.creditBalancePence = 0;
+    const zeroBalance = await fetchFrontend(`${base}/profile`, {
+      headers: { cookie: LOGIN_COOKIES },
+      redirect: 'manual',
+    });
+    assert.equal(zeroBalance.status, 200);
+    assert.match(
+      await zeroBalance.text(),
+      /<p class="profile-credit-amount">£0\.00<\/p>/,
+    );
+
     backend.isAccountExpired = true;
-    const unavailable = await (
-      await fetchFrontend(`${base}/profile`, {
-        headers: { cookie: LOGIN_COOKIES },
-      })
-    ).text();
-    assert.match(unavailable, /Your credit balance is not available right now/);
+    const unavailable = await fetchFrontend(`${base}/profile`, {
+      headers: { cookie: LOGIN_COOKIES },
+      redirect: 'manual',
+    });
+    assert.equal(unavailable.status, 200);
+    const unavailableHtml = await unavailable.text();
+    assert.match(
+      unavailableHtml,
+      /Your credit balance is not available right now/,
+    );
+    assert.doesNotMatch(unavailableHtml, /class="profile-credit-amount"/);
+    assert.match(unavailableHtml, /name="firstName" value="Sam"/);
   });
 
   it('returns to checkout after logging in, but never to another site', async () => {

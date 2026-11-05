@@ -1,7 +1,9 @@
 import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
+import type { CheckoutService } from '../../services/checkoutService';
 import { clearAuthCookie, readAuthCookie } from '../../util/authCookie';
 import type { LoginSession } from '../../util/loginSession';
+import { formatPrice } from '../../views/basket.page';
 import {
   ProfileAuthenticationError,
   type ProfileDetails,
@@ -15,9 +17,10 @@ export class AccountController {
     private readonly loginSession: LoginSession,
     private readonly templates: Environment,
     private readonly profileService: ProfileService,
+    private readonly checkoutService: CheckoutService,
   ) {}
 
-  private renderProfile(
+  private async renderProfile(
     res: Response,
     account: { name: string; role?: string },
     profile: ProfileDetails | null,
@@ -26,13 +29,24 @@ export class AccountController {
       message = '',
       error = '',
       fields,
+      token = null,
     }: {
       status?: number;
       message?: string;
       error?: string;
       fields?: unknown;
+      token?: string | null;
     } = {},
-  ): void {
+  ): Promise<void> {
+    let creditBalance: string | null = null;
+    if (token) {
+      try {
+        const account = await this.checkoutService.getAccount(token);
+        creditBalance = formatPrice(account.creditBalancePence);
+      } catch {
+        // The profile remains available when the credit balance cannot load.
+      }
+    }
     const form = profile ? { ...profile } : null;
     if (form && typeof fields === 'object' && fields !== null) {
       for (const key of [
@@ -59,6 +73,7 @@ export class AccountController {
             ? { ...account, name: profileDisplayName(profile) }
             : account,
           profile,
+          creditBalance,
           form,
           profileLoadMessage: profile
             ? ''
@@ -105,7 +120,8 @@ export class AccountController {
           profileDisplayName(profile),
         );
       }
-      this.renderProfile(res, account, profile, {
+      await this.renderProfile(res, account, profile, {
+        token,
         message: req.query.saved === '1' ? 'Your profile has been saved.' : '',
       });
     } catch (error) {
@@ -128,7 +144,8 @@ export class AccountController {
     try {
       profile = await this.profileService.getOwnProfile(token);
       if (!req.is('application/x-www-form-urlencoded')) {
-        this.renderProfile(res, account, profile, {
+        await this.renderProfile(res, account, profile, {
+          token,
           status: 415,
           error: 'Please submit the profile form.',
         });
@@ -147,7 +164,8 @@ export class AccountController {
       res.redirect(303, '/profile?saved=1');
     } catch (error) {
       if (error instanceof ProfileUpdateError && profile) {
-        this.renderProfile(res, account, profile, {
+        await this.renderProfile(res, account, profile, {
+          token,
           status: error.status,
           error: error.message,
           fields: req.body,

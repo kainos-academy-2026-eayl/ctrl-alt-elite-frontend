@@ -68,6 +68,20 @@ describe('saved profile autofill', () => {
       .sign(new TextEncoder().encode(SECRET));
     loginCookie = `ctrl_alt_elite_login=${token}`;
     backend = createServer(async (req, res) => {
+      if (req.url === '/api/account') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            account: {
+              firstName: 'Saved',
+              lastName: 'Customer',
+              email: 'saved@example.invalid',
+              creditBalancePence: 0,
+            },
+          }),
+        );
+        return;
+      }
       const isPatch = req.method === 'PATCH';
       let fields: unknown;
       if (isPatch) {

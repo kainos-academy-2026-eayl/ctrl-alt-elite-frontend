@@ -43,6 +43,14 @@
             </div>
             <h2>{{ account.name }}</h2>
             <p class="profile-copy">Your personal space on Ctrl-Alt-Elite.</p>
+            <section class="profile-credit" aria-labelledby="profile-credit-heading">
+                <h3 class="profile-credit-label" id="profile-credit-heading">Credit balance</h3>
+                {% if creditBalance %}
+                <p class="profile-credit-amount">{{ creditBalance }}</p>
+                {% else %}
+                <p class="profile-credit-copy">Your credit balance is not available right now.</p>
+                {% endif %}
+            </section>
         </aside>
 
         <section class="profile-card profile-editor" aria-labelledby="profile-details-heading">

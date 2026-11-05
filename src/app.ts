@@ -110,6 +110,7 @@ export function createApp(
     loginSession,
     adminTemplates,
     new ProfileService(backendOrigin),
+    checkoutService,
   );
   const supportController = new SupportController();
   const statusController = new StatusController(adminTemplates);
