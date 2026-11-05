@@ -50,12 +50,16 @@ describe('customer site navigation', () => {
         res.end('{}');
         return;
       }
-      if (req.url === '/api/products') {
+      if (req.url?.startsWith('/api/products')) {
         productRequests += 1;
-        res.statusCode = productsAvailable ? 200 : 500;
-        res.end(
-          JSON.stringify(productsAvailable ? { products: PRODUCTS } : {}),
+        const category = new URL(req.url, 'http://backend').searchParams.get(
+          'category',
         );
+        const matches = category
+          ? PRODUCTS.filter((product) => product.category === category)
+          : PRODUCTS;
+        res.statusCode = productsAvailable ? 200 : 500;
+        res.end(JSON.stringify(productsAvailable ? { products: matches } : {}));
         return;
       }
       res.statusCode = 404;
@@ -120,7 +124,7 @@ describe('customer site navigation', () => {
     );
 
     const unknown = await page('/products?category=Nope');
-    assert.match(unknown, /<h2>Mug<\/h2>/);
+    assert.doesNotMatch(unknown, /<h2>(Mug|Headphones|Speaker)<\/h2>/);
   });
 
   it('marks the current page in the navigation', async () => {
