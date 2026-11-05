@@ -1,76 +1,55 @@
-<!doctype html>
-<html lang="en">
+{% extends "layout.njk" %}
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Browse the Ctrl-Alt-Elite product catalog.">
-    <title>Product catalog | Ctrl-Alt-Elite</title>
-    <link rel="stylesheet" href="/assets/styles.css">
-    <link rel="stylesheet" href="/assets/basket.css">
-    <link rel="stylesheet" href="/assets/search.css">
-    <link rel="stylesheet" href="/assets/nav.css">
-    <link rel="stylesheet" href="/product-catalog/product_catalog.css">
-    <link rel="stylesheet" href="/assets/filters.css">
-    <script src="/controllers/script.js" defer></script>
-</head>
+{% block title %}Product catalog | Ctrl-Alt-Elite{% endblock %}
+{% block description %}Browse the Ctrl-Alt-Elite product catalog.{% endblock %}
 
-<body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <header class="site-header">
-        <div class="page-width header-content">
-            <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
-                <span class="brand-mark" aria-hidden="true">C</span>
-                <span>Ctrl-Alt-Elite</span>
-            </a>
-            {% include "_siteNav.njk" %}
-        </div>
-    </header>
+{% block styles %}
+<link rel="stylesheet" href="/product-catalog/product_catalog.css" />
+<link rel="stylesheet" href="/assets/filters.css" />
+{% endblock %}
 
-    <main class="catalog-main" id="main-content">
-        <section class="catalog-toolbar" aria-labelledby="catalogTitle">
-            <h1 id="catalogTitle">{{ pageHeading or "All products" }}</h1>
-            {% if not productError %}
-            <p class="catalog-summary" id="resultsCount" role="status">{{ resultsSummary }}</p>
-            {% endif %}
-        </section>
-
-        {% if filterPanel %}
-        {% include "_filterPanel.njk" %}
+{% block content %}
+<div class="catalog-main">
+    <section class="catalog-toolbar" aria-labelledby="catalogTitle">
+        <h1 id="catalogTitle">{{ pageHeading or "All products" }}</h1>
+        {% if not productError %}
+        <p class="catalog-summary" id="resultsCount" role="status">{{ resultsSummary }}</p>
         {% endif %}
+    </section>
 
-        <section class="product-grid" id="productGrid" aria-label="Products">
-            {% if productError %}
-            <p class="empty-state" role="alert">{{ productError }}</p>
-            {% else %}
-            {% for product in products %}
-            <article class="product-tile" data-product-card data-category="{{ product.category }}">
-                <div class="product-image-wrap">
-                    <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
-                    <span class="product-category">{{ product.category }}</span>
+    {% if filterPanel %}
+    {% include "_filterPanel.njk" %}
+    {% endif %}
+
+    <section class="product-grid" id="productGrid" aria-label="Products">
+        {% if productError %}
+        <p class="empty-state" role="alert">{{ productError }}</p>
+        {% else %}
+        {% for product in products %}
+        <article class="product-tile" data-product-card data-category="{{ product.category }}">
+            <div class="product-image-wrap">
+                <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
+                <span class="product-category">{{ product.category }}</span>
+            </div>
+            <div class="product-content">
+                <h2>{{ product.name }}</h2>
+                <p class="product-price">{{ product.priceLabel }}</p>
+                <p class="product-stock">{{ product.stockLabel }}</p>
+                <div class="product-actions">
+                    <a class="button button-secondary" href="/products/{{ product.id | urlencode }}">View details<span class="filters-visually-hidden"> of {{ product.name }}</span></a>
+                    <form action="/basket/items" method="post">
+                        <input type="hidden" name="productId" value="{{ product.id }}" />
+                        <button class="button button-primary" type="submit" {% if not product.available %}
+                            disabled{% endif %}>Add to basket</button>
+                    </form>
                 </div>
-                <div class="product-content">
-                    <h2>{{ product.name }}</h2>
-                    <p class="product-price">{{ product.priceLabel }}</p>
-                    <p class="product-stock">{{ product.stockLabel }}</p>
-                    <div class="product-actions">
-                        <a class="button button-secondary" href="/products/{{ product.id | urlencode }}">View details<span class="filters-visually-hidden"> of {{ product.name }}</span></a>
-                        <form action="/basket/items" method="post">
-                            <input type="hidden" name="productId" value="{{ product.id }}" />
-                            <button class="button button-primary" type="submit" {% if not product.available %}
-                                disabled{% endif %}>Add to basket</button>
-                        </form>
-                    </div>
-                </div>
-            </article>
-            {% else %}
-            <p class="empty-state">There are no products to show right now.</p>
-            {% endfor %}
-            {% endif %}
-        </section>
-        <button class="cta-button" onclick="location.href='/'">Go Home</button>
-    </main>
-
-</body>
-
-</html>
+            </div>
+        </article>
+        {% else %}
+        <p class="empty-state">There are no products to show right now.</p>
+        {% endfor %}
+        {% endif %}
+    </section>
+    <button class="cta-button" onclick="location.href='/'">Go Home</button>
+</div>
+{% endblock %}
