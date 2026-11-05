@@ -9,6 +9,7 @@ import { intlLocale } from '../i18n/locales';
 import { formatPounds } from '../i18n/money';
 import { t } from '../i18n/runtime';
 import { localiseProduct } from '../i18n/server';
+import type { LookedUpAddress } from '../services/addressLookupService';
 import {
   type CheckoutFieldError,
   type CheckoutValues,
@@ -97,6 +98,7 @@ export interface CheckoutPage {
   /** A message from the backend, such as not enough credit. */
   notice: string;
   orderOutcomeUnknown: boolean;
+  addresses: { index: number; label: string }[];
   homeDeliveryOptions: DeliveryOptionView[];
   collectionOptions: DeliveryOptionView[];
   /** Your details and address, once step 1 is complete. */
@@ -129,6 +131,7 @@ export interface CheckoutPageInput {
   errors?: readonly CheckoutFieldError[];
   notice?: string;
   orderOutcomeUnknown?: boolean;
+  addresses?: readonly LookedUpAddress[];
   deliveryOptions?: readonly DeliveryOptionDto[];
   now: Date;
 }
@@ -165,6 +168,7 @@ export function buildCheckoutPage({
   errors = [],
   notice = '',
   orderOutcomeUnknown = false,
+  addresses = [],
   deliveryOptions = [],
   now,
 }: CheckoutPageInput): CheckoutPage {
@@ -204,6 +208,10 @@ export function buildCheckoutPage({
     ),
     notice,
     orderOutcomeUnknown,
+    addresses: addresses.map((address, index) => ({
+      index,
+      label: `${address.line1}, ${address.town}, ${address.postcode}`,
+    })),
     homeDeliveryOptions: deliveryOptions
       .filter((option) => option.kind === 'delivery')
       .map((option) => toDeliveryView(option, selectedId)),

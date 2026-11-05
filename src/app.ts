@@ -30,6 +30,7 @@ import {
   addSiteNavigationGlobal,
   createSiteNavigationMiddleware,
 } from './server/siteNavigation';
+import { AddressLookupService } from './services/addressLookupService';
 import { BasketService } from './services/basketService';
 import { CheckoutService } from './services/checkoutService';
 import { PostcodeService } from './services/postcodeService';
@@ -100,6 +101,7 @@ export function createApp(
     basketService,
     loginSession,
     postcodeService,
+    new AddressLookupService(postcodeService),
   );
 
   // noCache is a loader option, so it must be set on the loader to take effect.
