@@ -35,6 +35,15 @@
             <h2>{{ account.name }}</h2>
             <p class="profile-copy">Your personal space on Ctrl-Alt-Elite.</p>
             <span class="profile-preview-badge">Profile preview</span>
+            <div class="profile-credit">
+                <h3 class="profile-credit-label">Credit balance</h3>
+                {% if creditBalance %}
+                <p class="profile-credit-amount">{{ creditBalance }}</p>
+                <p class="profile-credit-copy">Spend your credit at checkout. New accounts start with a £500.00 sample balance.</p>
+                {% else %}
+                <p class="profile-credit-copy">Your credit balance is not available right now. Try logging in again.</p>
+                {% endif %}
+            </div>
         </aside>
 
         <section class="profile-card profile-editor" aria-labelledby="profile-details-heading" aria-describedby="profile-preview-notice">

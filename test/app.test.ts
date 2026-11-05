@@ -1130,8 +1130,9 @@ describe('frontend routes', () => {
       const checkoutHtml = await checkoutPage.text();
       assert.equal(checkoutPage.status, 200);
       assert.match(checkoutHtml, /<h1 id="checkout-heading">Checkout<\/h1>/);
-      assert.match(checkoutHtml, new RegExp(product.name));
-      assert.match(checkoutHtml, /Total \(2 items\)/);
+      // Guests are asked to log in first, and their basket is kept.
+      assert.match(checkoutHtml, /Log in to check out/);
+      assert.match(checkoutHtml, /Your basket: 2 items, £49\.98/);
       assert.doesNotMatch(checkoutHtml, /<script/);
 
       const removed = await post(`${productPath}/remove`, cookies);
