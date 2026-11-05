@@ -6,6 +6,7 @@ import {
   isProductSearchResponseDto,
   type ProductSearchResponseDto,
 } from '../dtos/productSearchDto';
+import { type FilterQuery, toBackendParams } from '../util/productFilters';
 
 const REQUEST_TIMEOUT_MS = 5000;
 
@@ -21,9 +22,18 @@ export class ProductService {
       fetch(input, init),
   ) {}
 
-  /** Throws if the backend fails, is unreachable or sends an unexpected body. */
-  async search(searchTerm: string): Promise<ProductSearchResponseDto> {
+  /**
+   * Searches with optional filters and sorting. Throws if the backend fails,
+   * is unreachable or sends an unexpected body.
+   */
+  async search(
+    searchTerm: string,
+    filters?: FilterQuery,
+  ): Promise<ProductSearchResponseDto> {
     const url = new URL('/api/products/search', this.backendOrigin);
+    url.search = (
+      filters ? toBackendParams(filters) : new URLSearchParams()
+    ).toString();
     url.searchParams.set('q', searchTerm);
     const body = await this.getJson(url, 'Product search');
     if (!isProductSearchResponseDto(body)) {

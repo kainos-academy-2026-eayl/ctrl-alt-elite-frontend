@@ -1,6 +1,12 @@
 import type { BasketResponseDto } from '../dtos/basketDto';
 import type { ProductSearchResponseDto } from '../dtos/productSearchDto';
 import {
+  buildFilterPanel,
+  type FilterPanel,
+  type FilterQuery,
+  readFilterQuery,
+} from '../util/productFilters';
+import {
   type BasketSummary,
   formatPrice,
   toBasketSummary,
@@ -28,10 +34,14 @@ export interface SearchPage {
   basketSummary: BasketSummary;
   addToBasketUrl: string;
   currentYear: number;
+  /** The Filter and sort panel, or null when there is nothing to filter. */
+  filterPanel: FilterPanel | null;
 }
 
 export interface SearchPageInput {
   searchTerm: string;
+  /** Filters and sorting from the page's query string. */
+  filters?: FilterQuery;
   /** The backend result, or null when no search was made or it failed. */
   result: ProductSearchResponseDto | null;
   errorMessage: string;
@@ -47,12 +57,20 @@ function statusMessageFor(
   searchTerm: string,
   result: ProductSearchResponseDto | null,
   errorMessage: string,
+  activeFilters: number,
 ): string {
   if (errorMessage) return '';
   if (searchTerm === '') return 'Enter a product name or keyword to search.';
   const count = result?.products.length ?? 0;
+  const total = result?.facets?.total ?? count;
+  if (count === 0 && total > 0) {
+    return `No products match your filters for "${searchTerm}". Remove a filter or choose Clear all.`;
+  }
   if (count === 0) {
     return `No products found for "${searchTerm}". Try a different name or keyword.`;
+  }
+  if (activeFilters > 0) {
+    return `Showing ${count} of ${total} ${plural(total, 'product', 'products')} found for "${searchTerm}".`;
   }
   if (result?.isClosestMatch) {
     return `No exact matches for "${searchTerm}". Showing the closest ${plural(count, 'match', 'matches')}.`;
@@ -75,18 +93,34 @@ function toProductView(
 
 export function buildSearchPage({
   searchTerm,
+  filters = readFilterQuery({}),
   result,
   errorMessage,
   basket,
   now,
 }: SearchPageInput): SearchPage {
+  const filterPanel =
+    result?.facets && result.facets.total > 0
+      ? buildFilterPanel({
+          action: '/search',
+          searchTerm,
+          query: filters,
+          facets: result.facets,
+        })
+      : null;
   return {
     searchTerm,
-    statusMessage: statusMessageFor(searchTerm, result, errorMessage),
+    statusMessage: statusMessageFor(
+      searchTerm,
+      result,
+      errorMessage,
+      filterPanel?.activeCount ?? 0,
+    ),
     errorMessage,
     products: (result?.products ?? []).map(toProductView),
     basketSummary: toBasketSummary(basket),
     addToBasketUrl: '/basket/items',
     currentYear: now.getFullYear(),
+    filterPanel,
   };
 }

@@ -1,3 +1,10 @@
+import {
+  type FilterQuery,
+  isProductFacetsDto,
+  type ProductFacetsDto,
+  toBackendParams,
+} from '../../util/productFilters';
+
 type BackendProduct = {
   id: string | number;
   name: string;
@@ -64,11 +71,18 @@ function toCatalogProduct(product: BackendProduct): CatalogProduct {
 export class CatalogService {
   constructor(private readonly backendOrigin: string) {}
 
-  async getProducts(): Promise<{
+  /**
+   * Products, optionally filtered and sorted by the backend. `facets` describes
+   * every product before filtering, or is null if the backend sent none.
+   */
+  async getProducts(filters?: FilterQuery): Promise<{
     products: CatalogProduct[];
     categories: string[];
+    facets: ProductFacetsDto | null;
   }> {
-    const response = await fetch(new URL('/api/products', this.backendOrigin), {
+    const url = new URL('/api/products', this.backendOrigin);
+    if (filters) url.search = toBackendParams(filters).toString();
+    const response = await fetch(url, {
       headers: { accept: 'application/json' },
     });
 
@@ -76,13 +90,21 @@ export class CatalogService {
       throw new Error(`Products API returned ${response.status}.`);
     }
 
-    const records = getProducts(await response.json());
+    const payload: unknown = await response.json();
+    const records = getProducts(payload);
     const products = records.map(toCatalogProduct);
 
     const categories = [
       ...new Set(products.map((product) => product.category)),
     ];
-    return { products, categories };
+    const facets =
+      typeof payload === 'object' &&
+      payload !== null &&
+      'facets' in payload &&
+      isProductFacetsDto(payload.facets)
+        ? payload.facets
+        : null;
+    return { products, categories, facets };
   }
 
   /** One product by id, or null when the backend has no such product. */

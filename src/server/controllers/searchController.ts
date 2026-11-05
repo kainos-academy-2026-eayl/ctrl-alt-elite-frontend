@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { BasketResponseDto } from '../../dtos/basketDto';
 import { renderErrorPage } from '../../middleware/errorHandler';
 import type { ProductService } from '../../services/productService';
+import { readFilterQuery } from '../../util/productFilters';
 import { buildSearchPage } from '../../views/search.page';
 
 /** Matches the backend, which caps search terms at 100 characters. */
@@ -30,13 +31,14 @@ export class SearchController {
 
   show = async (req: Request, res: Response): Promise<void> => {
     const searchTerm = normaliseSearchTerm(req.query.q);
+    const filters = readFilterQuery(req.query);
     const basketPromise = this.getHeaderBasket(req);
 
     let result = null;
     let errorMessage = '';
     if (searchTerm !== '') {
       try {
-        result = await this.productService.search(searchTerm);
+        result = await this.productService.search(searchTerm, filters);
       } catch (error) {
         console.error('Unable to search products:', error);
         errorMessage = SEARCH_FAILED_MESSAGE;
@@ -46,6 +48,7 @@ export class SearchController {
 
     const page = buildSearchPage({
       searchTerm,
+      filters,
       result,
       errorMessage,
       basket: await basketPromise,
