@@ -16,6 +16,7 @@ import {
 import {
   renderOrderDetail,
   renderOrdersResults,
+  renderOrdersTotal,
 } from '../src/util/adminOrderViews';
 import {
   defaultReportRange,
@@ -68,6 +69,11 @@ function jsonResponse(status: number, body: unknown): typeof fetch {
 }
 
 describe('admin order helpers', () => {
+  it('labels filtered counts as matching orders', () => {
+    assert.equal(renderOrdersTotal(0), 'Total Orders: 0');
+    assert.equal(renderOrdersTotal(0, true), 'Matching Orders: 0');
+  });
+
   it('reads and rebuilds list queries safely', () => {
     const query = readOrderQuery(
       new URLSearchParams('q= Ada &status=BOGUS&sort=nope&page=-3'),

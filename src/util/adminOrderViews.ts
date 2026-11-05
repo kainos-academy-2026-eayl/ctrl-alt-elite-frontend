@@ -29,8 +29,8 @@ function dateHtml(isoDate: string): string {
   return `<time datetime="${escapeHtml(isoDate)}">${escapeHtml(formatOrderDate(isoDate))}</time>`;
 }
 
-export function renderOrdersTotal(total: number): string {
-  return `Total Orders: ${total}`;
+export function renderOrdersTotal(total: number, hasFilters = false): string {
+  return `${hasFilters ? 'Matching' : 'Total'} Orders: ${total}`;
 }
 
 export function renderOrdersEmpty(hasFilters: boolean): string {

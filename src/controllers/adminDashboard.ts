@@ -37,10 +37,12 @@ async function updateOrders(): Promise<void> {
   orderData = await loadDashboardOrderData(
     createOrdersApi({ timeoutMs: DASHBOARD_TIMEOUT_MS }),
   );
-  if (!orderData.available) return;
-
   const ordersValue = document.querySelector('[data-summary-card="Orders"]');
-  if (ordersValue) ordersValue.textContent = String(orderData.totalOrders);
+  if (ordersValue) {
+    ordersValue.textContent = orderData.available
+      ? String(orderData.totalOrders)
+      : 'Unavailable';
+  }
   updateNotifications();
 }
 

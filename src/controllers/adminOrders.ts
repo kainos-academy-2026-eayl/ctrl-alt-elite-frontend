@@ -46,7 +46,10 @@ async function loadOrders(): Promise<void> {
         ORDERS_PER_PAGE,
       );
     }
-    total.textContent = renderOrdersTotal(page.total);
+    total.textContent = renderOrdersTotal(
+      page.total,
+      Boolean(query.search || query.status),
+    );
     total.hidden = false;
     results.innerHTML = renderOrdersResults(page, {
       ...query,
