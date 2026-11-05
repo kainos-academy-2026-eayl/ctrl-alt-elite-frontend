@@ -95,11 +95,13 @@ export function createApp(
   const basketController = new BasketController(basketService);
   const checkoutService = new CheckoutService(backendOrigin);
   const postcodeService = new PostcodeService();
+  const profileService = new ProfileService(backendOrigin);
   const checkoutController = new CheckoutController(
     checkoutService,
     basketService,
     loginSession,
     postcodeService,
+    profileService,
   );
 
   // noCache is a loader option, so it must be set on the loader to take effect.
@@ -124,7 +126,7 @@ export function createApp(
   const accountController = new AccountController(
     loginSession,
     adminTemplates,
-    new ProfileService(backendOrigin),
+    profileService,
     checkoutService,
   );
   const supportController = new SupportController();

@@ -191,6 +191,17 @@ const fr: Partial<Record<string, string>> = {
   'checkout.error': 'Erreur :',
   'checkout.optional': '{label} (facultatif)',
   'checkout.step.details': 'Vos coordonnées',
+  'checkout.detailsChoice': 'Choisissez vos coordonnées pour la commande',
+  'checkout.useProfile': 'Utiliser les coordonnées de mon profil',
+  'checkout.useManual': 'Saisir d’autres coordonnées',
+  'checkout.detailsChoiceHint':
+    'Votre profil remplace les champs ci-dessous par vos coordonnées enregistrées. Les modifications concernent uniquement cette commande, pas votre profil.',
+  'checkout.profileSelected':
+    'Coordonnées du profil chargées. Vous pouvez les modifier pour cette commande. Complétez les champs manquants, y compris la ville.',
+  'checkout.manualSelected':
+    'Saisissez ou modifiez les coordonnées pour cette commande. Vos saisies sont conservées et votre profil ne sera pas modifié.',
+  'checkout.profileUnavailable':
+    'Impossible de charger votre profil. Vos saisies sont conservées. Saisissez vos coordonnées manuellement ou réessayez.',
   'checkout.step.delivery': 'Livraison',
   'checkout.step.payment': 'Paiement',
   'checkout.firstName': 'Prénom',
@@ -349,6 +360,9 @@ const fr: Partial<Record<string, string>> = {
   'profile.addressLine1': 'Adresse (ligne 1)',
   'profile.addressLine2': 'Adresse (ligne 2)',
   'profile.postcode': 'Code postal',
+  'profile.town': 'Ville',
+  'profile.townPending':
+    'L’enregistrement de la ville dans votre profil n’est pas encore disponible. Vous pouvez toujours la saisir lors de la commande.',
   'profile.postcodePlaceholder': 'Votre code postal',
   'profile.saveHint':
     'Le prénom et le nom sont obligatoires. L’adresse, le téléphone et le nom affiché sont facultatifs.',

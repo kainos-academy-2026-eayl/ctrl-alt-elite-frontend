@@ -13,6 +13,7 @@ import {
 } from 'vitest';
 import { createApp } from '../src/app';
 import type { PlaceOrderRequestDto } from '../src/dtos/checkoutDto';
+import type { ProfileDetails } from '../src/server/services/profile-service';
 import {
   PostcodeService,
   PostcodeServiceError,
@@ -136,6 +137,9 @@ function orderResult(creditBalancePence: number) {
 }
 
 interface FakeBackend {
+  profile: ProfileDetails;
+  profileStatus: number;
+  profileRequests: { method: string; authorization: string | null }[];
   creditBalancePence: number;
   orderStatus: number;
   orderMessage: string;
@@ -155,6 +159,20 @@ let LOGIN_COOKIES: string;
 function resetBackend(): void {
   BASKET_ID = randomUUID();
   backend = {
+    profile: {
+      id: 'customer-1',
+      username: null,
+      firstName: 'Sam',
+      lastName: 'Jones',
+      email: 'sam@example.com',
+      addressLine1: null,
+      addressLine2: null,
+      postcode: null,
+      phoneNumber: null,
+      hasPhoto: false,
+    },
+    profileStatus: 200,
+    profileRequests: [],
     creditBalancePence: 50000,
     orderStatus: 201,
     orderMessage: '',
@@ -210,18 +228,16 @@ async function handleBackend(req: Request): Promise<Response> {
     );
   }
   if (pathname === '/api/profile') {
-    return Response.json({
-      id: 'customer-1',
-      username: null,
-      firstName: 'Sam',
-      lastName: 'Jones',
-      email: 'sam@example.com',
-      addressLine1: null,
-      addressLine2: null,
-      postcode: null,
-      phoneNumber: null,
-      hasPhoto: false,
+    backend.profileRequests.push({
+      method: req.method,
+      authorization: req.headers.get('authorization'),
     });
+    return Response.json(
+      backend.profileStatus === 200
+        ? backend.profile
+        : { message: 'Profile unavailable.' },
+      { status: backend.profileStatus },
+    );
   }
   if (pathname === '/api/account') {
     return Response.json({
@@ -305,6 +321,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
       .map((cookie) => cookie.split(';')[0])
       .join('; ');
     CUSTOMER_COOKIES = `basket_id=${BASKET_ID}; ${LOGIN_COOKIES}`;
+    backend.profileRequests.length = 0;
   });
 
   afterEach(() => {
@@ -391,6 +408,266 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     assert.deepEqual(withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g), [
       SHARED_NAV_SCRIPT,
     ]);
+    assert.match(html, /value="use-profile-details" formnovalidate/);
+    assert.match(html, /value="use-manual-details" formnovalidate/);
+    assert.match(html, /name="detailsSource" value="manual"/);
+    assert.deepEqual(backend.profileRequests, []);
+  });
+
+  it('keeps the signed-in navigation on every rendered checkout submission', async () => {
+    const forms = [
+      { ...DETAILS, action: 'use-profile-details' },
+      { ...DETAILS, action: 'use-manual-details' },
+      { ...DETAILS, action: 'continue-to-delivery' },
+      { ...DETAILS, action: 'continue-to-payment' },
+      { ...DETAILS, action: 'edit-delivery' },
+      { ...DETAILS, action: 'edit-details' },
+      { ...DETAILS, town: '', action: 'continue-to-delivery' },
+    ];
+    for (const form of forms) {
+      const response = await postCheckout({
+        ...form,
+        detailsSource: 'profile',
+        deliveryOption: 'express',
+      });
+      assert.equal(response.status, form.town ? 200 : 400);
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      const html = await response.text();
+      const menu = html.match(
+        /<details class="account-menu"[\s\S]*?<\/details>/,
+      )?.[0];
+      assert.ok(menu, form.action);
+      assert.match(menu, /href="\/profile"/, form.action);
+      assert.match(menu, /action="\/logout"/, form.action);
+      assert.doesNotMatch(
+        menu,
+        /href="\/login"|href="\/register"/,
+        form.action,
+      );
+      assert.doesNotMatch(
+        response.headers.getSetCookie().join('\n'),
+        /(?:auth_token|ctrl_alt_elite_login)=;/,
+      );
+    }
+  });
+
+  it('fills only the signed-in profile on explicit request, without JavaScript', async () => {
+    backend.profile = {
+      ...backend.profile,
+      firstName: 'Saved',
+      phoneNumber: DETAILS.phone,
+      addressLine1: '12 Saved Street',
+      addressLine2: 'Flat "A" & B <not-markup>',
+      postcode: 'BT1 1AA',
+    };
+    const res = await postCheckout({
+      action: 'use-profile-details',
+      userId: 'someone-else',
+      firstName: 'Wrong',
+      town: 'Belfast',
+      deliveryOption: 'express',
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('cache-control'), 'no-store');
+    const html = await res.text();
+    assert.match(html, /name="firstName" type="text" value="Saved"/);
+    assert.match(html, /name="phone" type="tel" value="07700 900123"/);
+    assert.match(
+      html,
+      /name="addressLine1" type="text" value="12 Saved Street"/,
+    );
+    assert.match(html, /value="Flat &quot;A&quot; &amp; B &lt;not-markup&gt;"/);
+    assert.match(html, /name="town" type="text" value="Belfast"/);
+    assert.match(html, /name="deliveryOption" value="express"/);
+    assert.match(html, /name="detailsSource" value="profile"/);
+    assert.match(
+      html,
+      /value="use-profile-details" formnovalidate aria-pressed="true"/,
+    );
+    assert.match(html, /Complete any missing fields, including town or city/);
+    assert.doesNotMatch(html, /<not-markup>|someone-else|value="Wrong"/);
+    assert.deepEqual(backend.profileRequests, [
+      { method: 'GET', authorization: `Bearer ${TOKEN}` },
+    ]);
+    assert.deepEqual(withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g), [
+      SHARED_NAV_SCRIPT,
+    ]);
+  });
+
+  it('leaves missing profile fields empty and requires town and contact details', async () => {
+    const res = await postCheckout({ action: 'use-profile-details' });
+    const html = await res.text();
+    assert.match(html, /name="phone" type="tel" value=""/);
+    assert.match(html, /name="addressLine1" type="text" value=""/);
+    assert.match(html, /name="town" type="text" value=""/);
+    const continued = await postCheckout({
+      firstName: 'Sam',
+      lastName: 'Jones',
+      email: 'sam@example.com',
+      detailsSource: 'profile',
+      action: 'continue-to-delivery',
+    });
+    assert.equal(continued.status, 400);
+    const errors = await continued.text();
+    assert.match(errors, /Enter your phone number/);
+    assert.match(errors, /Enter your town or city/);
+    assert.match(errors, /name="detailsSource" value="profile"/);
+    assert.equal(backend.profileRequests.length, 1);
+  });
+
+  it.each([
+    { savedTown: 'Saved Town', expected: 'Saved Town' },
+    { savedTown: null, expected: 'Entered Town' },
+    { savedTown: undefined, expected: 'Entered Town' },
+  ])(
+    'uses the saved profile town $savedTown, retaining entered town if unavailable',
+    async ({ savedTown, expected }) => {
+      backend.profile = {
+        ...backend.profile,
+        ...(savedTown === undefined ? {} : { town: savedTown }),
+      };
+      const response = await postCheckout({
+        town: 'Entered Town',
+        action: 'use-profile-details',
+      });
+      assert.equal(response.status, 200);
+      const html = await response.text();
+      assert.match(
+        html,
+        new RegExp(`name="town" type="text" value="${expected}"`),
+      );
+      assert.match(html, /name="detailsSource" value="profile"/);
+    },
+  );
+
+  it('checks saved values against checkout limits instead of truncating them', async () => {
+    backend.profile.addressLine1 = 'x'.repeat(101);
+    backend.profile.phoneNumber = 'not a UK phone';
+    const filled = await postCheckout({ action: 'use-profile-details' });
+    assert.match(await filled.text(), new RegExp(`value="${'x'.repeat(101)}"`));
+    const res = await postCheckout({
+      ...DETAILS,
+      addressLine1: backend.profile.addressLine1,
+      phone: backend.profile.phoneNumber,
+      detailsSource: 'profile',
+      action: 'continue-to-delivery',
+    });
+    assert.equal(res.status, 400);
+    const html = await res.text();
+    assert.match(html, /Address line 1 must be 100 characters or fewer/);
+    assert.match(html, /Enter a UK phone number/);
+    assert.equal(backend.orders.length, 0);
+  });
+
+  it('switches to manual details without discarding edits or fetching the profile', async () => {
+    const res = await postCheckout({
+      ...DETAILS,
+      firstName: 'Edited',
+      detailsSource: 'profile',
+      action: 'use-manual-details',
+    });
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    assert.match(html, /name="detailsSource" value="manual"/);
+    assert.match(html, /name="firstName" type="text" value="Edited"/);
+    assert.match(html, /name="town" type="text" value="Belfast"/);
+    assert.deepEqual(backend.profileRequests, []);
+  });
+
+  it('preserves profile selection and edits across delivery, payment and returning to details', async () => {
+    for (const action of [
+      'continue-to-delivery',
+      'continue-to-payment',
+      'edit-delivery',
+      'edit-details',
+    ]) {
+      const res = await postCheckout({
+        ...DETAILS,
+        firstName: 'Edited',
+        deliveryOption: 'express',
+        detailsSource: 'profile',
+        action,
+      });
+      assert.equal(res.status, 200);
+      const html = await res.text();
+      assert.match(html, /name="detailsSource" value="profile"/);
+      assert.match(html, /name="firstName"[^>]*value="Edited"/);
+    }
+    assert.deepEqual(backend.profileRequests, []);
+  });
+
+  it.each([404, 500])(
+    'keeps entered details and allows manual checkout after profile API status %s',
+    async (status) => {
+      backend.profileStatus = status;
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const res = await postCheckout({
+        ...DETAILS,
+        firstName: 'Keep me',
+        action: 'use-profile-details',
+      });
+      assert.equal(res.status, 503);
+      const html = await res.text();
+      assert.match(html, /We could not load your profile details/);
+      assert.match(html, /name="firstName" type="text" value="Keep me"/);
+      assert.match(html, /name="detailsSource" value="manual"/);
+      assert.ok(
+        log.mock.calls.some(
+          ([message]) =>
+            message === 'Unable to load profile details for checkout:',
+        ),
+      );
+      const continued = await postCheckout({
+        ...DETAILS,
+        action: 'continue-to-delivery',
+      });
+      assert.equal(continued.status, 200);
+      assert.equal(backend.profileRequests.length, 1);
+    },
+  );
+
+  it.each([401, 403])(
+    'clears expired authentication when the profile API returns %s',
+    async (status) => {
+      backend.profileStatus = status;
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const res = await postCheckout({ action: 'use-profile-details' });
+      assert.equal(res.status, 303);
+      assert.equal(res.headers.get('location'), '/login?returnTo=%2Fcheckout');
+      const cookies = res.headers.getSetCookie().join('\n');
+      assert.match(cookies, /auth_token=;/);
+      assert.match(cookies, /ctrl_alt_elite_login=;/);
+    },
+  );
+
+  it('never loads a profile for guests requesting saved checkout details', async () => {
+    const res = await postCheckout(
+      { action: 'use-profile-details' },
+      `basket_id=${BASKET_ID}`,
+    );
+    assert.equal(res.status, 303);
+    assert.deepEqual(backend.profileRequests, []);
+  });
+
+  it('places an order with edited profile details without updating the profile', async () => {
+    const original = { ...backend.profile };
+    await postCheckout({ action: 'use-profile-details' });
+    const res = await postCheckout({
+      ...DETAILS,
+      firstName: 'Different recipient',
+      deliveryOption: 'express',
+      detailsSource: 'profile',
+      confirmedTotalPence: '5497',
+      action: 'place-order',
+    });
+    assert.equal(res.status, 303);
+    assert.equal(backend.orders[0]?.customer.firstName, 'Different recipient');
+    assert.equal(backend.orders[0]?.address.town, 'Belfast');
+    assert.deepEqual(backend.profile, original);
+    assert.deepEqual(
+      backend.profileRequests.map((request) => request.method),
+      ['GET'],
+    );
   });
 
   it('keeps manually entered addresses and rejects invalid postcodes', async () => {
@@ -852,6 +1129,15 @@ describe('checkout form checks', () => {
     });
     assert.equal(form.values.firstName, 'Sam');
     assert.equal(form.action, 'edit-details');
+    assert.equal(form.detailsSource, 'manual');
+    assert.equal(
+      readCheckoutForm({ detailsSource: 'profile' }).detailsSource,
+      'profile',
+    );
+    assert.equal(
+      readCheckoutForm({ detailsSource: 'someone-else' }).detailsSource,
+      'manual',
+    );
     assert.equal(readCheckoutForm(null).values.email, '');
   });
 

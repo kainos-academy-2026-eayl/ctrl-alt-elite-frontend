@@ -56,11 +56,21 @@
 
   <div class="checkout-layout">
     <form class="checkout-form" action="{{ checkoutUrl }}" method="post">
+      <input type="hidden" name="detailsSource" value="{{ detailsSource }}" />
 
       {# Step 1: your details and address #}
       <section class="checkout-panel" aria-labelledby="details-heading">
         <h2 id="details-heading" class="checkout-step-heading"><span class="checkout-step-number" aria-hidden="true">1</span> {{ t('checkout.step.details') }}</h2>
         {% if step == "details" %}
+        <fieldset class="checkout-fieldset checkout-field" aria-describedby="details-choice-hint">
+          <legend class="checkout-label">{{ t('checkout.detailsChoice') }}</legend>
+          <p class="checkout-hint" id="details-choice-hint">{{ t('checkout.detailsChoiceHint') }}</p>
+          <div class="checkout-actions">
+            <button class="checkout-secondary-button" type="submit" name="action" value="use-profile-details" formnovalidate aria-pressed="{{ detailsSource == 'profile' }}">{{ t('checkout.useProfile') }}</button>
+            <button class="checkout-secondary-button" type="submit" name="action" value="use-manual-details" formnovalidate aria-pressed="{{ detailsSource == 'manual' }}">{{ t('checkout.useManual') }}</button>
+          </div>
+          <p class="checkout-hint">{% if detailsSource == "profile" %}{{ t('checkout.profileSelected') }}{% else %}{{ t('checkout.manualSelected') }}{% endif %}</p>
+        </fieldset>
         {{ textField("firstName", t('checkout.firstName'), values, fieldErrors, autocomplete="given-name", maxlength=100) }}
         {{ textField("lastName", t('checkout.lastName'), values, fieldErrors, autocomplete="family-name", maxlength=100) }}
         {{ textField("email", t('checkout.email'), values, fieldErrors, type="email", autocomplete="email", maxlength=254, hint=t('checkout.emailHint')) }}

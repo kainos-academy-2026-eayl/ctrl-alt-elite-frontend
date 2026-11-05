@@ -224,6 +224,17 @@ const ga: Partial<Record<string, string>> = {
   'checkout.error': 'Earráid:',
   'checkout.optional': '{label} (roghnach)',
   'checkout.step.details': 'Do shonraí',
+  'checkout.detailsChoice': 'Roghnaigh do shonraí don tseiceáil amach',
+  'checkout.useProfile': 'Úsáid sonraí mo phróifíle',
+  'checkout.useManual': 'Cuir sonraí eile isteach',
+  'checkout.detailsChoiceHint':
+    'Líonfar na réimsí thíos le sonraí sábháilte do phróifíle. Ní bhaineann athruithe anseo ach leis an ordú seo, ní le do phróifíl.',
+  'checkout.profileSelected':
+    'Luchtaíodh sonraí do phróifíle. Is féidir iad a chur in eagar don ordú seo. Líon na réimsí atá ar iarraidh, an baile nó an chathair san áireamh.',
+  'checkout.manualSelected':
+    'Cuir sonraí isteach nó cuir in eagar iad don ordú seo. Coinnítear na sonraí atá curtha isteach agat; ní athrófar do phróifíl.',
+  'checkout.profileUnavailable':
+    'Níorbh fhéidir sonraí do phróifíle a luchtú. Coinníodh do chuid sonraí. Cuir do shonraí isteach de láimh nó bain triail eile as.',
   'checkout.step.delivery': 'Seachadadh',
   'checkout.step.payment': 'Íocaíocht',
   'checkout.firstName': 'Céadainm',
@@ -394,6 +405,9 @@ const ga: Partial<Record<string, string>> = {
   'profile.addressLine1': 'Líne 1 den seoladh',
   'profile.addressLine2': 'Líne 2 den seoladh',
   'profile.postcode': 'Cód poist',
+  'profile.town': 'Baile nó cathair',
+  'profile.townPending':
+    'Níl sábháil baile nó cathrach ar do phróifíl ar fáil fós. Is féidir leat é a chur isteach ag an tseiceáil amach.',
   'profile.postcodePlaceholder': 'Do chód poist',
   'profile.saveHint':
     'Tá an céadainm agus an sloinne riachtanach. Tá an seoladh, an uimhir ghutháin agus an t-ainm taispeána roghnach.',
