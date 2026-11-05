@@ -14,6 +14,9 @@
       <h1 id="login-heading">Log in</h1>
       <h2>Please enter your details</h2>
       <form class="login-form" action="/login" method="post">
+        {% if returnTo %}
+        <input type="hidden" name="returnTo" value="{{ returnTo }}" />
+        {% endif %}
         {% if errorMessage %}
         <p id="loginMessage" class="login-message" role="alert">{{ errorMessage }}</p>
         {% endif %}
