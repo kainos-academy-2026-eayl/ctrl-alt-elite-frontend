@@ -1,0 +1,14 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<a class="admin-back-link" href="/admin/orders"><span aria-hidden="true">&larr;</span> Back to orders</a>
+
+<div data-order-detail aria-live="polite">
+  <p class="admin-empty">Loading order&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to load this order.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminOrderDetail.js" defer></script>
+{% endblock %}

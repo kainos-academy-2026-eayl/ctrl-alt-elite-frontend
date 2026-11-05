@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
+import { ORDER_SORT_OPTIONS, ORDER_STATUSES } from '../../util/adminOrders';
 import { findAdminModule, navItemsForRole } from '../../util/adminPortal';
 import {
   ADMIN_QUICK_ACTIONS,
@@ -69,6 +70,29 @@ export class AdminController {
       firstName,
       activeSlug: 'dashboard',
       shortcuts: CUSTOMER_SERVICE_SHORTCUTS,
+    });
+  };
+
+  showOrders = (_req: Request, res: Response): void => {
+    this.renderPage(res, 'admin/orders.njk', {
+      title: 'Orders',
+      activeSlug: 'orders',
+      statuses: ORDER_STATUSES,
+      sortOptions: ORDER_SORT_OPTIONS,
+    });
+  };
+
+  showOrderDetail = (_req: Request, res: Response): void => {
+    this.renderPage(res, 'admin/order-detail.njk', {
+      title: 'Order details',
+      activeSlug: 'orders',
+    });
+  };
+
+  showReports = (_req: Request, res: Response): void => {
+    this.renderPage(res, 'admin/reports.njk', {
+      title: 'Reports',
+      activeSlug: 'reports',
     });
   };
 

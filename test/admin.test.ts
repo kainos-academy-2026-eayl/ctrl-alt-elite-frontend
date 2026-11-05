@@ -284,13 +284,53 @@ describe('admin portal pages', () => {
       assert.equal((await get('/admin/unknown')).status, 404);
     });
 
-    for (const section of ['orders', 'reports']) {
-      it(`serves a placeholder page for /admin/${section}`, async () => {
-        const { status, html } = await get(`/admin/${section}`);
-        assert.equal(status, 200);
-        assert.match(html, /Coming soon/);
-      });
-    }
+    it('no longer serves the orders and reports placeholders', async () => {
+      assert.equal((await get('/admin/orders')).status, 200);
+      assert.doesNotMatch((await get('/admin/orders')).html, /Coming soon/);
+      assert.doesNotMatch((await get('/admin/reports')).html, /Coming soon/);
+    });
+  });
+
+  describe('orders', () => {
+    it('serves the list shell with filters, sort options and controller', async () => {
+      const { status, html } = await get('/admin/orders');
+      assert.equal(status, 200);
+      assert.match(html, /name="q"/);
+      assert.match(html, /name="status"/);
+      for (const value of ['PENDING', 'SHIPPED', 'newest', 'totalDesc']) {
+        assert.ok(html.includes(`value="${value}"`), `missing ${value}`);
+      }
+      assert.match(html, /data-orders-results/);
+      assert.match(html, /data-total-orders/);
+      assert.match(html, /<script src="\/controllers\/adminOrders\.js" defer>/);
+      assert.match(html, /is-active"\s+href="\/admin\/orders"/);
+    });
+
+    it('serves the details shell for any id', async () => {
+      const { status, html } = await get('/admin/orders/some-uuid');
+      assert.equal(status, 200);
+      assert.match(html, /data-order-detail/);
+      assert.match(
+        html,
+        /<script src="\/controllers\/adminOrderDetail\.js" defer>/,
+      );
+      assert.match(html, /Back to orders/);
+    });
+  });
+
+  describe('reports', () => {
+    it('serves the report shell with a date range form and controller', async () => {
+      const { status, html } = await get('/admin/reports');
+      assert.equal(status, 200);
+      assert.match(html, /name="from"/);
+      assert.match(html, /name="to"/);
+      assert.match(html, /data-report-results/);
+      assert.match(
+        html,
+        /<script src="\/controllers\/adminReports\.js" defer>/,
+      );
+      assert.match(html, /is-active"\s+href="\/admin\/reports"/);
+    });
   });
 
   describe('customers', () => {

@@ -1,0 +1,42 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<header class="admin-page-header">
+  <h1>Orders</h1>
+  <p class="admin-subtitle" data-total-orders hidden></p>
+</header>
+
+<form class="customer-toolbar" action="/admin/orders" method="get" role="search">
+  <div class="customer-field customer-field-search">
+    <label for="order-search">Search by customer or order reference</label>
+    <input id="order-search" name="q" type="search" maxlength="200" autocomplete="off" />
+  </div>
+  <div class="customer-field">
+    <label for="order-status">Status</label>
+    <select id="order-status" name="status">
+      <option value="">All statuses</option>
+      {% for status in statuses %}
+      <option value="{{ status.value }}">{{ status.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="customer-field">
+    <label for="order-sort">Sort by</label>
+    <select id="order-sort" name="sort">
+      {% for option in sortOptions %}
+      <option value="{{ option.value }}">{{ option.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="customer-button" type="submit">Apply</button>
+</form>
+
+<div data-orders-results aria-live="polite">
+  <p class="admin-empty">Loading orders&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to load orders.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/controllers/adminOrders.js" defer></script>
+{% endblock %}

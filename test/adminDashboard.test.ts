@@ -4,6 +4,7 @@ import {
   buildNotifications,
   buildSystemStatus,
   loadDashboardCustomerData,
+  loadDashboardOrderData,
   loadProductCount,
   renderActivity,
   renderNotifications,
@@ -52,6 +53,85 @@ describe('dashboard product count', () => {
   });
 });
 
+describe('dashboard order data', () => {
+  const page = (total: number) => ({
+    orders: [],
+    page: 1,
+    pageSize: 1,
+    total,
+    totalPages: total,
+  });
+
+  it('reads the total and pending counts, one row each', async () => {
+    const listOrders = vi.fn(
+      async (query: { status: string }, _size?: number) =>
+        page(query.status === 'PENDING' ? 4 : 12),
+    );
+    const data = await loadDashboardOrderData({ listOrders });
+    assert.deepEqual(data, {
+      available: true,
+      totalOrders: 12,
+      pendingOrders: 4,
+    });
+    assert.deepEqual(
+      listOrders.mock.calls.map((call) => [call[0].status, call[1]]),
+      [
+        ['', 1],
+        ['PENDING', 1],
+      ],
+    );
+  });
+
+  it('returns unavailable data instead of throwing when orders cannot be read', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const data = await loadDashboardOrderData({
+        listOrders: async () => {
+          throw new Error('403');
+        },
+      });
+      assert.equal(data.available, false);
+      assert.equal(data.totalOrders, 0);
+    } finally {
+      errorLog.mockRestore();
+    }
+  });
+
+  it('adds a pending-orders notification linking to the filtered list', () => {
+    const customers = {
+      available: true,
+      totalCustomers: 1,
+      recentCustomers: [],
+      newCustomers: 1,
+    };
+    const notifications = buildNotifications(customers, {
+      available: true,
+      totalOrders: 3,
+      pendingOrders: 2,
+    });
+    assert.deepEqual(notifications[0], {
+      text: '2 orders are awaiting processing',
+      href: '/admin/orders?status=PENDING',
+    });
+    assert.equal(notifications.length, 2);
+    assert.equal(
+      buildNotifications(customers, {
+        available: true,
+        totalOrders: 1,
+        pendingOrders: 1,
+      })[0]?.text,
+      '1 order is awaiting processing',
+    );
+    assert.equal(
+      buildNotifications(
+        { ...customers, newCustomers: 0 },
+        { available: true, totalOrders: 3, pendingOrders: 0 },
+      ).length,
+      0,
+    );
+  });
+});
+
 describe('dashboard customer data', () => {
   it('loads the total, latest registrations and the last-7-days count', async () => {
     const data = await loadDashboardCustomerData(
@@ -65,7 +145,10 @@ describe('dashboard customer data', () => {
     assert.equal(data.recentCustomers.length, 5);
     assert.equal(data.recentCustomers[0]?.firstName, 'Aoife');
     assert.deepEqual(buildNotifications(data), [
-      '2 new customers registered in the last 7 days',
+      {
+        text: '2 new customers registered in the last 7 days',
+        href: '/admin/customers?sort=newest',
+      },
     ]);
   });
 
@@ -74,9 +157,10 @@ describe('dashboard customer data', () => {
       createInMemoryCustomerSource(),
       new Date('2026-10-26T10:00:00Z'),
     );
-    assert.deepEqual(buildNotifications(one), [
-      '1 new customer registered in the last 7 days',
-    ]);
+    assert.deepEqual(
+      buildNotifications(one).map((notification) => notification.text),
+      ['1 new customer registered in the last 7 days'],
+    );
     const none = await loadDashboardCustomerData(
       createInMemoryCustomerSource(),
       new Date('2027-01-01T00:00:00Z'),
@@ -138,7 +222,12 @@ describe('dashboard rendering', () => {
 
   it('renders notifications and status badges', () => {
     assert.match(
-      renderNotifications(['3 new customers registered in the last 7 days']),
+      renderNotifications([
+        {
+          text: '3 new customers registered in the last 7 days',
+          href: '/admin/customers?sort=newest',
+        },
+      ]),
       /<a href="\/admin\/customers\?sort=newest">3 new customers/,
     );
     const status = renderSystemStatus(buildSystemStatus(true));
