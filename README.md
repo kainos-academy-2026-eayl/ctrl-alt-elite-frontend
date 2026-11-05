@@ -7,7 +7,8 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Products come from the backend `/api/products` catalogue (via [CatalogService](src/server/services/catalog-service.ts)) and are chosen by [homepage-products.ts](src/server/services/homepage-products.ts): "Featured products" is the first six in-stock products, and a looping CSS-only conveyor shows six other in-stock products picked at random on each visit, each linking to its product page. The products listed in [src/data/hiddenProducts.ts](src/data/hiddenProducts.ts) are never shown on the homepage. |
 | `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts). Safe `returnTo` paths return users to their intended page after login, provided the destination matches their role. |
 | `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
-| `GET /profile` | Signed-in profile design preview ([src/views/profile.njk](src/views/profile.njk)) with a picture picker, username, first and second names, pronouns and a short description. The profile fields are cosmetic only: no profile API calls, picture upload/preview or saving. It also shows the account's credit balance from the backend `/api/account`, which is spent at checkout; every new account starts with a £500.00 sample balance. |
+| `GET /profile` | Signed-in profile ([src/views/profile.njk](src/views/profile.njk)). [AccountController](src/server/controllers/account-controller.ts) uses [ProfileService](src/server/services/profile-service.ts) to load saved username, names, email, address and phone from authenticated `GET /api/profile`. Username is display-only; email is the read-only login identifier. Older sessions without a backend token show a sign-in notice with editing disabled. Rejected authentication clears the session and redirects to login; API outages redirect to `/unavailable`. |
+| `POST /profile` | Same-origin protected form save through backend `PATCH /api/profile`. Preserves submitted values on validation/conflict errors, refreshes the displayed account name without extending login expiry, and redirects after success. Optional address/phone/username fields may be cleared; first and last names are required. |
 | `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/server/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
 | `GET /products/:id` | Product page, rendered on the server with no client-side JavaScript: [ProductDetailController](src/server/controllers/productDetailController.ts) → [CatalogService](src/server/services/catalog-service.ts) (calls the backend `/api/products/:id`) → [product-detail.page.ts](src/views/product-detail.page.ts) → [product-detail.njk](src/views/product-detail.njk). Has an "Add to Basket" form; unknown products show a 404 page. |
 | `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/server/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms and a **Filter & sort** dropdown (see below). |
@@ -42,19 +43,15 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
 
-### Filter & sort (search and catalogue)
-
-[_filterPanel.njk](src/views/_filterPanel.njk) is a `<details>` dropdown with a GET form, so it works without JavaScript and every filtered page has a shareable URL. [productFilters.ts](src/util/productFilters.ts) reads the query, sends it to the backend (which does the filtering and sorting) and builds the panel from the backend's `facets`.
-
-| Query parameter | What it does |
-| --- | --- |
-| `sort` | `recommended` (default), `price-asc`, `price-desc`, `newest`, `oldest`, `most-bought`, `name-asc`, `name-desc` |
-| `stock=in`, `stock=out` | In stock and/or out of stock |
-| `category` (repeatable) | Any of the ticked categories |
-| `price` | A quick band: `under-10`, `10-25`, `25-50`, `50-plus` |
-| `minPrice`, `maxPrice` | A custom range in pounds; replaces `price` |
-
-Each option shows how many results it would give, active filters are shown as removable tags, and **Clear all** removes every filter and goes back to the default sort, **Recommended**, but keeps the search term.
+Profile pictures are loaded, previewed, uploaded and removed by the existing
+[browser script](src/controllers/script.ts). Uploads go through the authenticated
+API proxy as raw JPG, PNG or WebP bytes (20 MiB and 16 megapixels maximum).
+Picture changes are saved separately from the details form. The homepage dropdown
+loads the current display name and picture, with a default avatar when no picture
+is saved and an explicit notice if profile data cannot be loaded.
+JavaScript is required for picture changes, but the details form works without it.
+The backend profile contact-details migration must be applied before using these
+fields; email cannot be changed through the profile API.
 
 ### Login flow
 

@@ -19,6 +19,7 @@ import { StatusController } from './server/controllers/status-controller';
 import { SupportController } from './server/controllers/support-controller';
 import { createAdminRouter } from './server/routes/admin';
 import { CatalogService } from './server/services/catalog-service';
+import { ProfileService } from './server/services/profile-service';
 import { BasketService } from './services/basketService';
 import { CheckoutService } from './services/checkoutService';
 import { PostcodeService } from './services/postcodeService';
@@ -108,6 +109,7 @@ export function createApp(
   const accountController = new AccountController(
     loginSession,
     adminTemplates,
+    new ProfileService(backendOrigin),
     checkoutService,
   );
   const supportController = new SupportController();
@@ -118,6 +120,14 @@ export function createApp(
     readAppVersion,
   );
 
+  app.use('/api/profile', (req, res, next) => {
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      res.setHeader('Cache-Control', 'no-store');
+      next();
+      return;
+    }
+    requireSameOrigin(req, res, next);
+  });
   app.use('/api', createApiProxy(backendOrigin));
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
@@ -156,6 +166,12 @@ export function createApp(
   );
 
   app.get('/profile', accountController.showProfile);
+  app.post(
+    '/profile',
+    requireSameOrigin,
+    express.urlencoded({ extended: false, limit: '16kb' }),
+    accountController.saveProfile,
+  );
   app.post('/logout', requireSameOrigin, accountController.logout);
   app.get('/register', accountController.showRegister);
 

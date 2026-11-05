@@ -23,7 +23,10 @@
         {% include "_searchForm.njk" %}
         <details class="account-menu" data-account-menu>
           <summary aria-label="{{ accountName }} options">
-            <svg class="account-avatar" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
+            {% if isAuthenticated %}
+            <img class="account-avatar" data-account-image width="32" height="32" alt="" hidden />
+            {% endif %}
+            <svg class="account-avatar" data-account-fallback viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
               <circle cx="32" cy="32" r="32" fill="#dcfce7" />
               <circle cx="32" cy="24" r="11" fill="#14532d" />
               <path d="M12 57a20 20 0 0 1 40 0" fill="#14532d" />
@@ -32,6 +35,7 @@
           </summary>
           <ul class="account-menu-list">
             {% if isAuthenticated %}
+            <li data-account-profile-error hidden><p class="account-profile-error" role="status">Saved profile details could not be loaded. <a href="/profile">Open your profile</a> to retry.</p></li>
             <li><a class="account-menu-link" href="/profile">My Profile</a></li>
             {% if isStaff %}
             <li><a class="account-menu-link" href="/dashboard">Dashboard</a></li>
