@@ -62,6 +62,7 @@
       <section class="checkout-panel" aria-labelledby="details-heading">
         <h2 id="details-heading" class="checkout-step-heading"><span class="checkout-step-number" aria-hidden="true">1</span> {{ t('checkout.step.details') }}</h2>
         {% if step == "details" %}
+        <button type="submit" name="action" value="continue-to-delivery" hidden></button>
         <fieldset class="checkout-fieldset checkout-field" aria-describedby="details-choice-hint">
           <legend class="checkout-label">{{ t('checkout.detailsChoice') }}</legend>
           <p class="checkout-hint" id="details-choice-hint">{{ t('checkout.detailsChoiceHint') }}</p>

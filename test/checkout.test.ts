@@ -404,6 +404,15 @@ describe('checkout (server-rendered, no JavaScript)', () => {
       /Find address|Choose your address|selectedAddress/,
     );
     assert.match(html, /value="continue-to-delivery">Continue to delivery/);
+    const checkoutForm =
+      html.match(/<form class="checkout-form"[\s\S]*?<\/form>/)?.[0] ?? '';
+    const firstSubmitButton = checkoutForm.match(
+      /<button\b[^>]*type="submit"[^>]*>/,
+    )?.[0];
+    assert.match(
+      firstSubmitButton ?? '',
+      /name="action" value="continue-to-delivery"/,
+    );
     assert.match(html, /2 × Desk Lamp/);
     assert.deepEqual(withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g), [
       SHARED_NAV_SCRIPT,
