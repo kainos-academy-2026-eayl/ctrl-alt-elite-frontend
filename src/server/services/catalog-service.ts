@@ -69,8 +69,78 @@ function toCatalogProduct(product: BackendProduct): CatalogProduct {
   };
 }
 
+const CATEGORIES_TTL_MS = 60_000;
+const CATEGORIES_FAILURE_TTL_MS = 15_000;
+const CATEGORIES_TIMEOUT_MS = 2_000;
+
 export class CatalogService {
+  private categoriesCache: { categories: string[]; expiresAt: number } | null =
+    null;
+  private categoriesRefresh: Promise<string[]> | null = null;
+
   constructor(private readonly backendOrigin: string) {}
+
+  /**
+   * The product categories for the site navigation. Every page shows them, so
+   * they are cached briefly; if the backend is slow or down the last known
+   * list (or none) is used rather than delaying or breaking the page.
+   */
+  async getCategories(now = Date.now()): Promise<string[]> {
+    if (this.categoriesCache && this.categoriesCache.expiresAt > now) {
+      return this.categoriesCache.categories;
+    }
+    if (this.categoriesRefresh) return this.categoriesRefresh;
+
+    const refresh = this.refreshCategories(now);
+    this.categoriesRefresh = refresh;
+    try {
+      return await refresh;
+    } finally {
+      if (this.categoriesRefresh === refresh) {
+        this.categoriesRefresh = null;
+      }
+    }
+  }
+
+  private async refreshCategories(now: number): Promise<string[]> {
+    try {
+      const response = await fetch(
+        new URL('/api/products', this.backendOrigin),
+        {
+          headers: { accept: 'application/json' },
+          signal: AbortSignal.timeout(CATEGORIES_TIMEOUT_MS),
+        },
+      );
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new Error(`Products API returned ${response.status}.`);
+      }
+      const categories = [
+        ...new Set(
+          getProducts(await response.json())
+            .map((product) => product.category)
+            .filter(
+              (category): category is string =>
+                typeof category === 'string' && category.trim() !== '',
+            ),
+        ),
+      ].sort((a, b) => a.localeCompare(b));
+      this.categoriesCache = {
+        categories,
+        expiresAt: now + CATEGORIES_TTL_MS,
+      };
+      return categories;
+    } catch (error) {
+      // The navigation works without categories, so this is not an error.
+      console.debug('Unable to load categories for the navigation:', error);
+      const categories = this.categoriesCache?.categories ?? [];
+      this.categoriesCache = {
+        categories,
+        expiresAt: now + CATEGORIES_FAILURE_TTL_MS,
+      };
+      return categories;
+    }
+  }
 
   /**
    * Products, optionally filtered and sorted by the backend. `facets` describes

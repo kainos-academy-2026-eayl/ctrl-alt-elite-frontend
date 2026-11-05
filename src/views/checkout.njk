@@ -8,12 +8,6 @@
 <link rel="stylesheet" href="/assets/checkout.css" />
 {% endblock %}
 
-{% block navigation %}
-<nav class="primary-nav" aria-label="{{ t('site.mainNavigation') }}">
-  {% include "_basketLink.njk" %}
-</nav>
-{% endblock %}
-
 {% macro textField(name, label, values, fieldErrors, type="text", autocomplete="", hint="", optional=false, width="", maxlength="", inputmode="") %}
 <div class="checkout-field{% if fieldErrors[name] %} checkout-field-error{% endif %}">
   <label class="checkout-label" for="{{ name }}">{% if optional %}{{ t('checkout.optional', { label: label }) }}{% else %}{{ label }}{% endif %}</label>

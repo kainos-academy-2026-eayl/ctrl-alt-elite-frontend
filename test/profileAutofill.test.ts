@@ -90,17 +90,21 @@ describe('saved profile autofill', () => {
         for await (const chunk of req) chunks.push(Buffer.from(chunk));
         fields = JSON.parse(Buffer.concat(chunks).toString());
       }
-      requests.push({
-        url: req.url ?? '',
-        authorization: req.headers.authorization,
-        ...(isPatch
-          ? {
-              method: req.method,
-              contentType: req.headers['content-type'],
-              body: fields,
-            }
-          : {}),
-      });
+      // The site navigation asks for the category list; it is not part of what
+      // these tests check.
+      if (req.url !== '/api/products') {
+        requests.push({
+          url: req.url ?? '',
+          authorization: req.headers.authorization,
+          ...(isPatch
+            ? {
+                method: req.method,
+                contentType: req.headers['content-type'],
+                body: fields,
+              }
+            : {}),
+        });
+      }
       if (isPatch) {
         if (patchStatus === 200) body = patchBody;
         res.writeHead(patchStatus, { 'Content-Type': 'application/json' });

@@ -1,74 +1,56 @@
-<!doctype html>
-<html lang="{{ prefs().locale }}">
+{% extends "layout.njk" %}
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="{{ t('catalogue.description') }}">
-    <title>{{ t('catalogue.title') }}</title>
-    <link rel="stylesheet" href="/product-catalog/product_catalog.css">
-    <link rel="stylesheet" href="/assets/filters.css">
-    <link rel="stylesheet" href="/assets/a11y.css">
-</head>
+{% block title %}{{ t('catalogue.title') }}{% endblock %}
+{% block description %}{{ t('catalogue.description') }}{% endblock %}
 
-<body>
-    {% include "_pageTop.njk" %}
-    <header class="site-header">
-        <div class="header-inner">
-            <a class="brand" href="/" aria-label="{{ t('site.home') }}">{{ t('site.name') }}</a>
-            <a class="basket-count" href="/basket">{{ t('header.basketShort') }}</a>
-        </div>
-    </header>
+{% block styles %}
+<link rel="stylesheet" href="/product-catalog/product_catalog.css" />
+<link rel="stylesheet" href="/assets/filters.css" />
+{% endblock %}
 
-    <main class="catalog-main" id="main-content" tabindex="-1">
-        <section class="catalog-toolbar" aria-labelledby="catalogTitle">
-            <div>
-                <p class="eyebrow">{{ t('catalogue.eyebrow') }}</p>
-                <h1 id="catalogTitle">{{ t('catalogue.heading') }}</h1>
-                <p class="catalog-summary">{{ t('catalogue.intro') }}</p>
-            </div>
-        </section>
-
-        {% if filterPanel %}
-        {% include "_filterPanel.njk" %}
-        {% endif %}
-
+{% block content %}
+<div class="catalog-main">
+    <section class="catalog-toolbar" aria-labelledby="catalogTitle">
+        <p class="eyebrow">{{ t('catalogue.eyebrow') }}</p>
+        <h1 id="catalogTitle">{{ pageHeading or t('catalogue.heading') }}</h1>
         {% if not productError %}
-        <p class="results-count" id="resultsCount" role="status">{{ resultsSummary }}</p>
+        <p class="catalog-summary" id="resultsCount" role="status">{{ resultsSummary or t('catalogue.intro') }}</p>
         {% endif %}
+    </section>
 
-        <section class="product-grid" id="productGrid" aria-label="{{ t('catalogue.products') }}">
-            {% if productError %}
-            <p class="empty-state" role="alert">{{ productError }}</p>
-            {% else %}
-            {% for product in products %}
-            <article class="product-tile" data-product-card data-category="{{ product.category }}">
-                <div class="product-image-wrap">
-                    <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
-                    <span class="product-category">{{ tCategory(product.category) }}</span>
+    {% if filterPanel %}
+    {% include "_filterPanel.njk" %}
+    {% endif %}
+
+    <section class="product-grid" id="productGrid" aria-label="{{ t('catalogue.products') }}">
+        {% if productError %}
+        <p class="empty-state" role="alert">{{ productError }}</p>
+        {% else %}
+        {% for product in products %}
+        <article class="product-tile" data-product-card data-category="{{ product.category }}">
+            <div class="product-image-wrap">
+                <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
+                <span class="product-category">{{ tCategory(product.category) }}</span>
+            </div>
+            <div class="product-content">
+                <h2>{{ product.name }}</h2>
+                <p class="product-price">{{ product.priceLabel }}</p>
+                <p class="product-stock">{{ product.stockLabel }}</p>
+                <div class="product-actions">
+                    <a class="button button-secondary" href="/products/{{ product.id | urlencode }}" aria-label="{{ t('product.viewDetailsOf', { name: product.name }) }}">{{ t('product.viewDetails') }}</a>
+                    <form action="/basket/items" method="post">
+                        <input type="hidden" name="productId" value="{{ product.id }}" />
+                        <button class="button button-primary" type="submit" {% if not product.available %}
+                            disabled{% endif %}>{{ t('product.addToBasket') }}</button>
+                    </form>
                 </div>
-                <div class="product-content">
-                    <h2>{{ product.name }}</h2>
-                    <p class="product-price">{{ product.priceLabel }}</p>
-                    <p class="product-stock">{{ product.stockLabel }}</p>
-                    <div class="product-actions">
-                        <a class="button button-secondary" href="/products/{{ product.id | urlencode }}" aria-label="{{ t('product.viewDetailsOf', { name: product.name }) }}">{{ t('product.viewDetails') }}</a>
-                        <form action="/basket/items" method="post">
-                            <input type="hidden" name="productId" value="{{ product.id }}" />
-                            <button class="button button-primary" type="submit" {% if not product.available %}
-                                disabled{% endif %}>{{ t('product.addToBasket') }}</button>
-                        </form>
-                    </div>
-                </div>
-            </article>
-            {% else %}
-            <p class="empty-state">{{ t('catalogue.empty') }}</p>
-            {% endfor %}
-            {% endif %}
-        </section>
-        <a class="cta-button" href="/">{{ t('catalogue.goHome') }}</a>
-    </main>
-
-</body>
-
-</html>
+            </div>
+        </article>
+        {% else %}
+        <p class="empty-state">{{ t('catalogue.empty') }}</p>
+        {% endfor %}
+        {% endif %}
+    </section>
+    <a class="cta-button" href="/">{{ t('catalogue.goHome') }}</a>
+</div>
+{% endblock %}

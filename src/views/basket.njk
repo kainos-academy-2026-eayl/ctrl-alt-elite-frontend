@@ -8,16 +8,6 @@
 {% block title %}{{ t('basket.title') }}{% endblock %}
 {% block description %}{{ t('basket.description') }}{% endblock %}
 
-{% block styles %}
-<link rel="stylesheet" href="/assets/basket.css" />
-{% endblock %}
-
-{% block navigation %}
-<nav class="primary-nav" aria-label="{{ t('site.mainNavigation') }}">
-  {% include "_basketLink.njk" %}
-</nav>
-{% endblock %}
-
 {% block content %}
 <section class="page-width basket" aria-labelledby="basket-heading">
   <h1 id="basket-heading" tabindex="-1"{% if focusTarget == "heading" %} autofocus{% endif %}>{{ t('basket.heading') }}</h1>

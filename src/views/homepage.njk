@@ -1,65 +1,14 @@
-<!doctype html>
-<html lang="{{ prefs().locale }}">
+{% extends "layout.njk" %}
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="{{ t('home.description') }}" />
-  <link rel="stylesheet" href="/assets/styles.css" />
-  <link rel="stylesheet" href="/assets/a11y.css" />
-  <link rel="stylesheet" href="/assets/basket.css" />
-  <link rel="stylesheet" href="/assets/search.css" />
-  <link rel="stylesheet" href="/assets/conveyor.css" />
-  <title>{{ t('home.title') }}</title>
-</head>
+{% block title %}{{ t('home.title') }}{% endblock %}
+{% block description %}{{ t('home.description') }}{% endblock %}
+{% block bodyClass %}home-page{% endblock %}
 
-<body class="home-page">
-  {% include "_pageTop.njk" %}
-  <header class="site-header">
-    <div class="page-width header-content">
-      <a class="brand" href="/" aria-label="{{ t('site.home') }}">
-        <span class="brand-mark" aria-hidden="true">C</span>
-        <span>{{ t('site.name') }}</span>
-      </a>
-      <nav class="primary-nav" aria-label="{{ t('site.mainNavigation') }}">
-        {% include "_searchForm.njk" %}
-        <details class="account-menu" data-account-menu>
-          <summary aria-label="{{ t('account.options', { name: accountName }) }}">
-            {% if isAuthenticated %}
-            <img class="account-avatar" data-account-image width="32" height="32" alt="" hidden />
-            {% endif %}
-            <svg class="account-avatar" data-account-fallback viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
-              <circle cx="32" cy="32" r="32" fill="#dcfce7" />
-              <circle cx="32" cy="24" r="11" fill="#14532d" />
-              <path d="M12 57a20 20 0 0 1 40 0" fill="#14532d" />
-            </svg>
-            <span class="account-label{% if isAuthenticated %} account-name{% endif %}">{{ accountName }}</span>
-          </summary>
-          <ul class="account-menu-list">
-            {% if isAuthenticated %}
-            <li data-account-profile-error hidden><p class="account-profile-error" role="status"><a href="/profile">{{ t('account.profileError') }}</a></p></li>
-            <li><a class="account-menu-link" href="/profile">{{ t('account.profile') }}</a></li>
-            {% if isStaff %}
-            <li><a class="account-menu-link" href="/dashboard">{{ t('account.dashboard') }}</a></li>
-            {% endif %}
-            <li>
-              <form action="/logout" method="post">
-                <button class="account-menu-link account-menu-button" type="submit">{{ t('account.logout') }}</button>
-              </form>
-            </li>
-            {% else %}
-            <li><a class="account-menu-link" href="/login">{{ t('account.login') }}</a></li>
-            <li><a class="account-menu-link" href="/register">{{ t('account.register') }}</a></li>
-            {% endif %}
-            <li><a class="account-menu-link" href="/account/support">{{ t('account.support') }}</a></li>
-          </ul>
-        </details>
-        {% include "_basketLink.njk" %}
-      </nav>
-    </div>
-  </header>
+{% block styles %}
+<link rel="stylesheet" href="/assets/conveyor.css" />
+{% endblock %}
 
-  <main id="main-content" tabindex="-1">
+{% block content %}
     <section class="page-width welcome" aria-labelledby="welcome-heading">
       <p class="eyebrow">{{ t('home.eyebrow') }}</p>
       <h1 id="welcome-heading">{{ t('home.heading') }}</h1>
@@ -112,15 +61,4 @@
       </ul>
     </section>
     {% endif %}
-  </main>
-
-  <footer class="site-footer">
-    <div class="page-width">
-      <p>&copy; <span data-current-year></span> {{ t('site.name') }}</p>
-    </div>
-  </footer>
-  {% include "_browserMessages.njk" %}
-  <script src="/controllers/script.js" defer></script>
-</body>
-
-</html>
+{% endblock %}

@@ -54,6 +54,8 @@ button {
 }
 
 .catalog-main {
+  display: block;
+  place-items: stretch;
   width: min(var(--page-width), calc(100% - 48px));
   margin: 0 auto;
   padding: 48px 0 72px;
@@ -61,10 +63,12 @@ button {
 
 .catalog-toolbar {
   display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 32px;
-  padding-bottom: 28px;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -89,9 +93,9 @@ h1 {
 }
 
 .catalog-summary {
-  margin: 10px 0 0;
+  margin: 0;
   color: var(--muted);
-  line-height: 1.5;
+  font-size: 14px;
 }
 
 .button:focus-visible,
@@ -99,31 +103,6 @@ h1 {
 .brand:focus-visible {
   outline: 3px solid #8eb89c;
   outline-offset: 2px;
-}
-
-.results-count {
-  margin: 22px 0 16px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.category-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 24px;
-}
-
-.category-filter {
-  min-width: 0;
-  max-width: 100%;
-  padding-inline: 18px;
-  overflow-wrap: anywhere;
-}
-
-.category-filter[aria-pressed="true"] {
-  background: var(--green-900);
-  color: var(--surface);
 }
 
 .product-grid {
@@ -336,12 +315,6 @@ h1 {
 
   .catalog-main {
     padding-top: 32px;
-  }
-
-  .catalog-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 20px;
   }
 
   h1 {

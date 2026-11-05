@@ -8,16 +8,7 @@
 {% block description %}{{ t('search.description') }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="/assets/basket.css" />
-<link rel="stylesheet" href="/assets/search.css" />
 <link rel="stylesheet" href="/assets/filters.css" />
-{% endblock %}
-
-{% block navigation %}
-<nav class="primary-nav" aria-label="{{ t('site.mainNavigation') }}">
-  {% include "_searchForm.njk" %}
-  {% include "_basketLink.njk" %}
-</nav>
 {% endblock %}
 
 {% block content %}

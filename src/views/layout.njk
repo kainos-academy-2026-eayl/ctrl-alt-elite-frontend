@@ -7,6 +7,9 @@
   <meta name="description" content="{% block description %}{{ t('site.name') }}{% endblock %}" />
   <link rel="stylesheet" href="/assets/styles.css" />
   <link rel="stylesheet" href="/assets/a11y.css" />
+  <link rel="stylesheet" href="/assets/basket.css" />
+  <link rel="stylesheet" href="/assets/search.css" />
+  <link rel="stylesheet" href="/assets/nav.css" />
   {% block styles %}{% endblock %}
   <title>{% block title %}{{ t('site.name') }}{% endblock %}</title>
 </head>
@@ -19,7 +22,7 @@
         <span class="brand-mark" aria-hidden="true">C</span>
         <span>{{ t('site.name') }}</span>
       </a>
-      {% block navigation %}{% endblock %}
+      {% block navigation %}{% include "_siteNav.njk" %}{% endblock %}
     </div>
   </header>
 
@@ -33,6 +36,7 @@
     </div>
   </footer>
   {% include "_browserMessages.njk" %}
+  <script src="/controllers/script.js" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 

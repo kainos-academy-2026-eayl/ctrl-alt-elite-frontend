@@ -7,12 +7,6 @@
 <link rel="stylesheet" href="/assets/profile.css" />
 {% endblock %}
 
-{% block navigation %}
-<nav class="primary-nav" aria-label="{{ t('site.mainNavigation') }}">
-    <a class="nav-link" href="/">{{ t('site.backToHome') }}</a>
-</nav>
-{% endblock %}
-
 {% block content %}
 <section class="page-width profile-page" aria-labelledby="profile-heading">
     <header class="profile-header">
@@ -128,8 +122,4 @@
         </section>
     </div>
 </section>
-{% endblock %}
-
-{% block scripts %}
-<script src="/controllers/script.js" defer></script>
 {% endblock %}

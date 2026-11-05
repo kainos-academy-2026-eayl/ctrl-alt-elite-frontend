@@ -43,18 +43,6 @@ export class HomeController {
         this.basketController.getHeaderBasket(req),
         this.loadHomepageProducts(),
       ]);
-      // Sessions created before roles were stored have no role to read.
-      const role = account
-        ? (findStaffRole(account.role) ??
-          (account.role
-            ? undefined
-            : (
-                await loadStaffAccount(
-                  this.backendOrigin,
-                  readAuthCookie(req.headers.cookie),
-                )
-              )?.role))
-        : undefined;
       res.type('html').send(
         this.templates.render('homepage.njk', {
           ...buildHomepage({
@@ -63,7 +51,7 @@ export class HomeController {
             conveyorProducts: conveyor,
             basket,
           }),
-          isStaff: role !== undefined,
+          currentYear: new Date().getFullYear(),
         }),
       );
     } catch (error) {
