@@ -1,61 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ prefs().locale }}">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Ctrl-Alt-Elite | Register</title>
-    <meta name="description" content="Create your Ctrl-Alt-Elite account.">
+    <title>{{ t('register.title') }}</title>
+    <meta name="description" content="{{ t('register.description') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/assets/styles.css">
     <link rel="stylesheet" href="/assets/register.css">
+    <link rel="stylesheet" href="/assets/a11y.css">
     <script src="/controllers/register.js" defer></script>
 </head>
 
 <body>
+    {% include "_pageTop.njk" %}
     <header class="site-header">
         <div class="page-width header-content">
-            <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
+            <a class="brand" href="/" aria-label="{{ t('site.home') }}">
                 <span class="brand-mark" aria-hidden="true">C</span>
-                <span>Ctrl-Alt-Elite</span>
+                <span>{{ t('site.name') }}</span>
             </a>
         </div>
     </header>
 
-    <main>
+    <main id="main-content" tabindex="-1">
         <div class="register-container">
-            <p class="eyebrow">Join Ctrl-Alt-Elite</p>
-            <h1>Create your account</h1>
-            <h2>Please enter your details</h2>
+            <p class="eyebrow">{{ t('register.eyebrow') }}</p>
+            <h1>{{ t('register.heading') }}</h1>
+            <h2>{{ t('register.subheading') }}</h2>
             <form id="registrationForm" method="post">
                 <div class="form-group">
-                    <label for="firstName">First Name</label>
-                    <input type="text" id="firstName" name="firstName" required>
+                    <label for="firstName">{{ t('register.firstName') }}</label>
+                    <input type="text" id="firstName" name="firstName" autocomplete="given-name" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="lastName">Last Name</label>
-                    <input type="text" id="lastName" name="lastName" required>
+                    <label for="lastName">{{ t('register.lastName') }}</label>
+                    <input type="text" id="lastName" name="lastName" autocomplete="family-name" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required>
+                    <label for="email">{{ t('register.email') }}</label>
+                    <input type="email" id="email" name="email" autocomplete="email" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" minlength="8" required>
+                    <label for="password">{{ t('register.password') }}</label>
+                    <input type="password" id="password" name="password" minlength="8" autocomplete="new-password" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="confirmPassword">Confirm Password</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" minlength="8" required>
+                    <label for="confirmPassword">{{ t('register.confirmPassword') }}</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" minlength="8" autocomplete="new-password" required>
                 </div>
 
                 <p id="passwordMessage" role="status" aria-live="polite"></p>
 
                 <button type="submit" class="register-btn">
-                    Register
+                    {{ t('register.submit') }}
                 </button>
             </form>
 
@@ -64,9 +66,10 @@
 
     <footer class="site-footer">
         <div class="page-width">
-            <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
+            <p>&copy; <span data-current-year></span> {{ t('site.name') }}</p>
         </div>
     </footer>
+    {% include "_browserMessages.njk" %}
     <script src="/controllers/script.js" defer></script>
 </body>
 

@@ -1,3 +1,5 @@
+import './i18n';
+import { t } from '../i18n/runtime';
 import {
   createTicket,
   findTicket,
@@ -33,8 +35,8 @@ async function showList(): Promise<void> {
     if (error instanceof UnauthorisedError) return redirectToLogin();
     console.error('Unable to load tickets:', error);
     container.innerHTML = renderSupportMessage(
-      'Unable to load your tickets',
-      'Something went wrong while loading your tickets. Please try again.',
+      t('js.support.listFailedTitle'),
+      t('js.support.listFailed'),
     );
   }
 }
@@ -45,8 +47,8 @@ async function showDetail(): Promise<void> {
     window.location.pathname.split('/').filter(Boolean).pop() ?? '',
   );
   const notFound = renderSupportMessage(
-    'Ticket not found',
-    'We could not find a ticket with that ID.',
+    t('js.support.notFoundTitle'),
+    t('js.support.notFound'),
   );
   if (!TICKET_ID_PATTERN.test(id)) {
     container.innerHTML = notFound;
@@ -74,8 +76,8 @@ async function showDetail(): Promise<void> {
     if (error instanceof UnauthorisedError) return redirectToLogin();
     console.error('Unable to load ticket:', error);
     container.innerHTML = renderSupportMessage(
-      'Unable to load this ticket',
-      'Something went wrong while loading this ticket. Please try again.',
+      t('js.support.detailFailedTitle'),
+      t('js.support.detailFailed'),
     );
   }
 }

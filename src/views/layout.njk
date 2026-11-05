@@ -1,35 +1,38 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ prefs().locale }}">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="{% block description %}Welcome to Ctrl-Alt-Elite.{% endblock %}" />
+  <meta name="description" content="{% block description %}{{ t('site.name') }}{% endblock %}" />
   <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/a11y.css" />
   {% block styles %}{% endblock %}
-  <title>{% block title %}Ctrl-Alt-Elite{% endblock %}</title>
+  <title>{% block title %}{{ t('site.name') }}{% endblock %}</title>
 </head>
 
 <body class="{% block bodyClass %}{% endblock %}">
+  {% include "_pageTop.njk" %}
   <header class="site-header">
     <div class="page-width header-content">
-      <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
+      <a class="brand" href="/" aria-label="{{ t('site.home') }}">
         <span class="brand-mark" aria-hidden="true">C</span>
-        <span>Ctrl-Alt-Elite</span>
+        <span>{{ t('site.name') }}</span>
       </a>
       {% block navigation %}{% endblock %}
     </div>
   </header>
 
-  <main>
+  <main id="main-content" tabindex="-1">
     {% block content %}{% endblock %}
   </main>
 
   <footer class="site-footer">
     <div class="page-width">
-      <p>&copy; {{ currentYear }} Ctrl-Alt-Elite</p>
+      <p>{{ t('site.copyright', { year: currentYear }) }}</p>
     </div>
   </footer>
+  {% include "_browserMessages.njk" %}
   {% block scripts %}{% endblock %}
 </body>
 

@@ -6,6 +6,7 @@ import {
   isProductSearchResponseDto,
   type ProductSearchResponseDto,
 } from '../dtos/productSearchDto';
+import { currentPreferences } from '../i18n/context';
 import { type FilterQuery, toBackendParams } from '../util/productFilters';
 
 const REQUEST_TIMEOUT_MS = 5000;
@@ -35,6 +36,9 @@ export class ProductService {
       filters ? toBackendParams(filters) : new URLSearchParams()
     ).toString();
     url.searchParams.set('q', searchTerm);
+    // Lets the backend also match product names in the visitor's language.
+    const { locale } = currentPreferences();
+    if (locale !== 'en') url.searchParams.set('lang', locale);
     const body = await this.getJson(url, 'Product search');
     if (!isProductSearchResponseDto(body)) {
       throw new Error('Product search returned an unexpected response');

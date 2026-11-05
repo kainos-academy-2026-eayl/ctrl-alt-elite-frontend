@@ -12,6 +12,7 @@ import {
   Role,
   STAFF_ROLES,
 } from '../src/util/staffRoles';
+import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const SECRET = 'test-only-inventory-role-secret-with-at-least-32-bytes';
 
@@ -641,7 +642,11 @@ describe('inventory management access', () => {
         const html = await (
           await get(`/login?returnTo=${encodeURIComponent(value)}`)
         ).text();
-        assert.doesNotMatch(html, /name="returnTo"/, value);
+        assert.doesNotMatch(
+          withoutAccessibilityMenu(html),
+          /name="returnTo"/,
+          value,
+        );
       }
     });
 

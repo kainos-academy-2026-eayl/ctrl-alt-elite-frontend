@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { t } from '../../i18n/runtime';
 import { clearAuthCookie, setAuthCookie } from '../../util/authCookie';
 import type { LoginSession } from '../../util/loginSession';
 
@@ -136,13 +137,13 @@ export class LoginController {
 
   submit = async (req: Request, res: Response): Promise<void> => {
     if (!req.is('application/x-www-form-urlencoded')) {
-      this.render(res, 415, '', 'Please submit the login form.');
+      this.render(res, 415, '', t('login.error.form'));
       return;
     }
 
     const body: unknown = req.body;
     if (typeof body !== 'object' || body === null) {
-      this.render(res, 400, '', 'Please enter your email and password.');
+      this.render(res, 400, '', t('login.error.missing'));
       return;
     }
     const email =
@@ -157,13 +158,7 @@ export class LoginController {
       'returnTo' in body ? (safeReturnPath(body.returnTo) ?? '') : '';
 
     if (!email || email.length > 254 || !password || password.length > 128) {
-      this.render(
-        res,
-        400,
-        email,
-        'Please enter your email and password.',
-        returnTo,
-      );
+      this.render(res, 400, email, t('login.error.missing'), returnTo);
       return;
     }
 
@@ -190,13 +185,7 @@ export class LoginController {
       }
     } catch (error) {
       console.error('Unable to reach the backend login API:', error);
-      this.render(
-        res,
-        502,
-        email,
-        'Unable to reach the server. Please try again later.',
-        returnTo,
-      );
+      this.render(res, 502, email, t('login.error.unreachable'), returnTo);
       return;
     }
 
@@ -204,13 +193,7 @@ export class LoginController {
       const destination = landingPathForRole(role);
       if (!destination) {
         console.error('Backend login returned an unknown role:', role);
-        this.render(
-          res,
-          403,
-          email,
-          'Your account role is not recognised. Please contact support.',
-          returnTo,
-        );
+        this.render(res, 403, email, t('login.error.role'), returnTo);
         return;
       }
       res.setHeader('Cache-Control', 'no-store');
@@ -222,13 +205,7 @@ export class LoginController {
           'Unable to validate the login session:',
           error instanceof Error ? error.name : 'Unknown error',
         );
-        this.render(
-          res,
-          502,
-          email,
-          'Unable to confirm your login. Please try again.',
-          returnTo,
-        );
+        this.render(res, 502, email, t('login.error.confirm'), returnTo);
         return;
       }
       if (token) {
@@ -243,16 +220,10 @@ export class LoginController {
           : destination,
       );
     } else if (response.status === 401) {
-      this.render(res, 401, email, 'Incorrect email or password.', returnTo);
+      this.render(res, 401, email, t('login.error.incorrect'), returnTo);
     } else {
       console.error('Backend login failed with status:', response.status);
-      this.render(
-        res,
-        502,
-        email,
-        'Unable to log in. Please try again later.',
-        returnTo,
-      );
+      this.render(res, 502, email, t('login.error.failed'), returnTo);
     }
   };
 }

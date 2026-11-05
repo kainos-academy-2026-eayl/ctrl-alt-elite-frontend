@@ -7,12 +7,11 @@ import {
   type OrderResultDto,
   type PlaceOrderRequestDto,
 } from '../dtos/checkoutDto';
+import { t } from '../i18n/runtime';
 
 const REQUEST_TIMEOUT_MS = 10_000;
-const SERVER_ERROR_MESSAGE =
-  'Something went wrong with checkout. Please try again.';
-const UNREACHABLE_MESSAGE =
-  'We could not reach checkout right now. Please try again later.';
+const SERVER_ERROR_MESSAGE = () => t('checkout.serverError');
+const UNREACHABLE_MESSAGE = () => t('checkout.unreachable');
 
 export class CheckoutServiceError extends Error {
   /** HTTP status from the backend, or 0 when it could not be reached. */
@@ -55,7 +54,7 @@ export class CheckoutService {
   async getAccount(token: string): Promise<AccountDto> {
     const body = await this.request('/api/account', 'GET', token);
     if (!isAccountResponse(body)) {
-      throw new CheckoutServiceError(502, SERVER_ERROR_MESSAGE);
+      throw new CheckoutServiceError(502, SERVER_ERROR_MESSAGE());
     }
     return body.account;
   }
@@ -63,7 +62,7 @@ export class CheckoutService {
   async getDeliveryOptions(): Promise<DeliveryOptionDto[]> {
     const body = await this.request('/api/delivery-options', 'GET', null);
     if (!isDeliveryOptionsResponse(body)) {
-      throw new CheckoutServiceError(502, SERVER_ERROR_MESSAGE);
+      throw new CheckoutServiceError(502, SERVER_ERROR_MESSAGE());
     }
     return body.deliveryOptions;
   }
@@ -91,7 +90,7 @@ export class CheckoutService {
   ): Promise<OrderResultDto> {
     const result = await this.request(path, method, token, body);
     if (!isOrderResultDto(result)) {
-      throw new CheckoutServiceError(502, SERVER_ERROR_MESSAGE);
+      throw new CheckoutServiceError(502, SERVER_ERROR_MESSAGE());
     }
     return result;
   }
@@ -118,7 +117,9 @@ export class CheckoutService {
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
     } catch (error) {
-      throw new CheckoutServiceError(0, UNREACHABLE_MESSAGE, { cause: error });
+      throw new CheckoutServiceError(0, UNREACHABLE_MESSAGE(), {
+        cause: error,
+      });
     }
     if (!response.ok) {
       throw new CheckoutServiceError(
@@ -134,7 +135,7 @@ export class CheckoutService {
 async function readErrorMessage(response: Response): Promise<string> {
   if (response.status >= 500) {
     await response.body?.cancel();
-    return SERVER_ERROR_MESSAGE;
+    return SERVER_ERROR_MESSAGE();
   }
   const body: unknown = await response.json().catch(() => null);
   if (
@@ -146,5 +147,5 @@ async function readErrorMessage(response: Response): Promise<string> {
   ) {
     return body.message;
   }
-  return SERVER_ERROR_MESSAGE;
+  return SERVER_ERROR_MESSAGE();
 }

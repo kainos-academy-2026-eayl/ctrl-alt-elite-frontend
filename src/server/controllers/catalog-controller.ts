@@ -1,9 +1,10 @@
 import type { Request, Response } from 'express';
+import { t, tCount } from '../../i18n/runtime';
 import { buildFilterPanel, readFilterQuery } from '../../util/productFilters';
 import type { CatalogService } from '../services/catalog-service';
 
 function productCount(count: number): string {
-  return `${count} ${count === 1 ? 'product' : 'products'}`;
+  return tCount('count.products', count);
 }
 
 export class CatalogController {
@@ -28,8 +29,11 @@ export class CatalogController {
       if (filterPanel && filterPanel.activeCount > 0) {
         resultsSummary =
           products.length === 0
-            ? 'No products match your filters. Remove a filter or choose Clear all.'
-            : `Showing ${products.length} of ${productCount(total)}`;
+            ? t('catalogue.noMatches')
+            : t('catalogue.showing', {
+                count: products.length,
+                total: productCount(total),
+              });
       }
       res.render('product.njk', {
         products,
@@ -41,7 +45,7 @@ export class CatalogController {
       console.error('Unable to load products from the backend:', error);
       res.status(502).render('product.njk', {
         products: [],
-        productError: 'Products are temporarily unavailable.',
+        productError: t('catalogue.unavailable'),
       });
     }
   };

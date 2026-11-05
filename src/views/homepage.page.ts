@@ -1,4 +1,5 @@
 import type { BasketResponseDto } from '../dtos/basketDto';
+import { t } from '../i18n/runtime';
 import type { CatalogProduct } from '../server/services/catalog-service';
 import { type BasketSummary, toBasketSummary } from './basket.page';
 
@@ -52,7 +53,7 @@ export function buildHomepage({
 }: HomepageInput): HomepagePage {
   return {
     isAuthenticated: account !== null,
-    accountName: account?.name ?? 'Account',
+    accountName: account?.name ?? t('account.label'),
     products: products.map(({ id, name, priceLabel, image }) => ({
       id: String(id),
       name,

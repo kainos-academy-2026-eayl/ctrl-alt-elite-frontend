@@ -6,6 +6,7 @@ import { jwtVerify, SignJWT } from 'jose';
 import { afterAll, beforeAll, describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
 import { LoginSession } from '../src/util/loginSession';
+import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 
@@ -249,7 +250,7 @@ describe('homepage profile dropdown', () => {
         /type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/,
       );
       assert.doesNotMatch(
-        html,
+        withoutAccessibilityMenu(html),
         /profile-pronouns|profile-description|<select|<textarea/,
       );
       assert.match(
@@ -307,7 +308,10 @@ describe('homepage profile dropdown', () => {
     const html = await response.text();
     assert.equal(response.status, 200);
     assert.match(html, /<h2>Signed In Customer<\/h2>/);
-    assert.doesNotMatch(html, /AnotherUser|someone-else/);
+    assert.doesNotMatch(
+      withoutAccessibilityMenu(html),
+      /AnotherUser|someone-else/,
+    );
   });
 
   it('escapes the signed-in name when rendering the dropdown and profile', async () => {

@@ -1,29 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ prefs().locale }}">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Browse the Ctrl-Alt-Elite product catalog.">
-    <title>Product catalog | Ctrl-Alt-Elite</title>
+    <meta name="description" content="{{ t('catalogue.description') }}">
+    <title>{{ t('catalogue.title') }}</title>
     <link rel="stylesheet" href="/product-catalog/product_catalog.css">
     <link rel="stylesheet" href="/assets/filters.css">
+    <link rel="stylesheet" href="/assets/a11y.css">
 </head>
 
 <body>
+    {% include "_pageTop.njk" %}
     <header class="site-header">
         <div class="header-inner">
-            <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">Ctrl-Alt-Elite</a>
-            <p class="basket-count" id="basketCount" aria-live="polite">Basket (0)</p>
+            <a class="brand" href="/" aria-label="{{ t('site.home') }}">{{ t('site.name') }}</a>
+            <a class="basket-count" href="/basket">{{ t('header.basketShort') }}</a>
         </div>
     </header>
 
-    <main class="catalog-main">
+    <main class="catalog-main" id="main-content" tabindex="-1">
         <section class="catalog-toolbar" aria-labelledby="catalogTitle">
             <div>
-                <p class="eyebrow">Shop</p>
-                <h1 id="catalogTitle">Product catalog</h1>
-                <p class="catalog-summary">Browse the latest products from Ctrl-Alt-Elite.</p>
+                <p class="eyebrow">{{ t('catalogue.eyebrow') }}</p>
+                <h1 id="catalogTitle">{{ t('catalogue.heading') }}</h1>
+                <p class="catalog-summary">{{ t('catalogue.intro') }}</p>
             </div>
         </section>
 
@@ -35,7 +37,7 @@
         <p class="results-count" id="resultsCount" role="status">{{ resultsSummary }}</p>
         {% endif %}
 
-        <section class="product-grid" id="productGrid" aria-label="Products">
+        <section class="product-grid" id="productGrid" aria-label="{{ t('catalogue.products') }}">
             {% if productError %}
             <p class="empty-state" role="alert">{{ productError }}</p>
             {% else %}
@@ -43,28 +45,28 @@
             <article class="product-tile" data-product-card data-category="{{ product.category }}">
                 <div class="product-image-wrap">
                     <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
-                    <span class="product-category">{{ product.category }}</span>
+                    <span class="product-category">{{ tCategory(product.category) }}</span>
                 </div>
                 <div class="product-content">
                     <h2>{{ product.name }}</h2>
                     <p class="product-price">{{ product.priceLabel }}</p>
                     <p class="product-stock">{{ product.stockLabel }}</p>
                     <div class="product-actions">
-                        <a class="button button-secondary" href="/products/{{ product.id | urlencode }}">View details<span class="filters-visually-hidden"> of {{ product.name }}</span></a>
+                        <a class="button button-secondary" href="/products/{{ product.id | urlencode }}" aria-label="{{ t('product.viewDetailsOf', { name: product.name }) }}">{{ t('product.viewDetails') }}</a>
                         <form action="/basket/items" method="post">
                             <input type="hidden" name="productId" value="{{ product.id }}" />
                             <button class="button button-primary" type="submit" {% if not product.available %}
-                                disabled{% endif %}>Add to basket</button>
+                                disabled{% endif %}>{{ t('product.addToBasket') }}</button>
                         </form>
                     </div>
                 </div>
             </article>
             {% else %}
-            <p class="empty-state">There are no products to show right now.</p>
+            <p class="empty-state">{{ t('catalogue.empty') }}</p>
             {% endfor %}
             {% endif %}
         </section>
-        <button class="cta-button" onclick="location.href='/'">Go Home</button>
+        <a class="cta-button" href="/">{{ t('catalogue.goHome') }}</a>
     </main>
 
 </body>

@@ -1,7 +1,13 @@
+import {
+  createPreferencesMiddleware,
+  createPreferencesRouter,
+} from './i18n/preferences';
+import './i18n/server';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express } from 'express';
 import nunjucks from 'nunjucks';
+import { addI18nGlobals } from './i18n/templates';
 import { errorHandler } from './middleware/errorHandler';
 import { requireSameOrigin } from './middleware/requireSameOrigin';
 import { createBasketRouter } from './routes/basketRouter';
@@ -24,6 +30,7 @@ import { BasketService } from './services/basketService';
 import { CheckoutService } from './services/checkoutService';
 import { PostcodeService } from './services/postcodeService';
 import { ProductService } from './services/productService';
+import { ProductTranslationService } from './services/productTranslationService';
 import { createApiProxy } from './util/apiProxy';
 import { createCustomerGuard } from './util/customerGuard';
 import { LoginSession } from './util/loginSession';
@@ -70,11 +77,12 @@ export function createApp(
 ): Express {
   const app = express();
   app.set('views', VIEWS_DIRECTORY);
-  nunjucks.configure([VIEWS_DIRECTORY], {
+  const customerTemplates = nunjucks.configure([VIEWS_DIRECTORY], {
     autoescape: true,
     express: app,
     noCache: process.env.NODE_ENV !== 'production',
   });
+  addI18nGlobals(customerTemplates);
   app.set('view engine', 'njk');
   const loginSession = new LoginSession(jwtSecret);
   const loginController = new LoginController(backendOrigin, loginSession);
@@ -96,6 +104,7 @@ export function createApp(
     }),
     { autoescape: true },
   );
+  addI18nGlobals(adminTemplates);
 
   const productService = new ProductService(backendOrigin);
   const catalogService = new CatalogService(backendOrigin);
@@ -139,6 +148,13 @@ export function createApp(
       { index: false },
     ),
   );
+  // Every page after this point is shown in the visitor's language and
+  // currency (static files and the API proxy above do not need them).
+  app.use(
+    createPreferencesMiddleware(new ProductTranslationService(backendOrigin)),
+  );
+  app.use('/preferences', createPreferencesRouter());
+
   const catalogController = new CatalogController(catalogService);
   app.get('/products', catalogController.showProducts);
 

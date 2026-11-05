@@ -4,6 +4,11 @@ import type {
   DeliveryOptionDto,
   OrderResultDto,
 } from '../dtos/checkoutDto';
+import { currentPreferences } from '../i18n/context';
+import { intlLocale } from '../i18n/locales';
+import { formatPounds } from '../i18n/money';
+import { t } from '../i18n/runtime';
+import { localiseProduct } from '../i18n/server';
 import {
   type CheckoutFieldError,
   type CheckoutValues,
@@ -12,9 +17,37 @@ import {
 import {
   type BasketSummary,
   formatItemCount,
-  formatPrice,
   toBasketSummary,
 } from './basket.page';
+
+/**
+ * A delivery option's name and description in the visitor's language. The
+ * backend sends English; known options are translated, others shown as sent.
+ */
+export function translateDelivery(option: {
+  id: string;
+  name: string;
+  description: string;
+}): { name: string; description: string } {
+  if (option.id === 'standard' || option.id === 'express') {
+    return {
+      name: t(`delivery.${option.id}.name`),
+      description: t(`delivery.${option.id}.description`),
+    };
+  }
+  const miles = /^(\d+(?:\.\d+)?) miles away$/.exec(option.description)?.[1];
+  if (option.id.startsWith('collection-') && miles) {
+    return {
+      name: t('delivery.collection.name'),
+      description: t('delivery.collection.description', {
+        miles: Number(miles).toLocaleString(
+          intlLocale(currentPreferences().locale),
+        ),
+      }),
+    };
+  }
+  return { name: option.name, description: option.description };
+}
 
 /*
  * Page models for checkout.njk and order-confirmation.njk. Prices, totals and
@@ -106,9 +139,11 @@ function toDeliveryView(
 ): DeliveryOptionView {
   return {
     id: option.id,
-    name: option.name,
-    description: option.description,
-    price: option.pricePence === 0 ? 'Free' : formatPrice(option.pricePence),
+    ...translateDelivery(option),
+    price:
+      option.pricePence === 0
+        ? t('checkout.free')
+        : formatPounds(option.pricePence),
     isChecked: option.id === selectedId,
   };
 }
@@ -152,12 +187,12 @@ export function buildCheckoutPage({
     registerUrl: REGISTER_URL,
     checkoutUrl: CHECKOUT_URL,
     lines: basket.items.map((item) => ({
-      name: item.name,
+      name: localiseProduct(item).name,
       quantity: item.quantity,
-      lineTotal: formatPrice(item.lineTotalPence),
+      lineTotal: formatPounds(item.lineTotalPence),
     })),
     itemCountText: formatItemCount(basket.itemCount),
-    itemsTotal: formatPrice(basket.totalPence),
+    itemsTotal: formatPounds(basket.totalPence),
     step,
     values: formValues,
     errors: errors.map((error) => ({
@@ -187,11 +222,11 @@ export function buildCheckoutPage({
       isPayment && delivery ? toDeliveryView(delivery, delivery.id) : null,
     payment: isPayment
       ? {
-          creditBalance: formatPrice(creditPence),
-          itemsTotal: formatPrice(basket.totalPence),
-          deliveryPrice: formatPrice(delivery?.pricePence ?? 0),
-          total: formatPrice(totalPence),
-          balanceAfter: formatPrice(Math.max(creditPence - totalPence, 0)),
+          creditBalance: formatPounds(creditPence),
+          itemsTotal: formatPounds(basket.totalPence),
+          deliveryPrice: formatPounds(delivery?.pricePence ?? 0),
+          total: formatPounds(totalPence),
+          balanceAfter: formatPounds(Math.max(creditPence - totalPence, 0)),
           canAfford: creditPence >= totalPence,
           totalPence,
         }
@@ -234,26 +269,29 @@ export function buildOrderConfirmationPage({
     basketSummary: toBasketSummary(basket),
     currentYear: now.getFullYear(),
     orderNumber: order.id,
-    orderDate: new Intl.DateTimeFormat('en-GB', {
-      dateStyle: 'long',
-      timeStyle: 'short',
-      timeZone: 'Europe/London',
-    }).format(new Date(order.createdAt)),
+    orderDate: new Intl.DateTimeFormat(
+      intlLocale(currentPreferences().locale),
+      {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: 'Europe/London',
+      },
+    ).format(new Date(order.createdAt)),
     firstName: order.customer.firstName,
     lines: order.items.map((item) => ({
-      name: item.name,
+      name: localiseProduct({ id: item.productId, name: item.name }).name,
       quantity: item.quantity,
-      unitPrice: formatPrice(item.unitPricePence),
-      lineTotal: formatPrice(item.lineTotalPence),
+      unitPrice: formatPounds(item.unitPricePence),
+      lineTotal: formatPounds(item.lineTotalPence),
     })),
-    itemsTotal: formatPrice(order.itemsTotalPence),
+    itemsTotal: formatPounds(order.itemsTotalPence),
     deliveryPrice:
       order.deliveryPricePence === 0
-        ? 'Free'
-        : formatPrice(order.deliveryPricePence),
-    total: formatPrice(order.totalPence),
-    creditBalance: formatPrice(result.creditBalancePence),
-    delivery: order.delivery,
+        ? t('checkout.free')
+        : formatPounds(order.deliveryPricePence),
+    total: formatPounds(order.totalPence),
+    creditBalance: formatPounds(result.creditBalancePence),
+    delivery: order.delivery ? translateDelivery(order.delivery) : null,
     contact: {
       name: `${order.customer.firstName} ${order.customer.lastName}`.trim(),
       email: order.customer.email,
