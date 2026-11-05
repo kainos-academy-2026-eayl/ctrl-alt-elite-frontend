@@ -116,6 +116,34 @@ export class LoginSession {
     }
   }
 
+  async refreshName(
+    req: Request,
+    res: Response,
+    userId: string,
+    name: string,
+  ): Promise<void> {
+    const cookies = (req.headers.cookie ?? '')
+      .split(';')
+      .map((cookie) => cookie.trim())
+      .filter((cookie) => cookie.startsWith(`${COOKIE_NAME}=`));
+    if (cookies.length !== 1 || !this.key) {
+      throw new Error('A valid login is required to refresh the account name.');
+    }
+    const payload = await this.verify(
+      cookies[0]?.slice(COOKIE_NAME.length + 1) ?? '',
+    );
+    if (payload.sub !== userId)
+      throw new Error('The saved profile does not match the login.');
+    if (payload.name === name) return;
+    const token = await new SignJWT({ ...payload, name })
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .sign(this.key);
+    res.cookie(COOKIE_NAME, token, {
+      ...this.cookieOptions,
+      expires: new Date(Number(payload.exp) * 1000),
+    });
+  }
+
   clear(res: Response): void {
     res.clearCookie(COOKIE_NAME, this.cookieOptions);
   }
