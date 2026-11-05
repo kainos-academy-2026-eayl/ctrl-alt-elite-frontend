@@ -119,6 +119,7 @@ describe('buildSearchPage', () => {
     assert.deepEqual(built.basketSummary, {
       itemCount: 0,
       itemCountText: '0 items',
+      label: 'Basket, 0 items',
     });
     assert.equal(built.currentYear, 2026);
     assert.equal(built.addToBasketUrl, '/basket/items');

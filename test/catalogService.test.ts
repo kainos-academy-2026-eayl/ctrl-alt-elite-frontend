@@ -44,7 +44,39 @@ describe('CatalogService.getProducts', () => {
         },
       ],
       categories: ['Audio'],
+      facets: null,
     });
+  });
+
+  it('sends filters to the backend and returns its facets', async () => {
+    const facets = {
+      total: 3,
+      categories: [{ name: 'Audio', count: 1 }],
+      stock: { in: 1, out: 0 },
+      priceRange: { min: '25.00', max: '25.00' },
+    };
+    fetchMock.mockResolvedValue(Response.json({ products: [PRODUCT], facets }));
+
+    const result = await service.getProducts({
+      stock: ['in'],
+      categories: ['Audio', 'Hi-Fi & TV'],
+      minPrice: '',
+      maxPrice: '',
+      priceBand: '10-25',
+      sort: 'price-desc',
+    });
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      `${BACKEND_ORIGIN}/api/products?stock=in&category=Audio&category=Hi-Fi+%26+TV&minPrice=10&maxPrice=24.99&sort=price-desc`,
+    );
+    expect(result.facets).toEqual(facets);
+  });
+
+  it('ignores facets that are not in the expected shape', async () => {
+    fetchMock.mockResolvedValue(
+      Response.json({ products: [PRODUCT], facets: { total: 'many' } }),
+    );
+    expect((await service.getProducts()).facets).toBeNull();
   });
 
   it('accepts a product array and converts a string price to a GBP label', async () => {
@@ -83,6 +115,7 @@ describe('CatalogService.getProducts', () => {
       await expect(service.getProducts()).resolves.toEqual({
         products: [],
         categories: [],
+        facets: null,
       });
     },
   );
@@ -169,6 +202,50 @@ describe('CatalogService.getProducts', () => {
     fetchMock.mockResolvedValue(new Response('not JSON'));
 
     await expect(service.getProducts()).rejects.toBeInstanceOf(SyntaxError);
+  });
+});
+
+describe('CatalogService.getCategories', () => {
+  const service = new CatalogService(BACKEND_ORIGIN);
+  const fetchMock = vi.fn<typeof fetch>();
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('shares an in-flight category refresh across concurrent requests', async () => {
+    let resolveResponse: (response: Response) => void = () => {};
+    fetchMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveResponse = resolve;
+      }),
+    );
+
+    const requests = [
+      service.getCategories(0),
+      service.getCategories(0),
+      service.getCategories(0),
+    ];
+
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      new URL('/api/products', BACKEND_ORIGIN),
+      {
+        headers: { accept: 'application/json' },
+        signal: expect.any(AbortSignal),
+      },
+    );
+    resolveResponse(Response.json({ products: [PRODUCT] }));
+
+    await expect(Promise.all(requests)).resolves.toEqual([
+      ['Audio'],
+      ['Audio'],
+      ['Audio'],
+    ]);
   });
 });
 

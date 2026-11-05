@@ -1,89 +1,56 @@
-<!doctype html>
-<html lang="en">
+{% extends "layout.njk" %}
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Browse the Ctrl-Alt-Elite product catalog.">
-    <title>Product catalog | Ctrl-Alt-Elite</title>
-    <link rel="stylesheet" href="/product-catalog/product_catalog.css">
-    <script src="/controllers/product_catalog.js" defer></script>
-</head>
+{% block title %}{{ t('catalogue.title') }}{% endblock %}
+{% block description %}{{ t('catalogue.description') }}{% endblock %}
 
-<body>
-    <header class="site-header">
-        <div class="header-inner">
-            <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">Ctrl-Alt-Elite</a>
-            <p class="basket-count" id="basketCount" aria-live="polite">Basket (0)</p>
-        </div>
-    </header>
+{% block styles %}
+<link rel="stylesheet" href="/product-catalog/product_catalog.css" />
+<link rel="stylesheet" href="/assets/filters.css" />
+{% endblock %}
 
-    <main class="catalog-main">
-        <section class="catalog-toolbar" aria-labelledby="catalogTitle">
-            <div>
-                <p class="eyebrow">Shop</p>
-                <h1 id="catalogTitle">Product catalog</h1>
-                <p class="catalog-summary">Browse the latest products from Ctrl-Alt-Elite.</p>
-            </div>
-        </section>
-
-        {% if categories.length %}
-        <div class="category-filters" role="group" aria-label="Filter by category">
-            {% for category in categories %}
-            <button class="button button-secondary category-filter" type="button" data-category-filter="{{ category }}"
-                aria-pressed="false" aria-controls="productGrid">{{ category }}</button>
-            {% endfor %}
-        </div>
+{% block content %}
+<div class="catalog-main">
+    <section class="catalog-toolbar" aria-labelledby="catalogTitle">
+        <p class="eyebrow">{{ t('catalogue.eyebrow') }}</p>
+        <h1 id="catalogTitle">{{ pageHeading or t('catalogue.heading') }}</h1>
+        {% if not productError %}
+        <p class="catalog-summary" id="resultsCount" role="status">{{ resultsSummary or t('catalogue.intro') }}</p>
         {% endif %}
+    </section>
 
-        <p class="results-count" id="resultsCount" aria-live="polite">{{ products.length }} products</p>
+    {% if filterPanel %}
+    {% include "_filterPanel.njk" %}
+    {% endif %}
 
-        <section class="product-grid" id="productGrid" aria-label="Products">
-            {% if productError %}
-            <p class="empty-state" role="alert">{{ productError }}</p>
-            {% else %}
-            {% for product in products %}
-            <article class="product-tile" data-product-card data-category="{{ product.category }}">
-                <div class="product-image-wrap">
-                    <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
-                    <span class="product-category">{{ product.category }}</span>
+    <section class="product-grid" id="productGrid" aria-label="{{ t('catalogue.products') }}">
+        {% if productError %}
+        <p class="empty-state" role="alert">{{ productError }}</p>
+        {% else %}
+        {% for product in products %}
+        <article class="product-tile" data-product-card data-category="{{ product.category }}">
+            <div class="product-image-wrap">
+                <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
+                <span class="product-category">{{ tCategory(product.category) }}</span>
+            </div>
+            <div class="product-content">
+                <h2>{{ product.name }}</h2>
+                <p class="product-price">{{ product.priceLabel }}</p>
+                <p class="product-stock">{{ product.stockLabel }}</p>
+                <div class="product-actions">
+                    <a class="button button-secondary" href="/products/{{ product.id | urlencode }}" aria-label="{{ t('product.viewDetailsOf', { name: product.name }) }}">{{ t('product.viewDetails') }}</a>
+                    <form action="/basket/items" method="post">
+                        <input type="hidden" name="productId" value="{{ product.id }}" />
+                        <button class="button button-primary" type="submit" {% if not product.available %}
+                            disabled{% endif %}>{{ t('product.addToBasket') }}</button>
+                    </form>
                 </div>
-                <div class="product-content">
-                    <h2>{{ product.name }}</h2>
-                    <p class="product-price">{{ product.priceLabel }}</p>
-                    <p class="product-stock">{{ product.stockLabel }}</p>
-                    <div class="product-actions">
-                        <button class="button button-secondary" type="button" data-view-details
-                            data-product-name="{{ product.name }}" data-product-category="{{ product.category }}"
-                            data-product-price="{{ product.priceLabel }}" data-product-image="{{ product.image }}"
-                            data-product-description="{{ product.description }}">View details</button>
-                        <form action="/basket/items" method="post">
-                            <input type="hidden" name="productId" value="{{ product.id }}" />
-                            <button class="button button-primary" type="submit" {% if not product.available %}
-                                disabled{% endif %}>Add to basket</button>
-                        </form>
-                    </div>
-                </div>
-            </article>
-            {% else %}
-            <p class="empty-state">There are no products to show right now.</p>
-            {% endfor %}
-            {% endif %}
-        </section>
-        <button class="cta-button" onclick="location.href='/'">Go Home</button>
-    </main>
-
-    <dialog class="details-dialog" id="productDetails" aria-labelledby="detailsName">
-        <div class="dialog-header">
-            <p class="eyebrow" id="detailsCategory"></p>
-            <button class="dialog-close" type="button" data-close-details
-                aria-label="Close product details">&times;</button>
-        </div>
-        <img class="dialog-image" id="detailsImage" alt="">
-        <h2 id="detailsName"></h2>
-        <p class="dialog-price" id="detailsPrice"></p>
-        <p class="dialog-description" id="detailsDescription"></p>
-    </dialog>
-</body>
-
-</html>
+            </div>
+        </article>
+        {% else %}
+        <p class="empty-state">{{ t('catalogue.empty') }}</p>
+        {% endfor %}
+        {% endif %}
+    </section>
+    <a class="cta-button" href="/">{{ t('catalogue.goHome') }}</a>
+</div>
+{% endblock %}

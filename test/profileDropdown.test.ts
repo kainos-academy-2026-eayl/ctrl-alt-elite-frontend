@@ -6,6 +6,7 @@ import { jwtVerify, SignJWT } from 'jose';
 import { afterAll, beforeAll, describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
 import { LoginSession } from '../src/util/loginSession';
+import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 
@@ -183,16 +184,27 @@ describe('homepage profile dropdown', () => {
     assert.match(profileHtml, /<title>My Profile \| Ctrl-Alt-Elite<\/title>/);
     assert.match(profileHtml, /<h2>Test Customer<\/h2>/);
     assert.match(profileHtml, /class="profile-preview-avatar"/);
-    assert.match(profileHtml, /Design preview only/);
-    assert.match(profileHtml, /href="\/">Back to home/);
+    assert.match(profileHtml, /Sign in again to load and save your profile\./);
+    assert.match(
+      profileHtml,
+      /<fieldset class="profile-details-fields" disabled>/,
+    );
+    assert.match(profileHtml, /aria-label="Main navigation"/);
+    assert.match(profileHtml, /href="\/"[^>]*>Home<\/a>/);
     assert.match(profileHtml, /href="\/assets\/profile\.css"/);
-    assert.doesNotMatch(profileHtml, /{{|{%|<form|<script/);
+    assert.match(profileHtml, /<form action="\/profile" method="post">/);
+    assert.doesNotMatch(profileHtml, /{{|{%/);
+    // The layout loads the shared script once; the profile page adds no other.
+    assert.deepEqual(
+      withoutAccessibilityMenu(profileHtml).match(/<script\b[^>]*>/g),
+      ['<script src="/controllers/script.js" defer>'],
+    );
     const stylesheet = await fetch(`${base}/assets/profile.css`);
     assert.equal(stylesheet.status, 200);
     assert.match(stylesheet.headers.get('content-type') ?? '', /text\/css/);
   });
 
-  it('renders cosmetic profile fields without submission or backend calls', async () => {
+  it('renders disabled profile fields for a legacy session without backend calls', async () => {
     const backendRequest = vi.fn();
     backend.on('request', backendRequest);
     try {
@@ -206,28 +218,63 @@ describe('homepage profile dropdown', () => {
         ['profile-username', 'Username'],
         ['profile-first-name', 'First name'],
         ['profile-second-name', 'Second name'],
-        ['profile-pronouns', 'Pronouns'],
-        ['profile-description', 'About you'],
+        ['profile-email', 'Email address'],
+        ['profile-phone', 'Phone number'],
+        ['profile-address-line-1', 'Address line 1'],
+        ['profile-address-line-2', 'Address line 2'],
+        ['profile-postcode', 'Postcode'],
       ]) {
         assert.ok(html.includes(`for="${id}">${label}</label>`));
         assert.ok(html.includes(`id="${id}"`));
       }
+      for (const [id, type, name, autocomplete] of [
+        ['profile-phone', 'tel', 'phoneNumber', 'tel'],
+        ['profile-address-line-1', 'text', 'addressLine1', 'address-line1'],
+        ['profile-address-line-2', 'text', 'addressLine2', 'address-line2'],
+        ['profile-postcode', 'text', 'postcode', 'postal-code'],
+      ]) {
+        const input = html.match(
+          new RegExp(`<input[^>]*id="${id}"[^>]*>`),
+        )?.[0];
+        assert.ok(input, `Missing profile input: ${id}`);
+        assert.ok(input.includes(`type="${type}"`));
+        assert.ok(input.includes(`name="${name}"`));
+        assert.ok(input.includes(`autocomplete="${autocomplete}"`));
+      }
+      const emailInput = html.match(/<input[^>]*id="profile-email"[^>]*>/)?.[0];
+      assert.ok(emailInput);
+      assert.match(emailInput, /type="email"/);
+      assert.match(emailInput, /autocomplete="email"/);
+      assert.match(emailInput, /\breadonly\b/);
+      assert.doesNotMatch(emailInput, /\bname=/);
       assert.match(
         html,
         /type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/,
       );
-      for (const pronouns of ['he/him', 'she/her', 'they/them', 'other']) {
-        assert.ok(html.includes(`<option value="${pronouns}">`));
-      }
-      assert.match(html, /<option value="">Prefer not to say<\/option>/);
-      assert.match(html, /<textarea[^>]*maxlength="200"/);
+      assert.doesNotMatch(
+        withoutAccessibilityMenu(html),
+        /profile-pronouns|profile-description|<select|<textarea/,
+      );
       assert.match(
         html,
-        /<button[^>]*type="button"[^>]*disabled[^>]*>Save changes<\/button>/,
+        /<button[^>]*type="submit"[^>]*disabled[^>]*>Save changes<\/button>/,
       );
-      assert.match(html, /changes are not saved/);
-      assert.match(html, /pictures are not uploaded or previewed/);
-      assert.doesNotMatch(html, /<form|<script|\/api\/|profileController/);
+      assert.match(html, /<fieldset class="profile-details-fields" disabled>/);
+      assert.match(html, /Sign in again to load and save your profile\./);
+      assert.match(html, /<input[^>]*id="profile-picture"[^>]*disabled/);
+      assert.match(html, /<form action="\/profile" method="post">/);
+      assert.match(
+        html,
+        /<script src="\/controllers\/script\.js" defer><\/script>/,
+      );
+      assert.doesNotMatch(
+        html,
+        /Design preview only|changes are not saved|{{|{%/,
+      );
+      assert.deepEqual(
+        withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g),
+        ['<script src="/controllers/script.js" defer>'],
+      );
       assert.equal(backendRequest.mock.calls.length, 0);
     } finally {
       backend.off('request', backendRequest);
@@ -267,7 +314,10 @@ describe('homepage profile dropdown', () => {
     const html = await response.text();
     assert.equal(response.status, 200);
     assert.match(html, /<h2>Signed In Customer<\/h2>/);
-    assert.doesNotMatch(html, /AnotherUser|someone-else/);
+    assert.doesNotMatch(
+      withoutAccessibilityMenu(html),
+      /AnotherUser|someone-else/,
+    );
   });
 
   it('escapes the signed-in name when rendering the dropdown and profile', async () => {

@@ -1,7 +1,7 @@
 {% extends "layout.njk" %}
 
-{% block title %}Log in | Ctrl-Alt-Elite{% endblock %}
-{% block description %}Log in to your Ctrl-Alt-Elite account.{% endblock %}
+{% block title %}{{ t('login.title') }}{% endblock %}
+{% block description %}{{ t('login.description') }}{% endblock %}
 {% block bodyClass %}login-page{% endblock %}
 
 {% block styles %}
@@ -10,9 +10,9 @@
 
 {% block content %}
     <section class="login-container" aria-labelledby="login-heading">
-      <p class="eyebrow">Welcome back</p>
-      <h1 id="login-heading">Log in</h1>
-      <h2>Please enter your details</h2>
+      <p class="eyebrow">{{ t('login.eyebrow') }}</p>
+      <h1 id="login-heading">{{ t('login.heading') }}</h1>
+      <h2>{{ t('login.subheading') }}</h2>
       <form class="login-form" action="/login" method="post">
         {% if returnTo %}
         <input type="hidden" name="returnTo" value="{{ returnTo }}" />
@@ -21,7 +21,7 @@
         <p id="loginMessage" class="login-message" role="alert">{{ errorMessage }}</p>
         {% endif %}
         <div class="login-form-group">
-          <label for="email">Email address</label>
+          <label for="email">{{ t('login.email') }}</label>
           <input
             id="email"
             name="email"
@@ -33,7 +33,7 @@
           />
         </div>
         <div class="login-form-group">
-          <label for="password">Password</label>
+          <label for="password">{{ t('login.password') }}</label>
           <div class="password-field">
             <input
               id="password"
@@ -47,8 +47,8 @@
               class="password-toggle"
               type="button"
               aria-controls="password"
-              aria-label="Show password"
-              title="Show password"
+              aria-label="{{ t('js.password.show') }}"
+              title="{{ t('js.password.show') }}"
               data-password-toggle
               hidden
             >
@@ -60,7 +60,7 @@
             </button>
           </div>
         </div>
-        <button class="login-btn" type="submit">Log in</button>
+        <button class="login-btn" type="submit">{{ t('login.submit') }}</button>
       </form>
     </section>
 {% endblock %}

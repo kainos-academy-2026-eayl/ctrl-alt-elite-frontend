@@ -1,5 +1,11 @@
 import type { BasketResponseDto } from '../dtos/basketDto';
+import { currentPreferences } from '../i18n/context';
+import { formatPrice, isConvertedCurrency } from '../i18n/money';
+import { t, tCount } from '../i18n/runtime';
+import { localiseProduct } from '../i18n/server';
 import type { BasketNotice } from '../util/basketCookie';
+
+export { formatPounds, formatPrice } from '../i18n/money';
 
 /*
  * Page model for basket.njk. Turns the backend basket into display-ready
@@ -9,6 +15,8 @@ import type { BasketNotice } from '../util/basketCookie';
 export interface BasketSummary {
   itemCount: number;
   itemCountText: string;
+  /** The header basket link's text for screen readers, e.g. "Basket, 2 items". */
+  label: string;
 }
 
 export interface BasketLineView {
@@ -31,6 +39,8 @@ export interface BasketPage {
   lines: BasketLineView[];
   isEmpty: boolean;
   total: string;
+  /** Explains converted prices, or '' when prices are shown in pounds. */
+  currencyNote: string;
   notice: BasketNotice | null;
   loadErrorMessage: string;
   focusTarget: string | null;
@@ -46,17 +56,8 @@ export interface BasketPageInput {
   now: Date;
 }
 
-const currency = new Intl.NumberFormat('en-GB', {
-  style: 'currency',
-  currency: 'GBP',
-});
-
-export function formatPrice(pence: number): string {
-  return currency.format(pence / 100);
-}
-
 export function formatItemCount(count: number): string {
-  return `${count} ${count === 1 ? 'item' : 'items'}`;
+  return tCount('count.items', count);
 }
 
 /** The header basket link: "Basket, 2 items" with a count badge. */
@@ -64,7 +65,11 @@ export function toBasketSummary(
   basket: BasketResponseDto | null,
 ): BasketSummary {
   const itemCount = basket?.itemCount ?? 0;
-  return { itemCount, itemCountText: formatItemCount(itemCount) };
+  return {
+    itemCount,
+    itemCountText: formatItemCount(itemCount),
+    label: tCount('header.basket', itemCount),
+  };
 }
 
 function toLineView(
@@ -75,7 +80,7 @@ function toLineView(
   const itemUrl = `/basket/items/${encodeURIComponent(line.id)}`;
   return {
     id: line.id,
-    name: line.name,
+    name: localiseProduct(line).name,
     quantity: line.quantity,
     unitPrice: formatPrice(line.unitPricePence),
     lineTotal: formatPrice(line.lineTotalPence),
@@ -104,6 +109,9 @@ export function buildBasketPage({
     lines,
     isEmpty: lines.length === 0,
     total: formatPrice(basket?.totalPence ?? 0),
+    currencyNote: isConvertedCurrency()
+      ? t('basket.payInPounds', { currency: currentPreferences().currency })
+      : '',
     notice,
     loadErrorMessage,
     focusTarget,

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ prefs().locale }}">
 
 <head>
 <meta charset="utf-8" />
@@ -7,24 +7,26 @@
 <meta name="robots" content="noindex" />
 <link rel="stylesheet" href="/assets/styles.css" />
 <link rel="stylesheet" href="/assets/unavailable.css" />
-<title>Access denied | Ctrl-Alt-Elite</title>
+<link rel="stylesheet" href="/assets/a11y.css" />
+<title>{{ t('accessDenied.title') }}</title>
 </head>
 
 <body>
+  {% include "_pageTop.njk" %}
   <header class="site-header">
     <div class="page-width header-content">
-      <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
+      <a class="brand" href="/" aria-label="{{ t('site.home') }}">
         <span class="brand-mark" aria-hidden="true">C</span>
-        <span>Ctrl-Alt-Elite</span>
+        <span>{{ t('site.name') }}</span>
       </a>
     </div>
   </header>
 
-  <main>
+  <main id="main-content" tabindex="-1">
     <section class="page-width welcome" aria-labelledby="access-denied-heading">
-      <h1 id="access-denied-heading">Access denied</h1>
+      <h1 id="access-denied-heading">{{ t('accessDenied.heading') }}</h1>
       <p class="welcome-copy">{{ message }}</p>
-      <a class="button-link" href="/">Return to the homepage</a>
+      <a class="button-link" href="/">{{ t('accessDenied.home') }}</a>
     </section>
   </main>
 </body>

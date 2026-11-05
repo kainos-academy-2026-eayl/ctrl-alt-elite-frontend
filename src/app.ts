@@ -1,14 +1,22 @@
+import {
+  createPreferencesMiddleware,
+  createPreferencesRouter,
+} from './i18n/preferences';
+import './i18n/server';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express } from 'express';
 import nunjucks from 'nunjucks';
+import { addI18nGlobals } from './i18n/templates';
 import { errorHandler } from './middleware/errorHandler';
 import { requireSameOrigin } from './middleware/requireSameOrigin';
 import { createBasketRouter } from './routes/basketRouter';
+import { createCheckoutRouter } from './routes/checkoutRouter';
 import { AccountController } from './server/controllers/account-controller';
 import { AdminController } from './server/controllers/admin-controller';
 import { BasketController } from './server/controllers/basketController';
 import { CatalogController } from './server/controllers/catalog-controller';
+import { CheckoutController } from './server/controllers/checkoutController';
 import { HomeController } from './server/controllers/home-controller';
 import { LoginController } from './server/controllers/login';
 import { ProductDetailController } from './server/controllers/productDetailController';
@@ -17,8 +25,16 @@ import { StatusController } from './server/controllers/status-controller';
 import { SupportController } from './server/controllers/support-controller';
 import { createAdminRouter } from './server/routes/admin';
 import { CatalogService } from './server/services/catalog-service';
+import { ProfileService } from './server/services/profile-service';
+import {
+  addSiteNavigationGlobal,
+  createSiteNavigationMiddleware,
+} from './server/siteNavigation';
 import { BasketService } from './services/basketService';
+import { CheckoutService } from './services/checkoutService';
+import { PostcodeService } from './services/postcodeService';
 import { ProductService } from './services/productService';
+import { ProductTranslationService } from './services/productTranslationService';
 import { createApiProxy } from './util/apiProxy';
 import { createCustomerGuard } from './util/customerGuard';
 import { LoginSession } from './util/loginSession';
@@ -65,16 +81,25 @@ export function createApp(
 ): Express {
   const app = express();
   app.set('views', VIEWS_DIRECTORY);
-  nunjucks.configure([VIEWS_DIRECTORY], {
+  const customerTemplates = nunjucks.configure([VIEWS_DIRECTORY], {
     autoescape: true,
     express: app,
     noCache: process.env.NODE_ENV !== 'production',
   });
+  addI18nGlobals(customerTemplates);
+  addSiteNavigationGlobal(customerTemplates);
   app.set('view engine', 'njk');
   const loginSession = new LoginSession(jwtSecret);
   const loginController = new LoginController(backendOrigin, loginSession);
-  const basketController = new BasketController(
-    new BasketService(backendOrigin),
+  const basketService = new BasketService(backendOrigin);
+  const basketController = new BasketController(basketService);
+  const checkoutService = new CheckoutService(backendOrigin);
+  const postcodeService = new PostcodeService();
+  const checkoutController = new CheckoutController(
+    checkoutService,
+    basketService,
+    loginSession,
+    postcodeService,
   );
 
   // noCache is a loader option, so it must be set on the loader to take effect.
@@ -84,6 +109,8 @@ export function createApp(
     }),
     { autoescape: true },
   );
+  addI18nGlobals(adminTemplates);
+  addSiteNavigationGlobal(adminTemplates);
 
   const productService = new ProductService(backendOrigin);
   const catalogService = new CatalogService(backendOrigin);
@@ -94,7 +121,12 @@ export function createApp(
     basketController,
     catalogService,
   );
-  const accountController = new AccountController(loginSession, adminTemplates);
+  const accountController = new AccountController(
+    loginSession,
+    adminTemplates,
+    new ProfileService(backendOrigin),
+    checkoutService,
+  );
   const supportController = new SupportController();
   const statusController = new StatusController(adminTemplates);
   const adminController = new AdminController(
@@ -103,6 +135,14 @@ export function createApp(
     readAppVersion,
   );
 
+  app.use('/api/profile', (req, res, next) => {
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      res.setHeader('Cache-Control', 'no-store');
+      next();
+      return;
+    }
+    requireSameOrigin(req, res, next);
+  });
   app.use('/api', createApiProxy(backendOrigin));
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
@@ -114,6 +154,21 @@ export function createApp(
       { index: false },
     ),
   );
+  // Every page after this point is shown in the visitor's language and
+  // currency (static files and the API proxy above do not need them).
+  app.use(
+    createPreferencesMiddleware(new ProductTranslationService(backendOrigin)),
+  );
+  app.use('/preferences', createPreferencesRouter());
+  app.use(
+    createSiteNavigationMiddleware({
+      backendOrigin,
+      loginSession,
+      catalogService,
+      getHeaderBasket: basketController.getHeaderBasket,
+    }),
+  );
+
   const catalogController = new CatalogController(catalogService);
   app.get('/products', catalogController.showProducts);
 
@@ -141,10 +196,16 @@ export function createApp(
   );
 
   app.get('/profile', accountController.showProfile);
+  app.post(
+    '/profile',
+    requireSameOrigin,
+    express.urlencoded({ extended: false, limit: '16kb' }),
+    accountController.saveProfile,
+  );
   app.post('/logout', requireSameOrigin, accountController.logout);
   app.get('/register', accountController.showRegister);
 
-  app.get('/checkout', basketController.showCheckout);
+  app.use('/checkout', createCheckoutRouter(checkoutController));
   app.use('/basket', createBasketRouter(basketController));
 
   app.use('/account', createCustomerGuard());

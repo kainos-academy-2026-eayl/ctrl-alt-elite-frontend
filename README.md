@@ -5,17 +5,21 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | Route | What it does |
 | --- | --- |
 | `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Products come from the backend `/api/products` catalogue (via [CatalogService](src/server/services/catalog-service.ts)) and are chosen by [homepage-products.ts](src/server/services/homepage-products.ts): "Featured products" is the first six in-stock products, and a looping CSS-only conveyor shows six other in-stock products picked at random on each visit, each linking to its product page. The products listed in [src/data/hiddenProducts.ts](src/data/hiddenProducts.ts) are never shown on the homepage. |
-| `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts) |
+| `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts). Safe `returnTo` paths return users to their intended page after login, provided the destination matches their role. |
 | `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
-| `GET /profile` | Signed-in profile design preview ([src/views/profile.njk](src/views/profile.njk)) with a picture picker, username, first and second names, pronouns and a short description. Cosmetic only: no controller, profile API calls, picture upload/preview or saving. |
+| `GET /profile` | Signed-in profile ([src/views/profile.njk](src/views/profile.njk)). [AccountController](src/server/controllers/account-controller.ts) uses [ProfileService](src/server/services/profile-service.ts) to load saved username, names, email, address and phone from authenticated `GET /api/profile`. Username is display-only; email is the read-only login identifier. Older sessions without a backend token show a sign-in notice with editing disabled. Rejected authentication clears the session and redirects to login; API outages redirect to `/unavailable`. |
+| `POST /profile` | Same-origin protected form save through backend `PATCH /api/profile`. Preserves submitted values on validation/conflict errors, refreshes the displayed account name without extending login expiry, and redirects after success. Optional address/phone/username fields may be cleared; first and last names are required. |
 | `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/server/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
 | `GET /products/:id` | Product page, rendered on the server with no client-side JavaScript: [ProductDetailController](src/server/controllers/productDetailController.ts) → [CatalogService](src/server/services/catalog-service.ts) (calls the backend `/api/products/:id`) → [product-detail.page.ts](src/views/product-detail.page.ts) → [product-detail.njk](src/views/product-detail.njk). Has an "Add to Basket" form; unknown products show a 404 page. |
-| `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/server/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms. |
+| `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/server/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms and a **Filter & sort** dropdown (see below). |
+| `GET /products` | Product catalogue ([product.njk](src/views/product.njk)), loaded from the backend `/api/products` by [CatalogController](src/server/controllers/catalog-controller.ts). Has the same **Filter & sort** dropdown as search, and **View details** links to each product page. |
 | `POST /basket/items` | "Add to Basket" form (`productId`), then redirects to `/basket` |
 | `POST /basket/items/:productId` | Quantity +/− form (`change` = `1` or `-1`), then redirects to `/basket` |
 | `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
 | `POST /basket/checkout` | Verifies the saved basket and redirects to `/checkout` |
-| `GET /checkout` | Server-rendered review of the saved basket items and total |
+| `GET /checkout` | Checkout, rendered on the server with no client-side JavaScript: [checkoutRouter](src/routes/checkoutRouter.ts) → [CheckoutController](src/server/controllers/checkoutController.ts) → [CheckoutService](src/services/checkoutService.ts) (calls the backend `/api/account`, `/api/delivery-options` and `/api/orders`) → [checkout.page.ts](src/views/checkout.page.ts) → [checkout.njk](src/views/checkout.njk). Anyone without a login session sees only **Log in** (`/login?returnTo=/checkout`) and **Create an account** buttons, because orders are paid from the account's credit balance. Logged-in customers go through three steps, starting with an empty form: 1. their details and home address, 2. delivery (standard 3–5 days, express 1–2 days, or one of three collection points), 3. payment from their credit balance, then **Checkout**. |
+| `POST /checkout` | Every checkout step. The form posts all fields each time (earlier steps as hidden inputs), with `action` set to `continue-to-delivery`, `edit-details`, `continue-to-payment`, `edit-delivery` or `place-order`. Postcodes must really exist: [PostcodeService](src/services/postcodeService.ts) checks them with [postcodes.io](https://postcodes.io) (free, no API key; only the postcode is sent). Customers enter their address manually; the service does not suggest unverified addresses. Email addresses and UK phone numbers are checked before the customer can continue, and again by the backend. Placing the order clears the `basket_id` cookie and redirects to the confirmation. Simultaneous submissions for one basket share the same in-process order request. |
+| `GET /checkout/confirmation/:orderId` | Order confirmation ([order-confirmation.njk](src/views/order-confirmation.njk)): says the order was successful and shows the order number, items, delivery, address and remaining credit balance. Only the customer who placed the order can see it. |
 | `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)), Admin role only. [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customer-service` | Customer Service dashboard ([customer-service-dashboard.njk](src/views/admin/customer-service-dashboard.njk)) linking to Customers, Orders, Support Tickets and Settings. Customer Service role only; other staff are redirected to their own dashboard. |
 | `GET /dashboard` | Target of the **Dashboard** option in the homepage Account menu (staff only). Redirects staff to the dashboard of their role, and visitors to `/login`. |
@@ -38,6 +42,18 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
+
+### Profile pictures
+
+Profile pictures are loaded, previewed, uploaded and removed by the existing
+[browser script](src/controllers/script.ts). Uploads go through the authenticated
+API proxy as raw JPG, PNG or WebP bytes (20 MiB and 16 megapixels maximum).
+Picture changes are saved separately from the details form. The homepage dropdown
+loads the current display name and picture, with a default avatar when no picture
+is saved and an explicit notice if profile data cannot be loaded.
+JavaScript is required for picture changes, but the details form works without it.
+The backend profile contact-details migration must be applied before using these
+fields; email cannot be changed through the profile API.
 
 ### Order history API contract (backend pending)
 
@@ -213,6 +229,24 @@ Generated folders — `node_modules/` and `dist/` — are ignored by git and saf
 ### Why `app.ts` and `index.ts` are separate
 
 [src/app.ts](src/app.ts) creates and configures the Express app but never starts listening. [src/index.ts](src/index.ts) reads configuration and starts the server. Keeping those responsibilities separate makes route registration independent from server startup, and lets the tests call `createApp()` directly.
+
+## Accessibility, language and currency
+
+Every customer page has a "Skip to main content" link and a floating accessibility button. The button opens a panel to choose:
+
+- **Language:** English, Welsh (`cy`), Irish (`ga`) or French (`fr`). This translates page text and product names and descriptions.
+- **Currency:** pounds or euros. Euros are display-only, at a fixed rate in [src/i18n/locales.ts](src/i18n/locales.ts). Checkout, order confirmation and credit balances always show the exact amount in pounds.
+- **Button position:** any corner. You can also drag the button to a corner.
+
+The panel is a plain form that posts to `POST /preferences`. It saves the choices in the `lang`, `currency` and `a11y_position` cookies, so it works without JavaScript. With JavaScript, Escape closes the panel and the search filters. Without a `lang` cookie, the language comes from the browser's `Accept-Language` header. Staff pages (`/admin`, `/dashboard`) always stay in English and pounds.
+
+How it fits together:
+
+- [src/i18n/messages/en.ts](src/i18n/messages/en.ts) holds every English string and is the source of truth. `cy.ts`, `ga.ts` and `fr.ts` translate the same keys, and any missing key falls back to English.
+- Templates call `t('key')`, `tCount('key', n)` and `prefs()`. Server code imports `t` from [src/i18n/runtime.ts](src/i18n/runtime.ts). Keys starting with `js.` are also sent to browser scripts.
+- Product translations come from the backend's `GET /api/product-translations?lang=` and are cached for five minutes.
+
+To add a string, add the key to `en.ts` and each translation file. To add a language, add it to `LOCALES` in [src/i18n/locales.ts](src/i18n/locales.ts), add a messages file, register it in [src/i18n/server.ts](src/i18n/server.ts) and seed product translations in the backend. The translations were machine-made and should be checked by native speakers.
 
 ## Adding a new page
 

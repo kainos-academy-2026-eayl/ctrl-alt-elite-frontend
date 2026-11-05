@@ -1,0 +1,343 @@
+/* Checkout steps, the basket summary beside them, and the order confirmation. */
+
+.checkout {
+  padding-block: 2rem 3rem;
+}
+
+.checkout h1 {
+  margin: 0 0 1.5rem;
+  color: #14532d;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+}
+
+/* A secondary action next to the green basket-button. */
+.checkout-secondary-button {
+  display: inline-block;
+  padding: calc(0.75rem - 2px) calc(1.5rem - 2px);
+  border: 2px solid #15803d;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #14532d;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.checkout-secondary-button:hover {
+  background: #dcfce7;
+}
+
+.checkout-secondary-button:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.checkout-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.checkout-panel {
+  margin-bottom: 1.25rem;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.checkout-form .checkout-panel {
+  margin-bottom: 0;
+}
+
+.checkout-panel h2 {
+  margin: 0 0 1rem;
+  color: #14532d;
+  font-size: 1.35rem;
+}
+
+.checkout-panel-upcoming h2 {
+  margin: 0;
+  color: #6b7280;
+}
+
+.checkout-step-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.checkout-step-number {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: #15803d;
+  color: #f8fafc;
+  font-size: 1rem;
+}
+
+.checkout-panel-upcoming .checkout-step-number {
+  background: #9ca3af;
+}
+
+.checkout-subheading {
+  margin: 1.5rem 0 0.5rem;
+  color: #14532d;
+  font-size: 1.1rem;
+}
+
+.checkout-field {
+  margin-bottom: 1.25rem;
+}
+
+.checkout-field-error {
+  padding-left: 1rem;
+  border-left: 0.3rem solid #b91c1c;
+}
+
+.checkout-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+}
+
+.checkout-hint {
+  margin: 0 0 0.5rem;
+  color: #4b5563;
+}
+
+.checkout-error-message {
+  margin: 0 0 0.5rem;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.checkout-input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 28rem;
+  padding: 0.6rem 0.75rem;
+  border: 2px solid #374151;
+  border-radius: 0.4rem;
+  font: inherit;
+}
+
+.checkout-input-medium {
+  max-width: 16rem;
+}
+
+.checkout-input-short {
+  max-width: 9rem;
+}
+
+.checkout-field-error .checkout-input {
+  border-color: #b91c1c;
+}
+
+.checkout-input:focus-visible,
+.checkout-radio input:focus-visible,
+.checkout-change:focus-visible,
+.checkout-error-summary a:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.checkout-postcode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.checkout-postcode .checkout-secondary-button {
+  margin-bottom: 1.25rem;
+}
+
+.checkout-fieldset {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+}
+
+.checkout-radio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.checkout-radio input {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0.15rem 0 0;
+  accent-color: #15803d;
+}
+
+.checkout-option-price {
+  margin-left: 0.25rem;
+  color: #14532d;
+  font-weight: 700;
+}
+
+.checkout-summary-list {
+  margin: 0 0 1rem;
+}
+
+.checkout-summary-list > div {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 2fr;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.checkout-summary-list dt {
+  font-weight: 700;
+}
+
+.checkout-summary-list dd {
+  margin: 0;
+}
+
+.checkout-payment dd {
+  text-align: right;
+}
+
+.basket-table + .checkout-summary-list {
+  margin-top: 1rem;
+}
+
+.checkout-payment-total {
+  font-size: 1.15rem;
+}
+
+.checkout-payment-total dd {
+  font-weight: 700;
+}
+
+/* "Change" looks like a link but is a submit button, so the form is kept. */
+.checkout-change {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #15803d;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.checkout-submit {
+  width: 100%;
+  font-size: 1.15rem;
+}
+
+.checkout-error-summary {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 0.3rem solid #b91c1c;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.checkout-error-summary h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.checkout-error-summary ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.checkout-error-summary a {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.checkout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.checkout-login {
+  max-width: 40rem;
+}
+
+.checkout-login-basket {
+  margin: 0;
+  color: #4b5563;
+}
+
+.checkout-lines {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.checkout-lines li,
+.checkout-basket-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0;
+}
+
+.checkout-basket-total {
+  margin: 0 0 1rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.75rem;
+}
+
+.checkout-confirmation-banner {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background: #15803d;
+  color: #f8fafc;
+  text-align: center;
+}
+
+.checkout-confirmation-banner h1 {
+  margin: 0 0 0.75rem;
+  color: #f8fafc;
+}
+
+.checkout-confirmation-banner p {
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+}
+
+.checkout-order-number {
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* The basket summary comes first on small screens. */
+  .checkout-basket {
+    order: -1;
+  }
+
+  .checkout-summary-list > div {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}

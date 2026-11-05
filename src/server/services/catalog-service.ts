@@ -1,3 +1,13 @@
+import { formatPrice } from '../../i18n/money';
+import { t } from '../../i18n/runtime';
+import { localiseProduct } from '../../i18n/server';
+import {
+  type FilterQuery,
+  isProductFacetsDto,
+  type ProductFacetsDto,
+  toBackendParams,
+} from '../../util/productFilters';
+
 type BackendProduct = {
   id: string | number;
   name: string;
@@ -42,33 +52,108 @@ function getProducts(payload: unknown): BackendProduct[] {
   throw new Error('The products API returned an unexpected response.');
 }
 
+/** Adds display labels in the visitor's language and currency. */
 function toCatalogProduct(product: BackendProduct): CatalogProduct {
   const stock = getStock(product.stock);
   return {
-    ...product,
+    ...localiseProduct(product),
     stock,
     stockLabel:
       stock === null
-        ? 'Stock unavailable'
+        ? t('product.stockUnknown')
         : stock === 0
-          ? 'Out of stock'
-          : `${stock} in stock`,
+          ? t('product.stockOut')
+          : t('product.stockCount', { count: stock }),
     available: stock !== null && stock > 0,
-    priceLabel: new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
-    }).format(Number(product.price)),
+    priceLabel: formatPrice(Math.round(Number(product.price) * 100)),
   };
 }
 
+const CATEGORIES_TTL_MS = 60_000;
+const CATEGORIES_FAILURE_TTL_MS = 15_000;
+const CATEGORIES_TIMEOUT_MS = 2_000;
+
 export class CatalogService {
+  private categoriesCache: { categories: string[]; expiresAt: number } | null =
+    null;
+  private categoriesRefresh: Promise<string[]> | null = null;
+
   constructor(private readonly backendOrigin: string) {}
 
-  async getProducts(): Promise<{
+  /**
+   * The product categories for the site navigation. Every page shows them, so
+   * they are cached briefly; if the backend is slow or down the last known
+   * list (or none) is used rather than delaying or breaking the page.
+   */
+  async getCategories(now = Date.now()): Promise<string[]> {
+    if (this.categoriesCache && this.categoriesCache.expiresAt > now) {
+      return this.categoriesCache.categories;
+    }
+    if (this.categoriesRefresh) return this.categoriesRefresh;
+
+    const refresh = this.refreshCategories(now);
+    this.categoriesRefresh = refresh;
+    try {
+      return await refresh;
+    } finally {
+      if (this.categoriesRefresh === refresh) {
+        this.categoriesRefresh = null;
+      }
+    }
+  }
+
+  private async refreshCategories(now: number): Promise<string[]> {
+    try {
+      const response = await fetch(
+        new URL('/api/products', this.backendOrigin),
+        {
+          headers: { accept: 'application/json' },
+          signal: AbortSignal.timeout(CATEGORIES_TIMEOUT_MS),
+        },
+      );
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new Error(`Products API returned ${response.status}.`);
+      }
+      const categories = [
+        ...new Set(
+          getProducts(await response.json())
+            .map((product) => product.category)
+            .filter(
+              (category): category is string =>
+                typeof category === 'string' && category.trim() !== '',
+            ),
+        ),
+      ].sort((a, b) => a.localeCompare(b));
+      this.categoriesCache = {
+        categories,
+        expiresAt: now + CATEGORIES_TTL_MS,
+      };
+      return categories;
+    } catch (error) {
+      // The navigation works without categories, so this is not an error.
+      console.debug('Unable to load categories for the navigation:', error);
+      const categories = this.categoriesCache?.categories ?? [];
+      this.categoriesCache = {
+        categories,
+        expiresAt: now + CATEGORIES_FAILURE_TTL_MS,
+      };
+      return categories;
+    }
+  }
+
+  /**
+   * Products, optionally filtered and sorted by the backend. `facets` describes
+   * every product before filtering, or is null if the backend sent none.
+   */
+  async getProducts(filters?: FilterQuery): Promise<{
     products: CatalogProduct[];
     categories: string[];
+    facets: ProductFacetsDto | null;
   }> {
-    const response = await fetch(new URL('/api/products', this.backendOrigin), {
+    const url = new URL('/api/products', this.backendOrigin);
+    if (filters) url.search = toBackendParams(filters).toString();
+    const response = await fetch(url, {
       headers: { accept: 'application/json' },
     });
 
@@ -76,13 +161,21 @@ export class CatalogService {
       throw new Error(`Products API returned ${response.status}.`);
     }
 
-    const records = getProducts(await response.json());
+    const payload: unknown = await response.json();
+    const records = getProducts(payload);
     const products = records.map(toCatalogProduct);
 
     const categories = [
       ...new Set(products.map((product) => product.category)),
     ];
-    return { products, categories };
+    const facets =
+      typeof payload === 'object' &&
+      payload !== null &&
+      'facets' in payload &&
+      isProductFacetsDto(payload.facets)
+        ? payload.facets
+        : null;
+    return { products, categories, facets };
   }
 
   /** One product by id, or null when the backend has no such product. */

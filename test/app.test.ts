@@ -14,6 +14,7 @@ import {
 } from 'vitest';
 import { createApp } from '../src/app';
 import { HIDDEN_HOMEPAGE_PRODUCT_IDS } from '../src/data/hiddenProducts';
+import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 const BACKEND_ORIGIN = 'https://backend.example.test';
@@ -34,6 +35,12 @@ function catalogueItem(id: string, name: string, stock = 10) {
     description: `${name} description`,
     stock,
   };
+}
+
+function assertOnlySharedNavigationScript(html: string): void {
+  assert.deepEqual(html.match(/<script\b[^>]*>/g), [
+    '<script src="/controllers/script.js" defer>',
+  ]);
 }
 
 const FEATURED_IDS = [
@@ -463,8 +470,8 @@ describe('frontend routes', () => {
     });
   });
 
-  describe('product pages (no JavaScript)', () => {
-    it('shows a product page with an Add to Basket form and no scripts', async () => {
+  describe('product pages (server-rendered)', () => {
+    it('shows a product page with an Add to Basket form', async () => {
       const res = await fetch(`${base}/products/hoodie-1`);
       assert.equal(res.status, 200);
       const html = await res.text();
@@ -475,7 +482,7 @@ describe('frontend routes', () => {
         html,
         /<input type="hidden" name="productId" value="hoodie-1" \/>/,
       );
-      assert.doesNotMatch(html, /<script/);
+      assertOnlySharedNavigationScript(withoutAccessibilityMenu(html));
     });
 
     it('disables Add to Basket for a product that is out of stock', async () => {
@@ -536,7 +543,7 @@ describe('frontend routes', () => {
       );
       assert.match(
         html,
-        /<a class="details-button" href="\/products\/feat-1">View details<span class="basket-visually-hidden"> of Featured feat-1<\/span><\/a>/,
+        /<a class="details-button" href="\/products\/feat-1" aria-label="View details of Featured feat-1">View details<\/a>/,
       );
       assert.doesNotMatch(html, /basket\.js/);
       assert.match(
@@ -546,8 +553,8 @@ describe('frontend routes', () => {
     });
   });
 
-  describe('GET /search (server-rendered, no JavaScript)', () => {
-    it('shows matching products with Add to Basket forms and no scripts', async () => {
+  describe('GET /search (server-rendered)', () => {
+    it('shows matching products with Add to Basket forms', async () => {
       const res = await fetch(`${base}/search?q=shirt`);
       assert.equal(res.status, 200);
       const html = await res.text();
@@ -560,7 +567,7 @@ describe('frontend routes', () => {
       );
       assert.doesNotMatch(html, /value="shirt-2"/);
       assert.match(html, /Out of Stock/);
-      assert.doesNotMatch(html, /<script/);
+      assertOnlySharedNavigationScript(withoutAccessibilityMenu(html));
     });
 
     it('explains when the closest match is shown and keeps the search term', async () => {
@@ -704,7 +711,7 @@ describe('frontend routes', () => {
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
       const html = await res.text();
       assert.match(html, /action="\/login" method="post"/);
-      assert.match(html, new RegExp(`&copy; ${new Date().getFullYear()}`));
+      assert.match(html, new RegExp(`© ${new Date().getFullYear()}`));
       assert.match(html, /id="password"[\s\S]*?type="password"/);
       const toggle = html.match(
         /<button\b[^>]*data-password-toggle[\s\S]*?<\/button>/,
@@ -1065,7 +1072,7 @@ describe('frontend routes', () => {
       return { res, html: await res.text() };
     }
 
-    it('renders an empty basket page with no scripts', async () => {
+    it('renders an empty basket page with only the shared navigation script', async () => {
       const { res, html } = await getBasketPage('');
       assert.equal(res.status, 200);
       assert.match(res.headers.get('content-type') ?? '', /text\/html/);
@@ -1078,7 +1085,7 @@ describe('frontend routes', () => {
         html,
         /<a class="basket-button" href="\/products">Back to products<\/a>/,
       );
-      assert.doesNotMatch(html, /<script/);
+      assertOnlySharedNavigationScript(withoutAccessibilityMenu(html));
     });
 
     it('adds, updates and removes items with form posts and redirects', async () => {
@@ -1138,9 +1145,10 @@ describe('frontend routes', () => {
       const checkoutHtml = await checkoutPage.text();
       assert.equal(checkoutPage.status, 200);
       assert.match(checkoutHtml, /<h1 id="checkout-heading">Checkout<\/h1>/);
-      assert.match(checkoutHtml, new RegExp(product.name));
-      assert.match(checkoutHtml, /Total \(2 items\)/);
-      assert.doesNotMatch(checkoutHtml, /<script/);
+      // Guests are asked to log in first, and their basket is kept.
+      assert.match(checkoutHtml, /Log in to check out/);
+      assert.match(checkoutHtml, /Your basket: 2 items, £49\.98/);
+      assertOnlySharedNavigationScript(withoutAccessibilityMenu(checkoutHtml));
 
       const removed = await post(`${productPath}/remove`, cookies);
       assert.equal(removed.status, 303);
@@ -1219,17 +1227,22 @@ describe('frontend routes', () => {
       assert.match(html, /10 products/);
     });
 
-    it('renders one category toggle per backend category and tags product cards', async () => {
+    it('tags product cards and links View details to each product page, with no scripts', async () => {
       const html = await (await fetch(`${base}/products`)).text();
-      const filters = [...html.matchAll(/data-category-filter="([^"]+)"/g)].map(
-        (match) => match[1],
-      );
-      assert.deepEqual(filters, ['Test category', 'Audio', 'Photography']);
-      assert.equal((html.match(/aria-pressed="false"/g) ?? []).length, 3);
       assert.equal(
         (html.match(/data-product-card data-category=/g) ?? []).length,
         10,
       );
+      assert.match(
+        html,
+        /<a class="button button-secondary" href="\/products\/database-product" aria-label="View details of Backend Product">View details/,
+      );
+      assert.doesNotMatch(
+        withoutAccessibilityMenu(html),
+        /<dialog|data-category-filter/,
+      );
+      assertOnlySharedNavigationScript(withoutAccessibilityMenu(html));
+      assert.doesNotMatch(html, /<dialog|data-category-filter/);
     });
 
     it('shows stock quantities and disables unavailable products', async () => {

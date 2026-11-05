@@ -64,7 +64,26 @@ export class LoginSession {
     });
   }
 
-  async getAccount(
+  // The site navigation and the page both read the account, so a request
+  // verifies its login cookie only once.
+  private readonly accounts = new WeakMap<
+    Request,
+    Promise<{ name: string; role?: string } | null>
+  >();
+
+  getAccount(
+    req: Request,
+    res: Response,
+  ): Promise<{ name: string; role?: string } | null> {
+    let account = this.accounts.get(req);
+    if (!account) {
+      account = this.readAccount(req, res);
+      this.accounts.set(req, account);
+    }
+    return account;
+  }
+
+  private async readAccount(
     req: Request,
     res: Response,
   ): Promise<{ name: string; role?: string } | null> {
@@ -95,6 +114,34 @@ export class LoginSession {
       this.clear(res);
       return null;
     }
+  }
+
+  async refreshName(
+    req: Request,
+    res: Response,
+    userId: string,
+    name: string,
+  ): Promise<void> {
+    const cookies = (req.headers.cookie ?? '')
+      .split(';')
+      .map((cookie) => cookie.trim())
+      .filter((cookie) => cookie.startsWith(`${COOKIE_NAME}=`));
+    if (cookies.length !== 1 || !this.key) {
+      throw new Error('A valid login is required to refresh the account name.');
+    }
+    const payload = await this.verify(
+      cookies[0]?.slice(COOKIE_NAME.length + 1) ?? '',
+    );
+    if (payload.sub !== userId)
+      throw new Error('The saved profile does not match the login.');
+    if (payload.name === name) return;
+    const token = await new SignJWT({ ...payload, name })
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .sign(this.key);
+    res.cookie(COOKIE_NAME, token, {
+      ...this.cookieOptions,
+      expires: new Date(Number(payload.exp) * 1000),
+    });
   }
 
   clear(res: Response): void {

@@ -3,6 +3,11 @@
  * the matching rules; the frontend only displays what it returns.
  */
 
+import {
+  isProductFacetsDto,
+  type ProductFacetsDto,
+} from '../util/productFilters';
+
 export interface ProductSearchItemDto {
   id: string;
   name: string;
@@ -20,6 +25,8 @@ export interface ProductSearchResponseDto {
   products: ProductSearchItemDto[];
   /** True when a misspelled word was matched to the closest product instead. */
   isClosestMatch: boolean;
+  /** Filter options for the matches; missing if the backend sent none. */
+  facets?: ProductFacetsDto;
 }
 
 function isProductSearchItemDto(value: unknown): value is ProductSearchItemDto {
@@ -52,6 +59,7 @@ export function isProductSearchResponseDto(
     typeof body.searchTerm === 'string' &&
     Array.isArray(body.products) &&
     body.products.every(isProductSearchItemDto) &&
-    typeof body.isClosestMatch === 'boolean'
+    typeof body.isClosestMatch === 'boolean' &&
+    (body.facets === undefined || isProductFacetsDto(body.facets))
   );
 }

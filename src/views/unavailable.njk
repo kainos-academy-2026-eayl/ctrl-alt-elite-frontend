@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ prefs().locale }}">
 
 <head>
 <meta charset="utf-8" />
@@ -7,34 +7,35 @@
 <meta name="robots" content="noindex" />
 <link rel="stylesheet" href="/assets/styles.css" />
 <link rel="stylesheet" href="/assets/unavailable.css" />
-<title>Ctrl-Alt-Elite | Unavailable</title>
+<link rel="stylesheet" href="/assets/a11y.css" />
+<title>{{ t('unavailable.title') }}</title>
 </head>
 
 <body>
+  {% include "_pageTop.njk" %}
   <header class="site-header">
     <div class="page-width header-content">
-      <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
+      <a class="brand" href="/" aria-label="{{ t('site.home') }}">
         <span class="brand-mark" aria-hidden="true">C</span>
-        <span>Ctrl-Alt-Elite</span>
+        <span>{{ t('site.name') }}</span>
       </a>
     </div>
   </header>
 
-  <main>
+  <main id="main-content" tabindex="-1">
     <section class="page-width welcome" aria-labelledby="unavailable-heading">
-      <p class="eyebrow">Page unavailable</p>
-      <h1 id="unavailable-heading">Website temporarily unavailable</h1>
+      <p class="eyebrow">{{ t('unavailable.eyebrow') }}</p>
+      <h1 id="unavailable-heading">{{ t('unavailable.heading') }}</h1>
       <p class="welcome-copy">
-        Sorry, we can’t load the home page right now. Please try again in a
-        little while.
+        {{ t('unavailable.message') }}
       </p>
-      <a class="button-link" href="/">Try the home page again</a>
+      <a class="button-link" href="/">{{ t('unavailable.retry') }}</a>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="page-width">
-      <p>&copy; <span data-current-year></span> Ctrl-Alt-Elite</p>
+      <p>&copy; <span data-current-year></span> {{ t('site.name') }}</p>
     </div>
   </footer>
   <script src="/controllers/script.js" defer></script>

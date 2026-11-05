@@ -4,12 +4,12 @@
   <p class="product-description">{{ product.description }}</p>
   <p class="product-price">{{ product.price }}</p>
   {% if product.isInStock %}
-  <p class="product-availability product-availability-in-stock">In Stock</p>
+  <p class="product-availability product-availability-in-stock">{{ t('product.inStock') }}</p>
   <form action="{{ addToBasketUrl }}" method="post">
     <input type="hidden" name="productId" value="{{ product.id }}" />
-    <button type="submit" class="basket-button">Add to Basket</button>
+    <button type="submit" class="basket-button">{{ t('product.addToBasket') }}</button>
   </form>
   {% else %}
-  <p class="product-availability product-availability-out-of-stock">Out of Stock</p>
+  <p class="product-availability product-availability-out-of-stock">{{ t('product.outOfStock') }}</p>
   {% endif %}
 </li>
