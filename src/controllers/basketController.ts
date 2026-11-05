@@ -1,11 +1,11 @@
 import type { Request, Response } from 'express';
-import type { BasketResponseDto } from '../../dtos/basketDto';
-import { t } from '../../i18n/runtime';
-import { localiseProduct } from '../../i18n/server';
+import type { BasketResponseDto } from '../dtos/basketDto';
+import { t } from '../i18n/runtime';
+import { localiseProduct } from '../i18n/server';
 import {
   type BasketService,
   BasketServiceError,
-} from '../../services/basketService';
+} from '../services/basketService';
 import {
   type BasketNotice,
   clearBasketCookie,
@@ -14,8 +14,8 @@ import {
   readBasketNotice,
   setBasketCookie,
   setBasketNotice,
-} from '../../util/basketCookie';
-import { buildBasketPage } from '../../views/basket.page';
+} from '../util/basketCookie';
+import { buildBasketPage } from '../views/basket.page';
 
 const MAX_PRODUCT_ID_LENGTH = 100;
 // Functions, not constants, so each message is in the visitor's language.

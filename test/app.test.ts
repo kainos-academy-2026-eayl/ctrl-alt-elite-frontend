@@ -39,7 +39,7 @@ function catalogueItem(id: string, name: string, stock = 10) {
 
 function assertOnlySharedNavigationScript(html: string): void {
   assert.deepEqual(html.match(/<script\b[^>]*>/g), [
-    '<script src="/controllers/script.js" defer>',
+    '<script src="/client/script.js" defer>',
   ]);
 }
 
@@ -723,10 +723,7 @@ describe('frontend routes', () => {
       assert.match(toggle, /title="Show password"/);
       assert.match(toggle, /\bhidden\s*>/);
       assert.match(toggle, /<svg\b[^>]*aria-hidden="true"/);
-      assert.match(
-        html,
-        /<script src="\/controllers\/login\.js" defer><\/script>/,
-      );
+      assert.match(html, /<script src="\/client\/login\.js" defer><\/script>/);
       assert.doesNotMatch(html, /{{|{%|Incorrect email or password/);
     });
   });
@@ -1291,17 +1288,17 @@ describe('frontend routes', () => {
     for (const [path, type] of [
       ['/assets/styles.css', /text\/css/],
       ['/assets/login.css', /text\/css/],
-      ['/controllers/login.js', /javascript/],
-      ['/controllers/script.js', /javascript/],
+      ['/client/login.js', /javascript/],
+      ['/client/script.js', /javascript/],
       ['/assets/register.css', /text\/css/],
-      ['/controllers/register.js', /javascript/],
+      ['/client/register.js', /javascript/],
       ['/assets/basket.css', /text\/css/],
       ['/assets/admin.css', /text\/css/],
-      ['/controllers/adminDashboard.js', /javascript/],
-      ['/controllers/adminCustomers.js', /javascript/],
-      ['/controllers/adminCustomerDetail.js', /javascript/],
+      ['/client/adminDashboard.js', /javascript/],
+      ['/client/adminCustomers.js', /javascript/],
+      ['/client/adminCustomerDetail.js', /javascript/],
       ['/assets/support.css', /text\/css/],
-      ['/controllers/support.js', /javascript/],
+      ['/client/support.js', /javascript/],
     ] as const) {
       it(`serves ${path}`, async () => {
         const res = await fetch(`${base}${path}`);

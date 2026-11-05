@@ -94,7 +94,7 @@ function setup() {
   };
   const requests: PendingRequest[] = [];
   runInNewContext(
-    readFileSync('dist/public/controllers/adminStockList.js', 'utf8'),
+    readFileSync('dist/public/client/adminStockList.js', 'utf8'),
     {
       document: {
         querySelector: (selector: string) => elements[selector],

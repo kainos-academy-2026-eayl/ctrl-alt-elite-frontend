@@ -7,35 +7,35 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import express, { type Express } from 'express';
 import nunjucks from 'nunjucks';
+import { AccountController } from './controllers/account-controller';
+import { AdminController } from './controllers/admin-controller';
+import { BasketController } from './controllers/basketController';
+import { CatalogController } from './controllers/catalog-controller';
+import { CheckoutController } from './controllers/checkoutController';
+import { HomeController } from './controllers/home-controller';
+import { LoginController } from './controllers/login';
+import { ProductDetailController } from './controllers/productDetailController';
+import { SearchController } from './controllers/searchController';
+import { StatusController } from './controllers/status-controller';
+import { SupportController } from './controllers/support-controller';
 import { addI18nGlobals } from './i18n/templates';
 import { errorHandler } from './middleware/errorHandler';
 import { requireSameOrigin } from './middleware/requireSameOrigin';
-import { createBasketRouter } from './routes/basketRouter';
-import { createCheckoutRouter } from './routes/checkoutRouter';
-import { AccountController } from './server/controllers/account-controller';
-import { AdminController } from './server/controllers/admin-controller';
-import { BasketController } from './server/controllers/basketController';
-import { CatalogController } from './server/controllers/catalog-controller';
-import { CheckoutController } from './server/controllers/checkoutController';
-import { HomeController } from './server/controllers/home-controller';
-import { LoginController } from './server/controllers/login';
-import { ProductDetailController } from './server/controllers/productDetailController';
-import { SearchController } from './server/controllers/searchController';
-import { StatusController } from './server/controllers/status-controller';
-import { SupportController } from './server/controllers/support-controller';
-import { createAdminRouter } from './server/routes/admin';
-import { CatalogService } from './server/services/catalog-service';
-import { ProfileService } from './server/services/profile-service';
 import {
   addSiteNavigationGlobal,
   createSiteNavigationMiddleware,
-} from './server/siteNavigation';
+} from './middleware/siteNavigation';
+import { createAdminRouter } from './routes/admin';
+import { createBasketRouter } from './routes/basketRouter';
+import { createCheckoutRouter } from './routes/checkoutRouter';
 import { AddressLookupService } from './services/addressLookupService';
 import { BasketService } from './services/basketService';
+import { CatalogService } from './services/catalog-service';
 import { CheckoutService } from './services/checkoutService';
 import { PostcodeService } from './services/postcodeService';
 import { ProductService } from './services/productService';
 import { ProductTranslationService } from './services/productTranslationService';
+import { ProfileService } from './services/profile-service';
 import { createApiProxy } from './util/apiProxy';
 import { createCustomerGuard } from './util/customerGuard';
 import { LoginSession } from './util/loginSession';
@@ -49,8 +49,8 @@ const PACKAGE_JSON_PATH = fileURLToPath(
 const ASSETS_DIRECTORY = fileURLToPath(
   new URL('../src/assets/', import.meta.url),
 );
-const CONTROLLERS_DIRECTORY = fileURLToPath(
-  new URL('../dist/public/controllers/', import.meta.url),
+const CLIENT_DIRECTORY = fileURLToPath(
+  new URL('../dist/public/client/', import.meta.url),
 );
 
 async function readAppVersion(): Promise<string> {
@@ -148,7 +148,7 @@ export function createApp(
   app.use('/api', createApiProxy(backendOrigin));
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
-  app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
+  app.use('/client', express.static(CLIENT_DIRECTORY));
   app.use(
     '/product-catalog',
     express.static(

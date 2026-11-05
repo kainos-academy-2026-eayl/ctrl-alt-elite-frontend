@@ -418,7 +418,7 @@ describe('admin support pages', () => {
       /<option value="RETURNS_REFUNDS">Returns &amp; Refunds<\/option>/,
     );
     assert.match(html, /data-tickets-results/);
-    assert.match(html, /src="\/controllers\/adminSupport\.js"/);
+    assert.match(html, /src="\/client\/adminSupport\.js"/);
   });
 
   it('serves the detail shell', async () => {
@@ -426,7 +426,7 @@ describe('admin support pages', () => {
       await fetch(`${base}/admin/support/1001`, admin)
     ).text();
     assert.match(html, /data-ticket-detail/);
-    assert.match(html, /src="\/controllers\/adminSupportDetail\.js"/);
+    assert.match(html, /src="\/client\/adminSupportDetail\.js"/);
   });
 
   it('adds Support Tickets to the navigation, active on its pages', async () => {
@@ -441,7 +441,7 @@ describe('admin support pages', () => {
 
   it('serves the controller bundles', async () => {
     for (const name of ['adminSupport', 'adminSupportDetail']) {
-      const res = await fetch(`${base}/controllers/${name}.js`);
+      const res = await fetch(`${base}/client/${name}.js`);
       assert.equal(res.status, 200);
       await res.text();
     }

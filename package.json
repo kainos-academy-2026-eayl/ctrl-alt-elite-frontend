@@ -9,7 +9,7 @@
     "dev:client": "npm run build:client -- --watch",
     "build": "npm run typecheck && npm run build:client && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/index.js --sourcemap",
     "typecheck": "tsc && tsc -p tsconfig.client.json",
-    "build:client": "esbuild src/controllers/*.ts --bundle --format=iife --target=es2022 --outdir=dist/public/controllers --sourcemap",
+    "build:client": "esbuild src/client/*.ts --bundle --format=iife --target=es2022 --outdir=dist/public/client --sourcemap",
     "start": "node --use-system-ca dist/index.js",
     "prepare": "husky",
     "lint": "biome check .",

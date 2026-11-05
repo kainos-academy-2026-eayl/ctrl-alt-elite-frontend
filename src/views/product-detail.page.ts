@@ -1,5 +1,5 @@
 import type { BasketResponseDto } from '../dtos/basketDto';
-import type { CatalogProduct } from '../server/services/catalog-service';
+import type { CatalogProduct } from '../services/catalog-service';
 import { type BasketSummary, toBasketSummary } from './basket.page';
 
 /*

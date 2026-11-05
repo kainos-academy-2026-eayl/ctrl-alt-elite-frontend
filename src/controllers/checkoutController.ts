@@ -1,30 +1,30 @@
 import type { Request, Response } from 'express';
-import type { BasketResponseDto } from '../../dtos/basketDto';
+import type { BasketResponseDto } from '../dtos/basketDto';
 import type {
   AccountDto,
   DeliveryOptionDto,
   OrderResultDto,
-} from '../../dtos/checkoutDto';
-import { t } from '../../i18n/runtime';
-import { renderErrorPage } from '../../middleware/errorHandler';
+} from '../dtos/checkoutDto';
+import { t } from '../i18n/runtime';
+import { renderErrorPage } from '../middleware/errorHandler';
 import type {
   AddressLookupService,
   LookedUpAddress,
-} from '../../services/addressLookupService';
+} from '../services/addressLookupService';
 import {
   type BasketService,
   BasketServiceError,
-} from '../../services/basketService';
+} from '../services/basketService';
 import {
   type CheckoutService,
   CheckoutServiceError,
-} from '../../services/checkoutService';
+} from '../services/checkoutService';
 import {
   type PostcodeService,
   PostcodeServiceError,
-} from '../../services/postcodeService';
-import { readAuthCookie } from '../../util/authCookie';
-import { clearBasketCookie, readBasketCookie } from '../../util/basketCookie';
+} from '../services/postcodeService';
+import { readAuthCookie } from '../util/authCookie';
+import { clearBasketCookie, readBasketCookie } from '../util/basketCookie';
 import {
   type CheckoutFieldError,
   type CheckoutForm,
@@ -35,14 +35,14 @@ import {
   validateDelivery,
   validateDetails,
   validatePostcode,
-} from '../../util/checkoutForm';
-import type { LoginSession } from '../../util/loginSession';
+} from '../util/checkoutForm';
+import type { LoginSession } from '../util/loginSession';
 import {
   buildCheckoutPage,
   buildOrderConfirmationPage,
   CHECKOUT_LOGIN_URL,
   type CheckoutPageInput,
-} from '../../views/checkout.page';
+} from '../views/checkout.page';
 
 // Functions, not constants, so each message is in the visitor's language.
 const POSTCODE_NOT_FOUND_MESSAGE = () => t('checkout.postcodeNotFound');

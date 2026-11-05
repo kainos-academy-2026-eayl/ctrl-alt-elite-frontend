@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CatalogService } from '../src/server/services/catalog-service';
+import { CatalogService } from '../src/services/catalog-service';
 
 const BACKEND_ORIGIN = 'https://backend.example.test';
 const PRODUCT = {

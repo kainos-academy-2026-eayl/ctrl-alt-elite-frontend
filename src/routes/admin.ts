@@ -20,6 +20,13 @@ export function createAdminRouter(
     requireDashboardRole('CUSTOMER_SERVICE'),
     controller.showCustomerServiceDashboard,
   );
+  router.get('/orders', requirePermission('orders'), controller.showOrders);
+  router.get(
+    '/orders/:id',
+    requirePermission('orders'),
+    controller.showOrderDetail,
+  );
+  router.get('/reports', requirePermission('reports'), controller.showReports);
   router.get(
     '/customers',
     requirePermission('customers'),

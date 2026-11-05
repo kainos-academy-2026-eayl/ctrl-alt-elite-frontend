@@ -254,7 +254,7 @@ describe('admin settings page', () => {
     assert.match(html, /<button[^>]*data-widgets-hide-all>Hide all<\/button>/);
     assert.match(html, /data-system-version>\d+\.\d+\.\d+/);
     assert.match(html, /data-system-error hidden/);
-    assert.match(html, /<script src="\/controllers\/adminSettings\.js" defer>/);
+    assert.match(html, /<script src="\/client\/adminSettings\.js" defer>/);
     assert.match(html, /is-active"\s+href="\/admin\/settings"/);
   });
 
@@ -265,7 +265,7 @@ describe('admin settings page', () => {
       });
       assert.match(
         await res.text(),
-        /<script src="\/controllers\/adminPreferences\.js"><\/script>/,
+        /<script src="\/client\/adminPreferences\.js"><\/script>/,
         path,
       );
     }

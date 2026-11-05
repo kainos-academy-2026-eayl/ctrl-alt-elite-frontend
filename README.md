@@ -4,47 +4,47 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 
 | Route | What it does |
 | --- | --- |
-| `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Products come from the backend `/api/products` catalogue (via [CatalogService](src/server/services/catalog-service.ts)) and are chosen by [homepage-products.ts](src/server/services/homepage-products.ts): "Featured products" is the first six in-stock products, and a looping CSS-only conveyor shows six other in-stock products picked at random on each visit, each linking to its product page. The products listed in [src/data/hiddenProducts.ts](src/data/hiddenProducts.ts) are never shown on the homepage. |
-| `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/server/controllers/login.ts). Safe `returnTo` paths return users to their intended page after login, provided the destination matches their role. |
+| `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Products come from the backend `/api/products` catalogue (via [CatalogService](src/services/catalog-service.ts)) and are chosen by [homepage-products.ts](src/services/homepage-products.ts): "Featured products" is the first six in-stock products, and a looping CSS-only conveyor shows six other in-stock products picked at random on each visit, each linking to its product page. The products listed in [src/data/hiddenProducts.ts](src/data/hiddenProducts.ts) are never shown on the homepage. |
+| `GET /login` | Nunjucks login page ([src/views/login.njk](src/views/login.njk)), rendered by the [server-side login controller](src/controllers/login.ts). Safe `returnTo` paths return users to their intended page after login, provided the destination matches their role. |
 | `GET /register` | Registration page ([src/views/register.njk](src/views/register.njk)) |
-| `GET /profile` | Signed-in profile ([src/views/profile.njk](src/views/profile.njk)). [AccountController](src/server/controllers/account-controller.ts) uses [ProfileService](src/server/services/profile-service.ts) to load saved username, names, email, address and phone from authenticated `GET /api/profile`. Username is display-only; email is the read-only login identifier. Older sessions without a backend token show a sign-in notice with editing disabled. Rejected authentication clears the session and redirects to login; API outages redirect to `/unavailable`. |
+| `GET /profile` | Signed-in profile ([src/views/profile.njk](src/views/profile.njk)). [AccountController](src/controllers/account-controller.ts) uses [ProfileService](src/services/profile-service.ts) to load saved username, names, email, address and phone from authenticated `GET /api/profile`. Username is display-only; email is the read-only login identifier. Older sessions without a backend token show a sign-in notice with editing disabled. Rejected authentication clears the session and redirects to login; API outages redirect to `/unavailable`. |
 | `POST /profile` | Same-origin protected form save through backend `PATCH /api/profile`. Preserves submitted values on validation/conflict errors, refreshes the displayed account name without extending login expiry, and redirects after success. Optional address/phone/username fields may be cleared; first and last names are required. |
-| `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/server/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
-| `GET /products/:id` | Product page, rendered on the server with no client-side JavaScript: [ProductDetailController](src/server/controllers/productDetailController.ts) → [CatalogService](src/server/services/catalog-service.ts) (calls the backend `/api/products/:id`) → [product-detail.page.ts](src/views/product-detail.page.ts) → [product-detail.njk](src/views/product-detail.njk). Has an "Add to Basket" form; unknown products show a 404 page. |
-| `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/server/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms and a **Filter & sort** dropdown (see below). |
-| `GET /products` | Product catalogue ([product.njk](src/views/product.njk)), loaded from the backend `/api/products` by [CatalogController](src/server/controllers/catalog-controller.ts). Has the same **Filter & sort** dropdown as search, and **View details** links to each product page. |
+| `GET /basket` | Basket page, rendered on the server with no client-side JavaScript: [basketRouter](src/routes/basketRouter.ts) → [BasketController](src/controllers/basketController.ts) → [BasketService](src/services/basketService.ts) (calls the backend `/api/baskets`) → [basket.page.ts](src/views/basket.page.ts) → [basket.njk](src/views/basket.njk). The basket id is kept in an httpOnly `basket_id` cookie. |
+| `GET /products/:id` | Product page, rendered on the server with no client-side JavaScript: [ProductDetailController](src/controllers/productDetailController.ts) → [CatalogService](src/services/catalog-service.ts) (calls the backend `/api/products/:id`) → [product-detail.page.ts](src/views/product-detail.page.ts) → [product-detail.njk](src/views/product-detail.njk). Has an "Add to Basket" form; unknown products show a 404 page. |
+| `GET /search?q=` | Product search, rendered on the server with no client-side JavaScript: [SearchController](src/controllers/searchController.ts) → [ProductService](src/services/productService.ts) (calls the backend `/api/products/search`) → [search.page.ts](src/views/search.page.ts) → [search.njk](src/views/search.njk). Results have "Add to Basket" forms and a **Filter & sort** dropdown (see below). |
+| `GET /products` | Product catalogue ([product.njk](src/views/product.njk)), loaded from the backend `/api/products` by [CatalogController](src/controllers/catalog-controller.ts). Has the same **Filter & sort** dropdown as search, and **View details** links to each product page. |
 | `POST /basket/items` | "Add to Basket" form (`productId`), then redirects to `/basket` |
 | `POST /basket/items/:productId` | Quantity +/− form (`change` = `1` or `-1`), then redirects to `/basket` |
 | `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
 | `POST /basket/checkout` | Verifies the saved basket and redirects to `/checkout` |
-| `GET /checkout` | Checkout, rendered on the server with no client-side JavaScript: [checkoutRouter](src/routes/checkoutRouter.ts) → [CheckoutController](src/server/controllers/checkoutController.ts) → [CheckoutService](src/services/checkoutService.ts) (calls the backend `/api/account`, `/api/delivery-options` and `/api/orders`) → [checkout.page.ts](src/views/checkout.page.ts) → [checkout.njk](src/views/checkout.njk). Anyone without a login session sees only **Log in** (`/login?returnTo=/checkout`) and **Create an account** buttons, because orders are paid from the account's credit balance. Logged-in customers go through three steps, starting with an empty form: 1. their details and home address, 2. delivery (standard 3–5 days, express 1–2 days, or one of three collection points), 3. payment from their credit balance, then **Checkout**. |
+| `GET /checkout` | Checkout, rendered on the server with no client-side JavaScript: [checkoutRouter](src/routes/checkoutRouter.ts) → [CheckoutController](src/controllers/checkoutController.ts) → [CheckoutService](src/services/checkoutService.ts) (calls the backend `/api/account`, `/api/delivery-options` and `/api/orders`) → [checkout.page.ts](src/views/checkout.page.ts) → [checkout.njk](src/views/checkout.njk). Anyone without a login session sees only **Log in** (`/login?returnTo=/checkout`) and **Create an account** buttons, because orders are paid from the account's credit balance. Logged-in customers go through three steps, starting with an empty form: 1. their details and home address, 2. delivery (standard 3–5 days, express 1–2 days, or one of three collection points), 3. payment from their credit balance, then **Checkout**. |
 | `POST /checkout` | Every checkout step. The form posts all fields each time (earlier steps as hidden inputs), with `action` set to `find-address`, `use-address`, `continue-to-delivery`, `edit-details`, `continue-to-payment`, `edit-delivery` or `place-order`. Postcodes must really exist: [PostcodeService](src/services/postcodeService.ts) checks them with [postcodes.io](https://postcodes.io) (free, no API key; only the postcode is sent). **Find address** lists six made-up addresses (house numbers on a street generated from the postcode) in the postcode's real town, from [AddressLookupService](src/services/addressLookupService.ts). These are demo data, not real addresses; customers can still type their address in instead. Email addresses and UK phone numbers are checked before the customer can continue, and again by the backend. Placing the order clears the `basket_id` cookie and redirects to the confirmation. Simultaneous submissions for one basket share the same in-process order request. |
 | `GET /checkout/confirmation/:orderId` | Order confirmation ([order-confirmation.njk](src/views/order-confirmation.njk)): says the order was successful and shows the order number, items, delivery, address and remaining credit balance. Only the customer who placed the order can see it. |
-| `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)), Admin role only. [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
+| `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)), Admin role only. [adminDashboard.ts](src/client/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customer-service` | Customer Service dashboard ([customer-service-dashboard.njk](src/views/admin/customer-service-dashboard.njk)) linking to Customers, Orders, Support Tickets and Settings. Customer Service role only; other staff are redirected to their own dashboard. |
 | `GET /dashboard` | Target of the **Dashboard** option in the homepage Account menu (staff only). Redirects staff to the dashboard of their role, and visitors to `/login`. |
-| `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/controllers/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
-| `GET /admin/customers/:id` | Customer details shell. [adminCustomerDetail.ts](src/controllers/adminCustomerDetail.ts) loads the customer from the backend. |
-| `GET /admin/settings` | Settings page ([settings.njk](src/views/admin/settings.njk)): profile (name, email, role) rendered by the server, a dark mode toggle and dashboard widget choices saved in the browser's `localStorage` ([adminPreferences.ts](src/controllers/adminPreferences.ts) applies them on every admin page), and system information whose backend and database status [adminSettings.ts](src/controllers/adminSettings.ts) loads in the browser. |
-| `GET /admin/support` | Support ticket list shell ([support.njk](src/views/admin/support.njk)). [adminSupport.ts](src/controllers/adminSupport.ts) loads every ticket (ID, customer name, subject, category, status, date created) and applies `q` (ticket ID, customer name or subject), `status` and `category` from the URL. |
-| `GET /admin/support/:id` | Ticket details (subject, category, description, customer, date created, status) with a status form and a comment thread (refreshes every 10 seconds; read-only once the ticket is closed). [adminSupportDetail.ts](src/controllers/adminSupportDetail.ts) loads the ticket, saves status changes and posts replies. |
+| `GET /admin/customers` | Customer list shell. [adminCustomers.ts](src/client/adminCustomers.ts) reads `q`, `email`, `sort` and `page` from the URL and loads, searches, sorts and paginates customers from the backend. |
+| `GET /admin/customers/:id` | Customer details shell. [adminCustomerDetail.ts](src/client/adminCustomerDetail.ts) loads the customer from the backend. |
+| `GET /admin/settings` | Settings page ([settings.njk](src/views/admin/settings.njk)): profile (name, email, role) rendered by the server, a dark mode toggle and dashboard widget choices saved in the browser's `localStorage` ([adminPreferences.ts](src/client/adminPreferences.ts) applies them on every admin page), and system information whose backend and database status [adminSettings.ts](src/client/adminSettings.ts) loads in the browser. |
+| `GET /admin/support` | Support ticket list shell ([support.njk](src/views/admin/support.njk)). [adminSupport.ts](src/client/adminSupport.ts) loads every ticket (ID, customer name, subject, category, status, date created) and applies `q` (ticket ID, customer name or subject), `status` and `category` from the URL. |
+| `GET /admin/support/:id` | Ticket details (subject, category, description, customer, date created, status) with a status form and a comment thread (refreshes every 10 seconds; read-only once the ticket is closed). [adminSupportDetail.ts](src/client/adminSupportDetail.ts) loads the ticket, saves status changes and posts replies. |
 | `GET /admin/inventory` | Product list shell (menu label **Products**), Admin role only |
 | `GET /admin/inventory/new` | Add-product form shell, Admin role only |
 | `GET /admin/inventory/:id` | Edit-product form shell, Admin role only |
-| `GET /admin/stock/dashboard` | Inventory Dashboard shell ([stock-dashboard.njk](src/views/admin/stock-dashboard.njk)), Inventory Manager (`INVENTORY_MANAGEMENT`) role only and its landing page; other staff are redirected to their own dashboard. [adminStockDashboard.ts](src/controllers/adminStockDashboard.ts) loads the summary cards and low-stock table from `GET /api/admin/inventory/dashboard`. |
-| `GET /admin/stock` | Inventory list shell ([stock.njk](src/views/admin/stock.njk)), Inventory Manager and Admin only. [adminStockList.ts](src/controllers/adminStockList.ts) lists every product with name search, a status filter (`status`), a low-stock-only toggle (`low`), inline stock and threshold editing, and an out-of-stock toggle with confirmation and undo, using the `/api/admin/inventory` endpoints. |
+| `GET /admin/stock/dashboard` | Inventory Dashboard shell ([stock-dashboard.njk](src/views/admin/stock-dashboard.njk)), Inventory Manager (`INVENTORY_MANAGEMENT`) role only and its landing page; other staff are redirected to their own dashboard. [adminStockDashboard.ts](src/client/adminStockDashboard.ts) loads the summary cards and low-stock table from `GET /api/admin/inventory/dashboard`. |
+| `GET /admin/stock` | Inventory list shell ([stock.njk](src/views/admin/stock.njk)), Inventory Manager and Admin only. [adminStockList.ts](src/client/adminStockList.ts) lists every product with name search, a status filter (`status`), a low-stock-only toggle (`low`), inline stock and threshold editing, and an out-of-stock toggle with confirmation and undo, using the `/api/admin/inventory` endpoints. |
 | `GET /admin/{orders,reports}` | "Coming soon" placeholders |
 | `GET /account/support` | Customer support dashboard shell ([support.njk](src/views/support.njk)): lists the customer's tickets with ID, subject, status and created date. Requires a login cookie, otherwise redirects to `/login`. |
 | `GET /account/support/new` | Create-ticket form (subject, category, description) with validation that blocks empty submissions |
-| `GET /account/support/:id` | Ticket details (subject, description, created date, status) and a comment thread to reply to support (refreshes every 10 seconds; read-only once the ticket is closed). [support.ts](src/controllers/support.ts) loads and submits tickets in the browser. |
+| `GET /account/support/:id` | Ticket details (subject, description, created date, status) and a comment thread to reply to support (refreshes every 10 seconds; read-only once the ticket is closed). [support.ts](src/client/support.ts) loads and submits tickets in the browser. |
 | `GET /unavailable` | Fallback page, served with `503`. Pages redirect here if they cannot be loaded. |
 | `GET /assets/*` | Stylesheets from [src/assets/](src/assets) |
-| `GET /controllers/*` | Browser scripts, compiled from [src/controllers/](src/controllers) TypeScript into `dist/public/controllers/` |
+| `GET /client/*` | Browser scripts, compiled from [src/client/](src/client) TypeScript into `dist/public/client/` |
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
 
 Profile pictures are loaded, previewed, uploaded and removed by the existing
-[browser script](src/controllers/script.ts). Uploads go through the authenticated
+[browser script](src/client/script.ts). Uploads go through the authenticated
 API proxy as raw JPG, PNG or WebP bytes (20 MiB and 16 megapixels maximum).
 Picture changes are saved separately from the details form. The homepage dropdown
 loads the current display name and picture, with a default avatar when no picture
@@ -87,8 +87,8 @@ password accessible label; without JavaScript the password
 stays masked and the button stays hidden. This verifies credentials only; it
 does not establish a persistent session or protect the homepage.
 
-Server-side controllers live in `src/server/controllers/` and are not bundled for the
-browser. Browser scripts remain in `src/controllers/`; registration still uses its
+Server-side controllers live in `src/controllers/` and are not bundled for the
+browser. Browser scripts live in `src/client/`; registration still uses its
 existing browser script and API proxy.
 
 ## Requirements
@@ -137,9 +137,9 @@ Use `npm ci` rather than `npm install`. It installs the exact versions recorded 
 | Script | Command | What it does |
 | --- | --- | --- |
 | `npm run dev` | `build:client` then `node --use-system-ca --import tsx --watch src/index.ts` | Compiles the browser scripts once, then runs the service from TypeScript source with the system CA store and restarts on file changes. Use this while developing. |
-| `npm run dev:client` | `esbuild … --watch` | Rebuilds the browser scripts whenever `src/controllers/*.ts` changes. Run it in a second terminal alongside `npm run dev`. |
+| `npm run dev:client` | `esbuild … --watch` | Rebuilds the browser scripts whenever `src/client/*.ts` changes. Run it in a second terminal alongside `npm run dev`. |
 | `npm run typecheck` | `tsc` and `tsc -p tsconfig.client.json` | Checks types without emitting files: the server code and tests, then the browser scripts (which use DOM types). |
-| `npm run build:client` | `esbuild` | Compiles `src/controllers/*.ts` to browser JavaScript in `dist/public/controllers/`. Runs automatically before `build` and `test`. |
+| `npm run build:client` | `esbuild` | Compiles `src/client/*.ts` to browser JavaScript in `dist/public/client/`. Runs automatically before `build` and `test`. |
 | `npm run build` | typecheck, `build:client`, then `esbuild` | Type-checks, compiles the browser scripts, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node --use-system-ca dist/index.js` | Runs the built output with the system CA store. Requires `npm run build` first. |
 | `npm run lint` | `biome check .` | Lints and checks formatting/import order with [Biome](https://biomejs.dev/). Reports issues without changing files. |
@@ -160,19 +160,18 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 │   ├── app.ts            # builds the Express app: routes, static folders, API proxy
 │   ├── views/            # Nunjucks page templates and admin/ shells
 │   ├── assets/           # CSS served at /assets
-│   ├── server/
-│   │   ├── controllers/  # server-side controllers (home, account, admin, support, status, login, catalog)
-│   │   ├── routes/       # route tables that wire URLs to controllers (admin)
-│   │   └── middleware/   # shared Express middleware (same-origin check)
-│   ├── controllers/      # browser-side TypeScript, compiled and served at /controllers
+│   ├── controllers/  # server-side controllers (home, account, admin, support, status, login, catalog, basket, checkout, search, product)
+│   ├── routes/       # route tables that wire URLs to controllers (admin, basket, checkout)
+│   ├── middleware/   # shared Express middleware (error handler, same-origin check, admin guard, site navigation)
+│   ├── services/     # backend API clients and catalogue/profile data services
+│   ├── client/           # browser-side TypeScript, compiled and served at /client
 │   ├── util/
 │   │   ├── apiProxy.ts   # forwards /api requests to the backend
 │   │   ├── customers.ts  # customer types, query parsing and formatting (shared by controllers)
 │   │   ├── customerViews.ts / adminDashboard.ts  # pure HTML rendering helpers used by the controllers
 │   │   ├── adminPortal.ts # admin navigation
 │   │   └── adminResources.ts # admin placeholder content
-│   ├── repos/            # reserved for data access code
-│   └── services/         # reserved for business logic
+│   └── repos/            # reserved for data access code
 ├── test/
 │   └── app.test.ts       # route, static asset, page link and proxy tests
 ├── .env                  # your local secrets and config (not committed)
@@ -184,7 +183,7 @@ Before pushing, run `npm run lint`, `npm test`, `npm run typecheck` and `npm run
 ├── package.json          # project metadata, scripts and dependencies
 ├── package-lock.json     # exact dependency versions, committed
 ├── tsconfig.json         # TypeScript options for the server code
-└── tsconfig.client.json  # TypeScript options for src/controllers (adds DOM types)
+└── tsconfig.client.json  # TypeScript options for src/client (adds DOM types)
 ```
 
 Generated folders — `node_modules/` and `dist/` — are ignored by git and safe to delete and regenerate.
@@ -219,10 +218,10 @@ Say you want a `/about` page.
 
 ```html
 <link rel="stylesheet" href="/assets/styles.css" />
-<script src="/controllers/script.js" defer></script>
+<script src="/client/script.js" defer></script>
 ```
 
-Put page-specific CSS in `src/assets/` and browser scripts in `src/controllers/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/controllers/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/controllers/`. Keep server-side request handlers in `src/server/controllers/`.
+Put page-specific CSS in `src/assets/` and browser scripts in `src/client/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/client/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/client/`. Keep server-side request handlers in `src/controllers/`.
 
 **2. Register the route** in [src/app.ts](src/app.ts), following the existing pages:
 

@@ -1,15 +1,15 @@
 import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
-import { loadStaffAccount } from '../../util/adminUser';
-import { readAuthCookie } from '../../util/authCookie';
-import type { LoginSession } from '../../util/loginSession';
-import { findStaffRole, normaliseRole, Role } from '../../util/staffRoles';
-import { buildHomepage } from '../../views/homepage.page';
 import type { CatalogService } from '../services/catalog-service';
 import {
   type HomepageProducts,
   pickHomepageProducts,
 } from '../services/homepage-products';
+import { loadStaffAccount } from '../util/adminUser';
+import { readAuthCookie } from '../util/authCookie';
+import type { LoginSession } from '../util/loginSession';
+import { findStaffRole, normaliseRole, Role } from '../util/staffRoles';
+import { buildHomepage } from '../views/homepage.page';
 import type { BasketController } from './basketController';
 
 const NO_PRODUCTS: HomepageProducts = { featured: [], conveyor: [] };

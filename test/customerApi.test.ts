@@ -3,7 +3,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import { createApp } from '../src/app';
-import { createApiCustomerSource as createSource } from '../src/controllers/customerApi';
+import { createApiCustomerSource as createSource } from '../src/client/customerApi';
 import {
   createInMemoryCustomerSource,
   FIXTURE_CUSTOMERS,
@@ -195,7 +195,7 @@ describe('customer API source', () => {
     mode = 'ok';
   });
 
-  it('works through the frontend /api proxy, like the browser controllers do', async () => {
+  it('works through the frontend /api proxy, like the browser client code does', async () => {
     mode = 'ok';
     const app = createServer(createApp(backendOrigin));
     const origin = await listen(app);

@@ -41,10 +41,11 @@ export function renderErrorState(retryUrl: string): string {
   return `<section class="admin-card customer-state" role="alert" aria-labelledby="customers-error-heading"><h2 id="customers-error-heading">Unable to load customers</h2><p class="admin-empty">Something went wrong while loading customer data. Please try again.</p><p><a class="admin-action customer-state-action" href="${escapeHtml(retryUrl)}">Try again</a></p></section>`;
 }
 
-function renderPagination(
+export function renderPagination(
   page: number,
   totalPages: number,
   urlForPage: (page: number) => string,
+  label = 'Customer pages',
 ): string {
   if (totalPages <= 1) return '';
   const previous =
@@ -68,7 +69,7 @@ function renderPagination(
   const items = [previous, ...numbers, next]
     .map((item) => `<li>${item}</li>`)
     .join('');
-  return `<nav class="customer-pagination" aria-label="Customer pages"><ul>${items}</ul></nav>`;
+  return `<nav class="customer-pagination" aria-label="${escapeHtml(label)}"><ul>${items}</ul></nav>`;
 }
 
 export function renderCustomersResults(

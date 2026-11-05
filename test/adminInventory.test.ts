@@ -434,7 +434,7 @@ describe('inventory pages', () => {
     const html = await res.text();
     assert.match(html, /<h1>Products<\/h1>/);
     assert.match(html, /href="\/admin\/inventory\/new"/);
-    assert.match(html, /\/controllers\/adminInventory\.js/);
+    assert.match(html, /\/client\/adminInventory\.js/);
     assert.match(html, /data-inventory-results/);
     assert.match(html, /admin-nav-link is-active" href="\/admin\/inventory"/);
   });
@@ -444,7 +444,7 @@ describe('inventory pages', () => {
       const res = await fetch(`${base}${path}`, admin);
       assert.equal(res.status, 200, path);
       const html = await res.text();
-      assert.match(html, /\/controllers\/adminInventoryForm\.js/);
+      assert.match(html, /\/client\/adminInventoryForm\.js/);
       assert.match(html, /data-product-page/);
     }
   });

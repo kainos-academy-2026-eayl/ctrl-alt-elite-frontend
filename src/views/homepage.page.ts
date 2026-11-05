@@ -1,6 +1,6 @@
 import type { BasketResponseDto } from '../dtos/basketDto';
 import { t } from '../i18n/runtime';
-import type { CatalogProduct } from '../server/services/catalog-service';
+import type { CatalogProduct } from '../services/catalog-service';
 import { type BasketSummary, toBasketSummary } from './basket.page';
 
 /*
