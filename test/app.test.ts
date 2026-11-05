@@ -1212,17 +1212,17 @@ describe('frontend routes', () => {
       assert.match(html, /10 products/);
     });
 
-    it('renders one category toggle per backend category and tags product cards', async () => {
+    it('tags product cards and links View details to each product page, with no scripts', async () => {
       const html = await (await fetch(`${base}/products`)).text();
-      const filters = [...html.matchAll(/data-category-filter="([^"]+)"/g)].map(
-        (match) => match[1],
-      );
-      assert.deepEqual(filters, ['Test category', 'Audio', 'Photography']);
-      assert.equal((html.match(/aria-pressed="false"/g) ?? []).length, 3);
       assert.equal(
         (html.match(/data-product-card data-category=/g) ?? []).length,
         10,
       );
+      assert.match(
+        html,
+        /<a class="button button-secondary" href="\/products\/database-product">View details/,
+      );
+      assert.doesNotMatch(html, /<script|<dialog|data-category-filter/);
     });
 
     it('shows stock quantities and disables unavailable products', async () => {

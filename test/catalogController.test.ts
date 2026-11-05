@@ -2,6 +2,9 @@ import type { Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 import { CatalogController } from '../src/server/controllers/catalog-controller';
 import type { CatalogService } from '../src/server/services/catalog-service';
+import { readFilterQuery } from '../src/util/productFilters';
+
+const NO_FILTERS = readFilterQuery({});
 
 describe('CatalogController.showProducts', () => {
   it('renders the products and categories returned by the service', async () => {
@@ -22,20 +25,22 @@ describe('CatalogController.showProducts', () => {
     const categories = ['Audio'];
     const getProducts = vi
       .fn<CatalogService['getProducts']>()
-      .mockResolvedValue({ products, categories });
+      .mockResolvedValue({ products, categories, facets: null });
     const service = { getProducts } as unknown as CatalogService;
     const controller = new CatalogController(service);
-    const request = {} as Request;
+    const request = { query: {} } as unknown as Request;
     const render = vi.fn();
     const status = vi.fn().mockReturnThis();
     const response = { render, status } as unknown as Response;
 
     await controller.showProducts(request, response);
 
-    expect(getProducts).toHaveBeenCalledExactlyOnceWith();
+    expect(getProducts).toHaveBeenCalledExactlyOnceWith(NO_FILTERS);
     expect(render).toHaveBeenCalledExactlyOnceWith('product.njk', {
       products,
       categories,
+      filterPanel: null,
+      resultsSummary: '1 product',
     });
     expect(status).not.toHaveBeenCalled();
   });
@@ -47,7 +52,7 @@ describe('CatalogController.showProducts', () => {
       .mockRejectedValue(error);
     const service = { getProducts } as unknown as CatalogService;
     const controller = new CatalogController(service);
-    const request = {} as Request;
+    const request = { query: {} } as unknown as Request;
     const render = vi.fn();
     const status = vi.fn().mockReturnThis();
     const response = { render, status } as unknown as Response;
@@ -56,7 +61,7 @@ describe('CatalogController.showProducts', () => {
     try {
       await controller.showProducts(request, response);
 
-      expect(getProducts).toHaveBeenCalledExactlyOnceWith();
+      expect(getProducts).toHaveBeenCalledExactlyOnceWith(NO_FILTERS);
       expect(status).toHaveBeenCalledExactlyOnceWith(502);
       expect(render).toHaveBeenCalledExactlyOnceWith('product.njk', {
         products: [],

@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
 import type { CheckoutService } from '../../services/checkoutService';
 import { clearAuthCookie, readAuthCookie } from '../../util/authCookie';
+import { clearBasketCookie, clearBasketNotice } from '../../util/basketCookie';
 import type { LoginSession } from '../../util/loginSession';
 import { formatPrice } from '../../views/basket.page';
 import {
@@ -189,6 +190,8 @@ export class AccountController {
     res.setHeader('Cache-Control', 'no-store');
     clearAuthCookie(res);
     this.loginSession.clear(res);
+    clearBasketCookie(res);
+    clearBasketNotice(res);
     res.redirect(303, '/login');
   };
 }

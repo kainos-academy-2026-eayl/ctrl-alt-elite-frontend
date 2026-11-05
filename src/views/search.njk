@@ -10,6 +10,7 @@
 {% block styles %}
 <link rel="stylesheet" href="/assets/basket.css" />
 <link rel="stylesheet" href="/assets/search.css" />
+<link rel="stylesheet" href="/assets/filters.css" />
 {% endblock %}
 
 {% block navigation %}
@@ -28,6 +29,9 @@
 {% block content %}
 <section class="page-width products search-results" aria-labelledby="search-heading">
   <h1 id="search-heading" class="search-heading">Search results</h1>
+  {% if filterPanel %}
+  {% include "_filterPanel.njk" %}
+  {% endif %}
   {% if errorMessage %}
   <p class="basket-alert" role="alert">{{ errorMessage }}</p>
   {% else %}
