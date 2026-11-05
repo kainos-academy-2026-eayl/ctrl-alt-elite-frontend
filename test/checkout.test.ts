@@ -25,6 +25,7 @@ import {
   validateDelivery,
   validateDetails,
 } from '../src/util/checkoutForm';
+import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const BACKEND_ORIGIN = 'https://backend.example.test';
 const POSTCODES_ORIGIN = 'https://api.postcodes.io';
@@ -347,7 +348,9 @@ describe('checkout (server-rendered, no JavaScript)', () => {
       /<a class="checkout-secondary-button" href="\/register">Create an account<\/a>/,
     );
     assert.doesNotMatch(html, /name="firstName"/);
-    assert.deepEqual(html.match(/<script\b[^>]*>/g), [SHARED_NAV_SCRIPT]);
+    assert.deepEqual(withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g), [
+      SHARED_NAV_SCRIPT,
+    ]);
   });
 
   it('treats an expired login like a guest', async () => {
@@ -385,7 +388,9 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     );
     assert.match(html, /value="continue-to-delivery">Continue to delivery/);
     assert.match(html, /2 × Desk Lamp/);
-    assert.deepEqual(html.match(/<script\b[^>]*>/g), [SHARED_NAV_SCRIPT]);
+    assert.deepEqual(withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g), [
+      SHARED_NAV_SCRIPT,
+    ]);
   });
 
   it('keeps manually entered addresses and rejects invalid postcodes', async () => {
@@ -810,7 +815,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     const evilPage = await (
       await fetchFrontend(`${base}/login?returnTo=https%3A%2F%2Fevil.example`)
     ).text();
-    assert.doesNotMatch(evilPage, /name="returnTo"/);
+    assert.doesNotMatch(withoutAccessibilityMenu(evilPage), /name="returnTo"/);
 
     async function logIn(returnTo: string) {
       return fetchFrontend(`${base}/login`, {

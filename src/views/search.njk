@@ -4,8 +4,8 @@
 #}
 {% extends "layout.njk" %}
 
-{% block title %}Ctrl-Alt-Elite | Search{% endblock %}
-{% block description %}Search Ctrl-Alt-Elite products by name or category.{% endblock %}
+{% block title %}{{ t('search.title') }}{% endblock %}
+{% block description %}{{ t('search.description') }}{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="/assets/filters.css" />
@@ -13,7 +13,7 @@
 
 {% block content %}
 <section class="page-width products search-results" aria-labelledby="search-heading">
-  <h1 id="search-heading" class="search-heading">Search results</h1>
+  <h1 id="search-heading" class="search-heading">{{ t('search.heading') }}</h1>
   {% if filterPanel %}
   {% include "_filterPanel.njk" %}
   {% endif %}

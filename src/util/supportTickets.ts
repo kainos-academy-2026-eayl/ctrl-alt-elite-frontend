@@ -1,3 +1,4 @@
+import { type MessageKey, t } from '../i18n/runtime';
 import { failureMessage, submitJson } from './apiResponse';
 
 export const TICKETS_PATH = '/api/support/tickets';
@@ -78,9 +79,9 @@ export function categoryKey(category: string): string {
 
 export function categoryLabel(category: string): string {
   const key = categoryKey(category);
-  return (
-    TICKET_CATEGORIES.find((item) => item.value === key)?.label ?? category
-  );
+  const known = TICKET_CATEGORIES.find((item) => item.value === key);
+  // Translated on customer pages; staff pages fall back to English.
+  return known ? t(`js.ticketCategory.${known.value}` as MessageKey) : category;
 }
 
 const UUID_PATTERN =

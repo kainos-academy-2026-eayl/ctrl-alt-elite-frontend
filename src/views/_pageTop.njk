@@ -1,0 +1,55 @@
+{#
+  Top of every customer page: a "Skip to main content" link (the first thing
+  the Tab key reaches) and the floating accessibility button. The button opens
+  a panel for language, currency and the button's own position. It is a
+  normal <details> and form, so it works without JavaScript;
+  controllers/a11yMenu.ts adds dragging and closing with Escape.
+#}
+{% set p = prefs() %}
+<a class="skip-link" href="#main-content">{{ t('site.skipToContent') }}</a>
+<details class="a11y-widget a11y-widget--{{ p.widgetPosition }}" data-a11y-widget>
+  <summary class="a11y-toggle" title="{{ t('preferences.button') }}">
+    <svg class="a11y-icon" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="4" r="2" fill="currentColor" />
+      <path d="M4 7.5c2.7.8 5.3 1.2 8 1.2s5.3-.4 8-1.2M12 8.7v5.3m0 0-3 7m3-7 3 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <span class="a11y-visually-hidden">{{ t('preferences.button') }}</span>
+    <span class="a11y-badge" aria-hidden="true">{{ p.locale | upper }}</span>
+  </summary>
+  <div class="a11y-panel">
+    <h2 class="a11y-heading" id="a11y-heading">{{ t('preferences.heading') }}</h2>
+    <form class="a11y-form" action="/preferences" method="post" aria-labelledby="a11y-heading">
+      <input type="hidden" name="returnTo" value="{{ p.currentPath }}" />
+      <div class="a11y-field">
+        <label for="a11y-language">{{ t('preferences.language') }}</label>
+        <select id="a11y-language" name="lang">
+          {% for option in p.locales %}
+          <option value="{{ option.code }}" lang="{{ option.code }}"{% if option.isSelected %} selected{% endif %}>{{ option.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="a11y-field">
+        <label for="a11y-currency">{{ t('preferences.currency') }}</label>
+        <select id="a11y-currency" name="currency">
+          {% for option in p.currencies %}
+          <option value="{{ option.code }}"{% if option.isSelected %} selected{% endif %}>{{ option.symbol }} {{ option.code }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="a11y-field">
+        <label for="a11y-position">{{ t('preferences.position') }}</label>
+        <select id="a11y-position" name="position" data-a11y-position>
+          {% for option in p.positions %}
+          <option value="{{ option.value }}"{% if option.isSelected %} selected{% endif %}>{{ t('preferences.position.' + option.value) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="a11y-save" type="submit">{{ t('preferences.apply') }}</button>
+    </form>
+    {% if p.isConverted %}
+    <p class="a11y-note">{{ t('preferences.approxNote', { currency: p.currency }) }}</p>
+    {% endif %}
+    <p class="a11y-note" data-a11y-drag-hint hidden>{{ t('preferences.dragHint') }}</p>
+  </div>
+</details>
+<script src="/controllers/a11yMenu.js" defer></script>

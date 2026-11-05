@@ -5,12 +5,12 @@
 #}
 {% extends "layout.njk" %}
 
-{% block title %}Ctrl-Alt-Elite | Basket{% endblock %}
-{% block description %}Review the items in your Ctrl-Alt-Elite basket and continue to checkout.{% endblock %}
+{% block title %}{{ t('basket.title') }}{% endblock %}
+{% block description %}{{ t('basket.description') }}{% endblock %}
 
 {% block content %}
 <section class="page-width basket" aria-labelledby="basket-heading">
-  <h1 id="basket-heading" tabindex="-1"{% if focusTarget == "heading" %} autofocus{% endif %}>Your basket</h1>
+  <h1 id="basket-heading" tabindex="-1"{% if focusTarget == "heading" %} autofocus{% endif %}>{{ t('basket.heading') }}</h1>
 
   {% if notice %}
   <p class="basket-notice{% if notice.isError %} basket-notice--error{% endif %}" role="{% if notice.isError %}alert{% else %}status{% endif %}">{{ notice.message }}</p>
@@ -20,43 +20,43 @@
   <p class="basket-alert" role="alert">{{ loadErrorMessage }}</p>
   {% elif isEmpty %}
   <div class="basket-empty">
-    <p>Your basket is empty.</p>
-    <a class="basket-button" href="/">Browse products</a>
+    <p>{{ t('basket.empty') }}</p>
+    <a class="basket-button" href="/">{{ t('basket.browse') }}</a>
   </div>
   {% else %}
   <table class="basket-table">
-    <caption class="basket-visually-hidden">Items in your basket</caption>
+    <caption class="basket-visually-hidden">{{ t('basket.caption') }}</caption>
     <thead>
       <tr>
-        <th scope="col">Product</th>
-        <th scope="col">Unit price</th>
-        <th scope="col">Quantity</th>
-        <th scope="col">Line total</th>
-        <th scope="col"><span class="basket-visually-hidden">Actions</span></th>
+        <th scope="col">{{ t('basket.product') }}</th>
+        <th scope="col">{{ t('basket.unitPrice') }}</th>
+        <th scope="col">{{ t('basket.quantity') }}</th>
+        <th scope="col">{{ t('basket.lineTotal') }}</th>
+        <th scope="col"><span class="basket-visually-hidden">{{ t('basket.actions') }}</span></th>
       </tr>
     </thead>
     <tbody>
       {% for line in lines %}
       <tr>
         <th scope="row">{{ line.name }}</th>
-        <td data-label="Unit price">{{ line.unitPrice }}</td>
-        <td data-label="Quantity">
+        <td data-label="{{ t('basket.unitPrice') }}">{{ line.unitPrice }}</td>
+        <td data-label="{{ t('basket.quantity') }}">
           <div class="basket-quantity">
             <form action="{{ line.updateUrl }}" method="post">
               <input type="hidden" name="change" value="-1" />
-              <button type="submit" aria-label="Decrease quantity of {{ line.name }}"{% if not line.canDecrease %} disabled{% endif %}{% if line.focusDecrease %} autofocus{% endif %}>−</button>
+              <button type="submit" aria-label="{{ t('basket.decrease', { name: line.name }) }}"{% if not line.canDecrease %} disabled{% endif %}{% if line.focusDecrease %} autofocus{% endif %}>−</button>
             </form>
             <span class="basket-quantity__value">{{ line.quantity }}</span>
             <form action="{{ line.updateUrl }}" method="post">
               <input type="hidden" name="change" value="1" />
-              <button type="submit" aria-label="Increase quantity of {{ line.name }}"{% if not line.canIncrease %} disabled{% endif %}{% if line.focusIncrease %} autofocus{% endif %}>+</button>
+              <button type="submit" aria-label="{{ t('basket.increase', { name: line.name }) }}"{% if not line.canIncrease %} disabled{% endif %}{% if line.focusIncrease %} autofocus{% endif %}>+</button>
             </form>
           </div>
         </td>
-        <td data-label="Line total" class="basket-line-total">{{ line.lineTotal }}</td>
+        <td data-label="{{ t('basket.lineTotal') }}" class="basket-line-total">{{ line.lineTotal }}</td>
         <td data-label="">
           <form action="{{ line.removeUrl }}" method="post">
-            <button type="submit" class="basket-remove" aria-label="Remove {{ line.name }}">Remove</button>
+            <button type="submit" class="basket-remove" aria-label="{{ t('basket.removeName', { name: line.name }) }}">{{ t('basket.remove') }}</button>
           </form>
         </td>
       </tr>
@@ -66,11 +66,14 @@
 
   <div class="basket-summary">
     <p class="basket-total">
-      Total ({{ basketSummary.itemCountText }}):
+      {{ t('basket.total', { items: basketSummary.itemCountText }) }}
       <strong>{{ total }}</strong>
     </p>
+    {% if currencyNote %}
+    <p class="basket-currency-note">{{ currencyNote }}</p>
+    {% endif %}
     <form action="/basket/checkout" method="post">
-      <button type="submit" class="basket-button">Checkout</button>
+      <button type="submit" class="basket-button">{{ t('basket.checkout') }}</button>
     </form>
   </div>
   {% endif %}

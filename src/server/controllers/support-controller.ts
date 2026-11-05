@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { t } from '../../i18n/runtime';
 import { renderErrorPage } from '../../middleware/errorHandler';
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -34,14 +35,14 @@ export class SupportController {
   }
 
   showList = (_req: Request, res: Response): void => {
-    this.renderPage(res, 'list', 'My support tickets');
+    this.renderPage(res, 'list', t('support.page.list'));
   };
 
   showNew = (_req: Request, res: Response): void => {
-    this.renderPage(res, 'new', 'Create a ticket');
+    this.renderPage(res, 'new', t('support.page.new'));
   };
 
   showDetail = (_req: Request, res: Response): void => {
-    this.renderPage(res, 'detail', 'Ticket details');
+    this.renderPage(res, 'detail', t('support.page.detail'));
   };
 }

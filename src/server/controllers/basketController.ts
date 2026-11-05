@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express';
 import type { BasketResponseDto } from '../../dtos/basketDto';
+import { t } from '../../i18n/runtime';
+import { localiseProduct } from '../../i18n/server';
 import {
   type BasketService,
   BasketServiceError,
@@ -16,15 +18,12 @@ import {
 import { buildBasketPage } from '../../views/basket.page';
 
 const MAX_PRODUCT_ID_LENGTH = 100;
-const ADD_FAILED_MESSAGE =
-  'Sorry, we could not add that item. Please try again.';
-const UPDATE_FAILED_MESSAGE =
-  'Sorry, we could not update your basket. Please try again.';
-const LOAD_FAILED_MESSAGE =
-  "We couldn't load your basket. Please try again in a little while.";
-const EMPTY_CHECKOUT_MESSAGE = 'Your basket is empty.';
-const BASKET_RESET_MESSAGE =
-  'We could not find your previous basket, so a new one has been started. Please check your basket before continuing.';
+// Functions, not constants, so each message is in the visitor's language.
+const ADD_FAILED_MESSAGE = () => t('basket.addFailed');
+const UPDATE_FAILED_MESSAGE = () => t('basket.updateFailed');
+const LOAD_FAILED_MESSAGE = () => t('basket.loadFailed');
+const EMPTY_CHECKOUT_MESSAGE = () => t('basket.empty');
+const BASKET_RESET_MESSAGE = () => t('basket.reset');
 
 function readProductId(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -71,10 +70,10 @@ export class BasketController {
       } catch (error) {
         if (error instanceof BasketServiceError && error.isNotFound) {
           clearBasketCookie(res);
-          notice = { isError: true, message: BASKET_RESET_MESSAGE };
+          notice = { isError: true, message: BASKET_RESET_MESSAGE() };
         } else {
           console.error('Unable to load the basket:', error);
-          loadErrorMessage = LOAD_FAILED_MESSAGE;
+          loadErrorMessage = LOAD_FAILED_MESSAGE();
         }
       }
     }
@@ -102,7 +101,7 @@ export class BasketController {
     if (basketId === null) {
       this.redirectToBasket(res, {
         isError: true,
-        message: EMPTY_CHECKOUT_MESSAGE,
+        message: EMPTY_CHECKOUT_MESSAGE(),
       });
       return;
     }
@@ -112,7 +111,7 @@ export class BasketController {
       if (basket.items.length === 0) {
         this.redirectToBasket(res, {
           isError: true,
-          message: EMPTY_CHECKOUT_MESSAGE,
+          message: EMPTY_CHECKOUT_MESSAGE(),
         });
         return;
       }
@@ -127,7 +126,7 @@ export class BasketController {
     if (productId === null) {
       this.redirectToBasket(res, {
         isError: true,
-        message: ADD_FAILED_MESSAGE,
+        message: ADD_FAILED_MESSAGE(),
       });
       return;
     }
@@ -138,17 +137,18 @@ export class BasketController {
         productId,
       );
       setBasketCookie(res, basket.id);
-      const name =
-        basket.items.find((item) => item.id === productId)?.name ?? 'Item';
+      const line = basket.items.find((item) => item.id === productId);
       this.redirectToBasket(res, {
         isError: false,
-        message: `${name} added to your basket`,
+        message: line
+          ? t('basket.added', { name: localiseProduct(line).name })
+          : t('basket.addedItem'),
       });
     } catch (error) {
       console.error('Unable to add to the basket:', error);
       this.redirectToBasket(res, {
         isError: true,
-        message: messageFor(error, ADD_FAILED_MESSAGE),
+        message: messageFor(error, ADD_FAILED_MESSAGE()),
       });
     }
   };
@@ -160,7 +160,7 @@ export class BasketController {
     if (productId === null || change === null || basketId === null) {
       this.redirectToBasket(res, {
         isError: true,
-        message: UPDATE_FAILED_MESSAGE,
+        message: UPDATE_FAILED_MESSAGE(),
       });
       return;
     }
@@ -198,7 +198,7 @@ export class BasketController {
     if (productId === null || basketId === null) {
       this.redirectToBasket(res, {
         isError: true,
-        message: UPDATE_FAILED_MESSAGE,
+        message: UPDATE_FAILED_MESSAGE(),
       });
       return;
     }
@@ -209,7 +209,11 @@ export class BasketController {
         res,
         {
           isError: false,
-          message: `${name ?? 'Item'} removed from your basket`,
+          message: name
+            ? t('basket.removed', {
+                name: localiseProduct({ id: productId, name }).name,
+              })
+            : t('basket.removedItem'),
         },
         'heading',
       );
@@ -257,14 +261,14 @@ export class BasketController {
       clearBasketCookie(res);
       this.redirectToBasket(res, {
         isError: true,
-        message: BASKET_RESET_MESSAGE,
+        message: BASKET_RESET_MESSAGE(),
       });
       return;
     }
     console.error('Unable to update the basket:', error);
     this.redirectToBasket(res, {
       isError: true,
-      message: messageFor(error, UPDATE_FAILED_MESSAGE),
+      message: messageFor(error, UPDATE_FAILED_MESSAGE()),
     });
   }
 

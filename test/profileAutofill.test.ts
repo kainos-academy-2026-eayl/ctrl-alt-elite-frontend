@@ -8,6 +8,7 @@ import {
   type ProfileDetails,
   ProfileService,
 } from '../src/server/services/profile-service';
+import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const SECRET = 'profile-autofill-test-secret-at-least-32-bytes';
 const BACKEND_TOKEN = 'test-backend-profile-token';
@@ -162,7 +163,10 @@ describe('saved profile autofill', () => {
       );
       assert.match(html, new RegExp(`name="firstName" value="Saved-${visit}"`));
       assert.match(html, /name="lastName" value="Customer"/);
-      assert.doesNotMatch(html, /someone-else|value="Wrong"|Sign in again/);
+      assert.doesNotMatch(
+        withoutAccessibilityMenu(html),
+        /someone-else|value="Wrong"|Sign in again/,
+      );
       assert.ok(!html.includes(BACKEND_TOKEN));
       const emailInput = html.match(/<input[^>]*id="profile-email"[^>]*>/)?.[0];
       assert.ok(emailInput);

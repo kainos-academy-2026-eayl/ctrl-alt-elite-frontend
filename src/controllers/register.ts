@@ -1,3 +1,6 @@
+import './i18n';
+import { t } from '../i18n/runtime';
+
 function getElement<T extends Element>(
   selector: string,
   parent: ParentNode = document,
@@ -53,7 +56,7 @@ emailInput.addEventListener('input', () => {
   }
 
   emailInput.setCustomValidity(
-    isValidEmail(emailInput.value) ? '' : 'Please enter a valid email address.',
+    isValidEmail(emailInput.value) ? '' : t('js.register.invalidEmail'),
   );
 });
 
@@ -70,7 +73,7 @@ const submitButton = getElement<HTMLButtonElement>(
 
 async function registerAccount(): Promise<void> {
   submitButton.disabled = true;
-  passwordMessage.textContent = 'Creating your account...';
+  passwordMessage.textContent = t('js.register.creating');
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
@@ -87,16 +90,14 @@ async function registerAccount(): Promise<void> {
     const data: ApiError = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      passwordMessage.textContent =
-        data.message || 'Unable to create your account. Please try again.';
+      passwordMessage.textContent = data.message || t('js.register.failed');
       return;
     }
 
     registrationForm.reset();
-    passwordMessage.textContent = 'Account created successfully.';
+    passwordMessage.textContent = t('js.register.created');
   } catch {
-    passwordMessage.textContent =
-      'Unable to reach the server. Please try again later.';
+    passwordMessage.textContent = t('js.register.unreachable');
   } finally {
     submitButton.disabled = false;
   }
@@ -110,21 +111,19 @@ registrationForm.addEventListener('submit', async (event) => {
   const inputsAreValid = areAllInputsValid();
 
   if (!isValidEmail(emailInput.value)) {
-    emailInput.setCustomValidity('Please enter a valid email address.');
+    emailInput.setCustomValidity(t('js.register.invalidEmail'));
     emailInput.reportValidity();
     return;
   }
 
   if (!isValidPassword(passwordInput.value)) {
-    passwordInput.setCustomValidity(
-      'Use at least 8 characters, including a digit and one of: @, £, $, %, &.',
-    );
+    passwordInput.setCustomValidity(t('js.register.weakPassword'));
     passwordInput.reportValidity();
     return;
   }
 
   if (!passwordsMatch(passwordInput.value, confirmPasswordInput.value)) {
-    confirmPasswordInput.setCustomValidity('Passwords do not match.');
+    confirmPasswordInput.setCustomValidity(t('js.register.mismatch'));
     confirmPasswordInput.reportValidity();
     return;
   }
@@ -141,5 +140,3 @@ confirmPasswordInput.addEventListener('input', () => {
   confirmPasswordInput.setCustomValidity('');
   passwordMessage.textContent = '';
 });
-
-export {};

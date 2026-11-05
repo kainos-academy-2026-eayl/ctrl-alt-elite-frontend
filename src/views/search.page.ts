@@ -1,5 +1,7 @@
 import type { BasketResponseDto } from '../dtos/basketDto';
 import type { ProductSearchResponseDto } from '../dtos/productSearchDto';
+import { t, tCount } from '../i18n/runtime';
+import { localiseProduct } from '../i18n/server';
 import {
   buildFilterPanel,
   type FilterPanel,
@@ -49,10 +51,6 @@ export interface SearchPageInput {
   now: Date;
 }
 
-function plural(count: number, singular: string, pluralForm: string): string {
-  return count === 1 ? singular : pluralForm;
-}
-
 function statusMessageFor(
   searchTerm: string,
   result: ProductSearchResponseDto | null,
@@ -60,31 +58,31 @@ function statusMessageFor(
   activeFilters: number,
 ): string {
   if (errorMessage) return '';
-  if (searchTerm === '') return 'Enter a product name or keyword to search.';
+  if (searchTerm === '') return t('search.prompt');
+  const term = searchTerm;
   const count = result?.products.length ?? 0;
   const total = result?.facets?.total ?? count;
-  if (count === 0 && total > 0) {
-    return `No products match your filters for "${searchTerm}". Remove a filter or choose Clear all.`;
-  }
-  if (count === 0) {
-    return `No products found for "${searchTerm}". Try a different name or keyword.`;
-  }
+  if (count === 0 && total > 0) return t('search.noFilterMatches', { term });
+  if (count === 0) return t('search.none', { term });
   if (activeFilters > 0) {
-    return `Showing ${count} of ${total} ${plural(total, 'product', 'products')} found for "${searchTerm}".`;
+    return t('search.showing', {
+      count,
+      total: tCount('count.products', total),
+      term,
+    });
   }
-  if (result?.isClosestMatch) {
-    return `No exact matches for "${searchTerm}". Showing the closest ${plural(count, 'match', 'matches')}.`;
-  }
-  return `${count} ${plural(count, 'product', 'products')} found for "${searchTerm}".`;
+  if (result?.isClosestMatch) return tCount('search.closest', count, { term });
+  return tCount('search.found', count, { term });
 }
 
 function toProductView(
   product: ProductSearchResponseDto['products'][number],
 ): SearchProductView {
+  const { name, description } = localiseProduct(product);
   return {
     id: product.id,
-    name: product.name,
-    description: product.description,
+    name,
+    description,
     imageUrl: product.imageUrl,
     price: formatPrice(Math.round(Number(product.price) * 100)),
     isInStock: product.isInStock,

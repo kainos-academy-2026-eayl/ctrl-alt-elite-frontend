@@ -6,6 +6,7 @@ import express from 'express';
 import nunjucks from 'nunjucks';
 import { describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
+import { addI18nGlobals } from '../src/i18n/templates';
 import { errorHandler } from '../src/middleware/errorHandler';
 import { buildErrorPage } from '../src/views/error.page';
 
@@ -82,7 +83,9 @@ describe('error page', () => {
 
   it('shows the error template for any unexpected route error, without details', async () => {
     const app = express();
-    nunjucks.configure(VIEWS_DIRECTORY, { autoescape: true, express: app });
+    addI18nGlobals(
+      nunjucks.configure(VIEWS_DIRECTORY, { autoescape: true, express: app }),
+    );
     app.set('view engine', 'njk');
     app.get('/boom', () => {
       throw new Error('Secret internal detail');

@@ -18,6 +18,7 @@ import {
   readFilterQuery,
   toBackendParams,
 } from '../src/util/productFilters';
+import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const FACETS: ProductFacetsDto = {
   total: 7,
@@ -328,7 +329,7 @@ describe('Filter and sort on the search and catalogue pages (no JavaScript)', ()
       /class="filters-chip" href="\/search\?q=shirt&amp;category=Shirt&amp;price=10-25&amp;sort=price-desc">In stock/,
     );
     assert.match(html, /Showing 1 of 7 products found for &quot;shirt&quot;\./);
-    assert.deepEqual(html.match(/<script\b[^>]*>/g), [
+    assert.deepEqual(withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g), [
       '<script src="/controllers/script.js" defer>',
     ]);
   });
