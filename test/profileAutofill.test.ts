@@ -80,10 +80,10 @@ describe('saved profile autofill', () => {
         authorization: req.headers.authorization,
         ...(isPatch
           ? {
-            method: req.method,
-            contentType: req.headers['content-type'],
-            body: fields,
-          }
+              method: req.method,
+              contentType: req.headers['content-type'],
+              body: fields,
+            }
           : {}),
       });
       if (isPatch) {
@@ -146,8 +146,12 @@ describe('saved profile autofill', () => {
       assert.match(html, /name="lastName" value="Customer"/);
       assert.doesNotMatch(html, /someone-else|value="Wrong"|Sign in again/);
       assert.ok(!html.includes(BACKEND_TOKEN));
+      const emailInput = html.match(/<input[^>]*id="profile-email"[^>]*>/)?.[0];
+      assert.ok(emailInput);
+      assert.ok(emailInput.includes(`value="${profile.email}"`));
+      assert.match(emailInput, /\breadonly\b/);
+      assert.doesNotMatch(emailInput, /\bname=/);
       for (const [id, value] of [
-        ['profile-email', profile.email],
         ['profile-phone', profile.phoneNumber],
         ['profile-address-line-1', profile.addressLine1],
         ['profile-address-line-2', profile.addressLine2],
@@ -158,10 +162,6 @@ describe('saved profile autofill', () => {
         )?.[0];
         assert.ok(input);
         assert.ok(input.includes(`value="${value}"`));
-        if (id === 'profile-email') {
-          assert.match(input, /\breadonly\b/);
-          assert.doesNotMatch(input, /\bname=/);
-        }
       }
       assert.match(html, /<form action="\/profile" method="post">/);
       const saveButton = html.match(/<button[^>]*>Save changes<\/button>/)?.[0];
@@ -332,7 +332,7 @@ describe('saved profile autofill', () => {
     },
   );
 
-  it('renders a null username as empty and retains names up to the backend limit', async () => {
+  it('renders null optional fields empty and retains saved email and names', async () => {
     body = makeProfile({
       username: null,
       firstName: 'A'.repeat(100),
@@ -342,6 +342,21 @@ describe('saved profile autofill', () => {
     assert.equal(response.status, 200);
     const html = await response.text();
     assert.match(html, /name="username" value=""/);
+    const emailInput = html.match(/<input[^>]*id="profile-email"[^>]*>/)?.[0];
+    assert.ok(emailInput);
+    assert.match(emailInput, /value="saved@example\.invalid"/);
+    assert.match(emailInput, /\breadonly\b/);
+    assert.doesNotMatch(emailInput, /\bname=/);
+    for (const id of [
+      'profile-phone',
+      'profile-address-line-1',
+      'profile-address-line-2',
+      'profile-postcode',
+    ]) {
+      const input = html.match(new RegExp(`<input[^>]*id="${id}"[^>]*>`))?.[0];
+      assert.ok(input, `Missing profile input: ${id}`);
+      assert.match(input, /\bvalue=""/);
+    }
     assert.ok(html.includes(`name="firstName" value="${'A'.repeat(100)}"`));
     assert.ok(html.includes(`name="lastName" value="${'B'.repeat(100)}"`));
     assert.match(html, /name="firstName"[^>]*maxlength="100"/);
@@ -375,7 +390,7 @@ describe('saved profile autofill', () => {
     context.onTestFinished(() => {
       vi.restoreAllMocks();
     });
-    const warning = vi.spyOn(console, 'warn').mockImplementation(() => { });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const response = await fetch(`${base}/profile`, {
       headers: { cookie: loginCookie },
     });
@@ -399,7 +414,7 @@ describe('saved profile autofill', () => {
     context.onTestFinished(() => {
       vi.restoreAllMocks();
     });
-    vi.spyOn(console, 'warn').mockImplementation(() => { });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     for (const cookie of [
       `auth_token=${BACKEND_TOKEN}`,
       `ctrl_alt_elite_login=forged; auth_token=${BACKEND_TOKEN}`,
@@ -418,7 +433,7 @@ describe('saved profile autofill', () => {
     context.onTestFinished(() => {
       vi.restoreAllMocks();
     });
-    vi.spyOn(console, 'warn').mockImplementation(() => { });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
     for (const code of [401, 403]) {
       status = code;
       const response = await getProfile();
@@ -435,7 +450,7 @@ describe('saved profile autofill', () => {
     context.onTestFinished(() => {
       vi.restoreAllMocks();
     });
-    const error = vi.spyOn(console, 'error').mockImplementation(() => { });
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     for (const code of [404, 500, 503]) {
       status = code;
       const response = await getProfile();
