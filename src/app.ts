@@ -26,10 +26,14 @@ import { SupportController } from './server/controllers/support-controller';
 import { createAdminRouter } from './server/routes/admin';
 import { CatalogService } from './server/services/catalog-service';
 import { ProfileService } from './server/services/profile-service';
+<<<<<<< HEAD
 import {
   addSiteNavigationGlobal,
   createSiteNavigationMiddleware,
 } from './server/siteNavigation';
+=======
+import { AddressLookupService } from './services/addressLookupService';
+>>>>>>> c3bcbd5 (postcode button)
 import { BasketService } from './services/basketService';
 import { CheckoutService } from './services/checkoutService';
 import { PostcodeService } from './services/postcodeService';
@@ -100,6 +104,7 @@ export function createApp(
     basketService,
     loginSession,
     postcodeService,
+    new AddressLookupService(postcodeService),
   );
 
   // noCache is a loader option, so it must be set on the loader to take effect.

@@ -18,7 +18,7 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `POST /basket/items/:productId/remove` | Remove form, then redirects to `/basket` |
 | `POST /basket/checkout` | Verifies the saved basket and redirects to `/checkout` |
 | `GET /checkout` | Checkout, rendered on the server with no client-side JavaScript: [checkoutRouter](src/routes/checkoutRouter.ts) → [CheckoutController](src/server/controllers/checkoutController.ts) → [CheckoutService](src/services/checkoutService.ts) (calls the backend `/api/account`, `/api/delivery-options` and `/api/orders`) → [checkout.page.ts](src/views/checkout.page.ts) → [checkout.njk](src/views/checkout.njk). Anyone without a login session sees only **Log in** (`/login?returnTo=/checkout`) and **Create an account** buttons, because orders are paid from the account's credit balance. Logged-in customers go through three steps, starting with an empty form: 1. their details and home address, 2. delivery (standard 3–5 days, express 1–2 days, or one of three collection points), 3. payment from their credit balance, then **Checkout**. |
-| `POST /checkout` | Every checkout step. The form posts all fields each time (earlier steps as hidden inputs), with `action` set to `continue-to-delivery`, `edit-details`, `continue-to-payment`, `edit-delivery` or `place-order`. Postcodes must really exist: [PostcodeService](src/services/postcodeService.ts) checks them with [postcodes.io](https://postcodes.io) (free, no API key; only the postcode is sent). Customers enter their address manually; the service does not suggest unverified addresses. Email addresses and UK phone numbers are checked before the customer can continue, and again by the backend. Placing the order clears the `basket_id` cookie and redirects to the confirmation. Simultaneous submissions for one basket share the same in-process order request. |
+| `POST /checkout` | Every checkout step. The form posts all fields each time (earlier steps as hidden inputs), with `action` set to `find-address`, `use-address`, `continue-to-delivery`, `edit-details`, `continue-to-payment`, `edit-delivery` or `place-order`. Postcodes must really exist: [PostcodeService](src/services/postcodeService.ts) checks them with [postcodes.io](https://postcodes.io) (free, no API key; only the postcode is sent). **Find address** lists six made-up addresses (house numbers on a street generated from the postcode) in the postcode's real town, from [AddressLookupService](src/services/addressLookupService.ts). These are demo data, not real addresses; customers can still type their address in instead. Email addresses and UK phone numbers are checked before the customer can continue, and again by the backend. Placing the order clears the `basket_id` cookie and redirects to the confirmation. Simultaneous submissions for one basket share the same in-process order request. |
 | `GET /checkout/confirmation/:orderId` | Order confirmation ([order-confirmation.njk](src/views/order-confirmation.njk)): says the order was successful and shows the order number, items, delivery, address and remaining credit balance. Only the customer who placed the order can see it. |
 | `GET /admin` | Admin dashboard shell ([src/views/admin/dashboard.njk](src/views/admin/dashboard.njk)), Admin role only. [adminDashboard.ts](src/controllers/adminDashboard.ts) loads live customer figures in the browser. |
 | `GET /admin/customer-service` | Customer Service dashboard ([customer-service-dashboard.njk](src/views/admin/customer-service-dashboard.njk)) linking to Customers, Orders, Support Tickets and Settings. Customer Service role only; other staff are redirected to their own dashboard. |
@@ -96,7 +96,7 @@ existing browser script and API proxy.
 | Tool | Version | Notes |
 | --- | --- | --- |
 | [nvm](https://github.com/nvm-sh/nvm) | latest | Required. Manages your Node version per project. |
-| Node.js | 22 | Pinned in [.nvmrc](.nvmrc). Install it with nvm, not with a system installer. |
+| Node.js | 22.15+ | Pinned in [.nvmrc](.nvmrc). Install it with nvm, not with a system installer. |
 | npm | 10+ | Ships with Node 22. |
 
 Install nvm, then from the repository root run:
@@ -136,12 +136,12 @@ Use `npm ci` rather than `npm install`. It installs the exact versions recorded 
 
 | Script | Command | What it does |
 | --- | --- | --- |
-| `npm run dev` | `build:client` then `tsx watch src/index.ts` | Compiles the browser scripts once, then runs the service from TypeScript source and restarts on file changes. Use this while developing. |
+| `npm run dev` | `build:client` then `node --use-system-ca --import tsx --watch src/index.ts` | Compiles the browser scripts once, then runs the service from TypeScript source with the system CA store and restarts on file changes. Use this while developing. |
 | `npm run dev:client` | `esbuild … --watch` | Rebuilds the browser scripts whenever `src/controllers/*.ts` changes. Run it in a second terminal alongside `npm run dev`. |
 | `npm run typecheck` | `tsc` and `tsc -p tsconfig.client.json` | Checks types without emitting files: the server code and tests, then the browser scripts (which use DOM types). |
 | `npm run build:client` | `esbuild` | Compiles `src/controllers/*.ts` to browser JavaScript in `dist/public/controllers/`. Runs automatically before `build` and `test`. |
 | `npm run build` | typecheck, `build:client`, then `esbuild` | Type-checks, compiles the browser scripts, then bundles the service into `dist/index.js` for production. |
-| `npm start` | `node dist/index.js` | Runs the built output. Requires `npm run build` first. |
+| `npm start` | `node --use-system-ca dist/index.js` | Runs the built output with the system CA store. Requires `npm run build` first. |
 | `npm run lint` | `biome check .` | Lints and checks formatting/import order with [Biome](https://biomejs.dev/). Reports issues without changing files. |
 | `npm run lint:fix` | `biome check --write .` | Runs Biome and applies every safe fix it can (formatting, import order, safe lint fixes). |
 | `npm run format` | `biome format --write .` | Formats files with Biome only (no lint rules or import sorting). |

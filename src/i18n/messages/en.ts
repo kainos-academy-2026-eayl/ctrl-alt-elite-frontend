@@ -219,7 +219,11 @@ const en = {
   'checkout.phoneHint': 'A UK number, for example 07700 900123',
   'checkout.homeAddress': 'Home address',
   'checkout.addressHint':
-    'Enter your address below. We will check that your postcode exists.',
+    'Enter your postcode and choose Find address, or type your address in below.',
+  'checkout.findAddress': 'Find address',
+  'checkout.chooseAddress': 'Choose your address',
+  'checkout.useAddress': 'Use this address',
+  'checkout.error.chooseAddress': 'Choose your address from the list',
   'checkout.postcode': 'Postcode',
   'checkout.addressLine1': 'Address line 1',
   'checkout.addressLine2': 'Address line 2',

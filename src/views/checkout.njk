@@ -68,7 +68,27 @@
 
         <h3 class="checkout-subheading">{{ t('checkout.homeAddress') }}</h3>
         <p class="checkout-hint">{{ t('checkout.addressHint') }}</p>
-        {{ textField("postcode", t('checkout.postcode'), values, fieldErrors, autocomplete="postal-code", width="short", maxlength=8) }}
+        <div class="checkout-postcode">
+          {{ textField("postcode", t('checkout.postcode'), values, fieldErrors, autocomplete="postal-code", width="short", maxlength=8) }}
+          <button class="checkout-secondary-button" type="submit" name="action" value="find-address" formnovalidate>{{ t('checkout.findAddress') }}</button>
+        </div>
+
+        {% if addresses.length %}
+        <div class="checkout-field{% if fieldErrors.selectedAddress %} checkout-field-error{% endif %}">
+          <fieldset class="checkout-fieldset" id="selectedAddress"{% if fieldErrors.selectedAddress %} aria-describedby="selectedAddress-error"{% endif %}>
+            <legend class="checkout-label">{{ t('checkout.chooseAddress') }}</legend>
+            {% if fieldErrors.selectedAddress %}<p class="checkout-error-message" id="selectedAddress-error"><span class="basket-visually-hidden">{{ t('checkout.error') }}</span> {{ fieldErrors.selectedAddress }}</p>{% endif %}
+            {% for address in addresses %}
+            <div class="checkout-radio">
+              <input id="address-{{ address.index }}" type="radio" name="selectedAddress" value="{{ address.index }}" />
+              <label for="address-{{ address.index }}">{{ address.label }}</label>
+            </div>
+            {% endfor %}
+          </fieldset>
+          <button class="checkout-secondary-button" type="submit" name="action" value="use-address" formnovalidate>{{ t('checkout.useAddress') }}</button>
+        </div>
+        {% endif %}
+
         {{ textField("addressLine1", t('checkout.addressLine1'), values, fieldErrors, autocomplete="address-line1", maxlength=100) }}
         {{ textField("addressLine2", t('checkout.addressLine2'), values, fieldErrors, autocomplete="address-line2", optional=true, maxlength=100) }}
         {{ textField("town", t('checkout.town'), values, fieldErrors, autocomplete="address-level2", width="medium", maxlength=60) }}

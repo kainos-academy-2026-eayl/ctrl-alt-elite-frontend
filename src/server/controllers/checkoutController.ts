@@ -7,6 +7,10 @@ import type {
 } from '../../dtos/checkoutDto';
 import { t } from '../../i18n/runtime';
 import { renderErrorPage } from '../../middleware/errorHandler';
+import type {
+  AddressLookupService,
+  LookedUpAddress,
+} from '../../services/addressLookupService';
 import {
   type BasketService,
   BasketServiceError,
@@ -43,6 +47,7 @@ import {
 // Functions, not constants, so each message is in the visitor's language.
 const POSTCODE_NOT_FOUND_MESSAGE = () => t('checkout.postcodeNotFound');
 const POSTCODE_UNAVAILABLE_MESSAGE = () => t('checkout.postcodeUnavailable');
+const CHOOSE_ADDRESS_MESSAGE = () => t('checkout.error.chooseAddress');
 const TOTAL_CHANGED_MESSAGE = () => t('checkout.totalChanged');
 // Long enough to catch a double-click or a refresh, short enough to forget.
 const RECENT_ORDER_MS = 10 * 60 * 1000;
@@ -74,6 +79,7 @@ export class CheckoutController {
     private readonly basketService: BasketService,
     private readonly loginSession: LoginSession,
     private readonly postcodeService: PostcodeService,
+    private readonly addressLookup: AddressLookupService,
   ) {}
 
   show = async (req: Request, res: Response): Promise<void> => {
@@ -102,6 +108,12 @@ export class CheckoutController {
     const form = readCheckoutForm(req.body);
     const page: StepPage = { basket, account, values: form.values };
     switch (form.action) {
+      case 'find-address':
+        await this.findAddress(res, page);
+        return;
+      case 'use-address':
+        await this.useAddress(res, page, form);
+        return;
       case 'continue-to-delivery':
       case 'edit-delivery':
       case 'continue-to-payment':
@@ -154,6 +166,74 @@ export class CheckoutController {
       },
     );
   };
+
+  private async findAddress(res: Response, page: StepPage): Promise<void> {
+    const values = {
+      ...page.values,
+      postcode: normalisePostcode(page.values.postcode) ?? page.values.postcode,
+    };
+    const problem = await this.checkPostcode(values);
+    if (problem) {
+      this.renderPostcodeProblem(res, { ...page, values }, problem);
+      return;
+    }
+    let addresses: LookedUpAddress[];
+    try {
+      addresses = await this.addressLookup.findAddresses(values.postcode);
+    } catch (error) {
+      if (!(error instanceof PostcodeServiceError)) throw error;
+      this.renderPostcodeProblem(res, { ...page, values }, error);
+      return;
+    }
+    this.render(res, 200, {
+      ...page,
+      values: {
+        ...values,
+        postcode: addresses[0]?.postcode ?? values.postcode,
+      },
+      addresses,
+    });
+  }
+
+  /** Copies the chosen suggested address into the address fields. */
+  private async useAddress(
+    res: Response,
+    page: StepPage,
+    form: CheckoutForm,
+  ): Promise<void> {
+    let addresses: LookedUpAddress[];
+    try {
+      addresses = await this.addressLookup.findAddresses(page.values.postcode);
+    } catch (error) {
+      if (!(error instanceof PostcodeServiceError)) throw error;
+      this.renderPostcodeProblem(res, page, error);
+      return;
+    }
+    const chosen =
+      form.selectedAddress === null
+        ? undefined
+        : addresses[form.selectedAddress];
+    if (!chosen) {
+      this.render(res, 400, {
+        ...page,
+        addresses,
+        errors: [
+          { field: 'selectedAddress', message: CHOOSE_ADDRESS_MESSAGE() },
+        ],
+      });
+      return;
+    }
+    this.render(res, 200, {
+      ...page,
+      values: {
+        ...page.values,
+        addressLine1: chosen.line1,
+        addressLine2: '',
+        town: chosen.town,
+        postcode: chosen.postcode,
+      },
+    });
+  }
 
   /**
    * Returns null for a real postcode, a field error for a badly formed or

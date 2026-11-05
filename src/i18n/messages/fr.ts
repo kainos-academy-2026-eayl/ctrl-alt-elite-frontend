@@ -201,7 +201,11 @@ const fr: Partial<Record<string, string>> = {
   'checkout.phoneHint': 'Un numéro britannique, par exemple 07700 900123',
   'checkout.homeAddress': 'Adresse du domicile',
   'checkout.addressHint':
-    'Saisissez votre adresse ci-dessous. Nous vérifierons que votre code postal existe.',
+    "Saisissez votre code postal et choisissez Trouver l'adresse, ou saisissez votre adresse ci-dessous.",
+  'checkout.findAddress': "Trouver l'adresse",
+  'checkout.chooseAddress': 'Choisissez votre adresse',
+  'checkout.useAddress': 'Utiliser cette adresse',
+  'checkout.error.chooseAddress': 'Choisissez votre adresse dans la liste',
   'checkout.postcode': 'Code postal',
   'checkout.addressLine1': 'Adresse (ligne 1)',
   'checkout.addressLine2': 'Adresse (ligne 2)',
