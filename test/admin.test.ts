@@ -236,10 +236,7 @@ describe('admin portal pages', () => {
 
     it('loads its controller script and exposes the hooks it updates', async () => {
       const { html } = await get('/admin');
-      assert.match(
-        html,
-        /<script src="\/controllers\/adminDashboard\.js" defer>/,
-      );
+      assert.match(html, /<script src="\/client\/adminDashboard\.js" defer>/);
       for (const hook of [
         'data-summary-card="Customers"',
         'data-dashboard-notifications',
@@ -302,7 +299,7 @@ describe('admin portal pages', () => {
       }
       assert.match(html, /data-orders-results/);
       assert.match(html, /data-total-orders/);
-      assert.match(html, /<script src="\/controllers\/adminOrders\.js" defer>/);
+      assert.match(html, /<script src="\/client\/adminOrders\.js" defer>/);
       assert.match(html, /is-active"\s+href="\/admin\/orders"/);
     });
 
@@ -310,10 +307,7 @@ describe('admin portal pages', () => {
       const { status, html } = await get('/admin/orders/some-uuid');
       assert.equal(status, 200);
       assert.match(html, /data-order-detail/);
-      assert.match(
-        html,
-        /<script src="\/controllers\/adminOrderDetail\.js" defer>/,
-      );
+      assert.match(html, /<script src="\/client\/adminOrderDetail\.js" defer>/);
       assert.match(html, /Back to orders/);
     });
   });
@@ -325,10 +319,7 @@ describe('admin portal pages', () => {
       assert.match(html, /name="from"/);
       assert.match(html, /name="to"/);
       assert.match(html, /data-report-results/);
-      assert.match(
-        html,
-        /<script src="\/controllers\/adminReports\.js" defer>/,
-      );
+      assert.match(html, /<script src="\/client\/adminReports\.js" defer>/);
       assert.match(html, /is-active"\s+href="\/admin\/reports"/);
     });
   });
@@ -344,10 +335,7 @@ describe('admin portal pages', () => {
       }
       assert.match(html, /data-customers-results/);
       assert.match(html, /data-total-customers/);
-      assert.match(
-        html,
-        /<script src="\/controllers\/adminCustomers\.js" defer>/,
-      );
+      assert.match(html, /<script src="\/client\/adminCustomers\.js" defer>/);
       assert.match(html, /is-active"\s+href="\/admin\/customers"/);
     });
 
@@ -357,7 +345,7 @@ describe('admin portal pages', () => {
       assert.match(html, /data-customer-detail/);
       assert.match(
         html,
-        /<script src="\/controllers\/adminCustomerDetail\.js" defer>/,
+        /<script src="\/client\/adminCustomerDetail\.js" defer>/,
       );
       assert.match(html, /Back to customers/);
     });

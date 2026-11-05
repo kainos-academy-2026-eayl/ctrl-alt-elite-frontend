@@ -191,10 +191,7 @@ describe('saved profile autofill', () => {
       assert.match(saveButton, /type="submit"/);
       assert.doesNotMatch(saveButton, /\bdisabled\b/);
       assert.match(html, /<fieldset class="profile-details-fields">/);
-      assert.match(
-        html,
-        /<script src="\/controllers\/script\.js" defer><\/script>/,
-      );
+      assert.match(html, /<script src="\/client\/script\.js" defer><\/script>/);
       assert.doesNotMatch(
         html,
         /Design preview only|changes are not saved|{{|{%/,

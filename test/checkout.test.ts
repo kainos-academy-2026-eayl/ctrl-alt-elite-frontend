@@ -30,7 +30,7 @@ import { withoutAccessibilityMenu } from './accessibilityMenu';
 const BACKEND_ORIGIN = 'https://backend.example.test';
 const POSTCODES_ORIGIN = 'https://api.postcodes.io';
 // The only script a storefront page loads: the shared navigation script.
-const SHARED_NAV_SCRIPT = '<script src="/controllers/script.js" defer>';
+const SHARED_NAV_SCRIPT = '<script src="/client/script.js" defer>';
 /** Postcodes the fake postcodes.io knows, with their council area. */
 const REAL_POSTCODES: Record<string, string> = {
   BT11AA: 'Belfast',

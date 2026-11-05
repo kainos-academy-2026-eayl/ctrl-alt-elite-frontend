@@ -48,8 +48,8 @@ const PACKAGE_JSON_PATH = fileURLToPath(
 const ASSETS_DIRECTORY = fileURLToPath(
   new URL('../src/assets/', import.meta.url),
 );
-const CONTROLLERS_DIRECTORY = fileURLToPath(
-  new URL('../dist/public/controllers/', import.meta.url),
+const CLIENT_DIRECTORY = fileURLToPath(
+  new URL('../dist/public/client/', import.meta.url),
 );
 
 async function readAppVersion(): Promise<string> {
@@ -146,7 +146,7 @@ export function createApp(
   app.use('/api', createApiProxy(backendOrigin));
 
   app.use('/assets', express.static(ASSETS_DIRECTORY));
-  app.use('/controllers', express.static(CONTROLLERS_DIRECTORY));
+  app.use('/client', express.static(CLIENT_DIRECTORY));
   app.use(
     '/product-catalog',
     express.static(

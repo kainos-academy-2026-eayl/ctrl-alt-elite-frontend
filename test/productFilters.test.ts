@@ -330,7 +330,7 @@ describe('Filter and sort on the search and catalogue pages (no JavaScript)', ()
     );
     assert.match(html, /Showing 1 of 7 products found for &quot;shirt&quot;\./);
     assert.deepEqual(withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g), [
-      '<script src="/controllers/script.js" defer>',
+      '<script src="/client/script.js" defer>',
     ]);
   });
 

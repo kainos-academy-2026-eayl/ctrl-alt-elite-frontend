@@ -36,7 +36,7 @@ const EXCLUDED_PREFIXES = [
   '/admin',
   '/api',
   '/assets',
-  '/controllers',
+  '/client',
   '/product-catalog',
   '/health',
 ];

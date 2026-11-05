@@ -6,7 +6,7 @@ import type { StockItem } from '../src/util/adminStock';
 import { renderSummaryCards } from '../src/util/adminStockViews';
 
 const controller = readFileSync(
-  new URL('../dist/public/controllers/adminStockList.js', import.meta.url),
+  new URL('../dist/public/client/adminStockList.js', import.meta.url),
   'utf8',
 );
 

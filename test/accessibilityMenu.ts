@@ -7,7 +7,7 @@
 export function withoutAccessibilityMenu(html: string): string {
   return html
     .replace(/<details class="a11y-widget[\s\S]*?<\/details>/, '')
-    .replace(/<script src="\/controllers\/a11yMenu\.js" defer><\/script>/, '')
+    .replace(/<script src="\/client\/a11yMenu\.js" defer><\/script>/, '')
     .replace(
       /<script type="application\/json" id="i18n-messages">[\s\S]*?<\/script>/,
       '',

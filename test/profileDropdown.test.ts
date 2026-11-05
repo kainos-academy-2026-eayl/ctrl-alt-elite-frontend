@@ -197,7 +197,7 @@ describe('homepage profile dropdown', () => {
     // The layout loads the shared script once; the profile page adds no other.
     assert.deepEqual(
       withoutAccessibilityMenu(profileHtml).match(/<script\b[^>]*>/g),
-      ['<script src="/controllers/script.js" defer>'],
+      ['<script src="/client/script.js" defer>'],
     );
     const stylesheet = await fetch(`${base}/assets/profile.css`);
     assert.equal(stylesheet.status, 200);
@@ -263,17 +263,14 @@ describe('homepage profile dropdown', () => {
       assert.match(html, /Sign in again to load and save your profile\./);
       assert.match(html, /<input[^>]*id="profile-picture"[^>]*disabled/);
       assert.match(html, /<form action="\/profile" method="post">/);
-      assert.match(
-        html,
-        /<script src="\/controllers\/script\.js" defer><\/script>/,
-      );
+      assert.match(html, /<script src="\/client\/script\.js" defer><\/script>/);
       assert.doesNotMatch(
         html,
         /Design preview only|changes are not saved|{{|{%/,
       );
       assert.deepEqual(
         withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g),
-        ['<script src="/controllers/script.js" defer>'],
+        ['<script src="/client/script.js" defer>'],
       );
       assert.equal(backendRequest.mock.calls.length, 0);
     } finally {
