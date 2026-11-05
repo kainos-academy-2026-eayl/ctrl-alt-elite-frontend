@@ -382,15 +382,76 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     assert.match(html, /id="email" name="email" type="email" value=""/);
     assert.match(html, /id="phone" name="phone" type="tel" value=""/);
     assert.match(html, /id="addressLine1" name="addressLine1"/);
-    assert.doesNotMatch(
-      html,
-      /Find address|Choose your address|selectedAddress/,
-    );
+    assert.match(html, /value="find-address" formnovalidate>Find address/);
+    assert.doesNotMatch(html, /Choose your address|name="selectedAddress"/);
     assert.match(html, /value="continue-to-delivery">Continue to delivery/);
     assert.match(html, /2 × Desk Lamp/);
     assert.deepEqual(withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g), [
       SHARED_NAV_SCRIPT,
     ]);
+  });
+
+  it('suggests addresses for a real postcode and fills in the chosen one', async () => {
+    const found = await postCheckout({
+      ...DETAILS,
+      postcode: 'sw1a1aa',
+      addressLine1: '',
+      town: '',
+      action: 'find-address',
+    });
+    assert.equal(found.status, 200);
+    const html = await found.text();
+    assert.match(
+      html,
+      /<legend class="checkout-label">Choose your address<\/legend>/,
+    );
+    const labels = [
+      ...html.matchAll(/<label for="address-\d">([^<]+)<\/label>/g),
+    ].map((match) => match[1]);
+    assert.equal(labels.length, 6);
+    for (const label of labels) {
+      assert.match(label ?? '', /^\d [A-Za-z ]+, London, SW1A 1AA$/);
+    }
+
+    const chosen = await postCheckout({
+      ...DETAILS,
+      postcode: 'SW1A 1AA',
+      addressLine1: '',
+      town: '',
+      selectedAddress: '2',
+      action: 'use-address',
+    });
+    assert.equal(chosen.status, 200);
+    const filled = await chosen.text();
+    assert.match(
+      filled,
+      /id="addressLine1" name="addressLine1" type="text" value="3 [A-Za-z ]+"/,
+    );
+    assert.match(filled, /id="town" name="town" type="text" value="London"/);
+    assert.doesNotMatch(filled, /Choose your address/);
+  });
+
+  it('asks you to pick an address and rejects unknown postcodes when finding one', async () => {
+    const noChoice = await postCheckout({
+      ...DETAILS,
+      action: 'use-address',
+    });
+    assert.equal(noChoice.status, 400);
+    assert.match(
+      await noChoice.text(),
+      /<a href="#selectedAddress">Choose your address from the list<\/a>/,
+    );
+
+    const unknown = await postCheckout({
+      ...DETAILS,
+      postcode: 'ZZ99 9ZZ',
+      action: 'find-address',
+    });
+    assert.equal(unknown.status, 400);
+    assert.match(
+      await unknown.text(),
+      /We could not find that postcode\. Check it and try again\./,
+    );
   });
 
   it('keeps manually entered addresses and rejects invalid postcodes', async () => {

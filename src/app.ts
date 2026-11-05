@@ -28,6 +28,7 @@ import {
 import { createAdminRouter } from './routes/admin';
 import { createBasketRouter } from './routes/basketRouter';
 import { createCheckoutRouter } from './routes/checkoutRouter';
+import { AddressLookupService } from './services/addressLookupService';
 import { BasketService } from './services/basketService';
 import { CatalogService } from './services/catalog-service';
 import { CheckoutService } from './services/checkoutService';
@@ -100,6 +101,7 @@ export function createApp(
     basketService,
     loginSession,
     postcodeService,
+    new AddressLookupService(postcodeService),
   );
 
   // noCache is a loader option, so it must be set on the loader to take effect.
