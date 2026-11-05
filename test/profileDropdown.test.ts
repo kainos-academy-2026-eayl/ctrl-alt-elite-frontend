@@ -6,6 +6,7 @@ import { jwtVerify, SignJWT } from 'jose';
 import { afterAll, beforeAll, describe, it, vi } from 'vitest';
 import { createApp } from '../src/app';
 import { LoginSession } from '../src/util/loginSession';
+import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const TEST_JWT_SECRET = 'test-only-profile-secret-with-at-least-32-bytes';
 
@@ -194,9 +195,10 @@ describe('homepage profile dropdown', () => {
     assert.match(profileHtml, /<form action="\/profile" method="post">/);
     assert.doesNotMatch(profileHtml, /{{|{%/);
     // The layout loads the shared script once; the profile page adds no other.
-    assert.deepEqual(profileHtml.match(/<script\b[^>]*>/g), [
-      '<script src="/controllers/script.js" defer>',
-    ]);
+    assert.deepEqual(
+      withoutAccessibilityMenu(profileHtml).match(/<script\b[^>]*>/g),
+      ['<script src="/controllers/script.js" defer>'],
+    );
     const stylesheet = await fetch(`${base}/assets/profile.css`);
     assert.equal(stylesheet.status, 200);
     assert.match(stylesheet.headers.get('content-type') ?? '', /text\/css/);
@@ -250,7 +252,7 @@ describe('homepage profile dropdown', () => {
         /type="file"[^>]*accept="image\/jpeg,image\/png,image\/webp"/,
       );
       assert.doesNotMatch(
-        html,
+        withoutAccessibilityMenu(html),
         /profile-pronouns|profile-description|<select|<textarea/,
       );
       assert.match(
@@ -269,9 +271,10 @@ describe('homepage profile dropdown', () => {
         html,
         /Design preview only|changes are not saved|{{|{%/,
       );
-      assert.deepEqual(html.match(/<script\b[^>]*>/g), [
-        '<script src="/controllers/script.js" defer>',
-      ]);
+      assert.deepEqual(
+        withoutAccessibilityMenu(html).match(/<script\b[^>]*>/g),
+        ['<script src="/controllers/script.js" defer>'],
+      );
       assert.equal(backendRequest.mock.calls.length, 0);
     } finally {
       backend.off('request', backendRequest);
@@ -311,7 +314,10 @@ describe('homepage profile dropdown', () => {
     const html = await response.text();
     assert.equal(response.status, 200);
     assert.match(html, /<h2>Signed In Customer<\/h2>/);
-    assert.doesNotMatch(html, /AnotherUser|someone-else/);
+    assert.doesNotMatch(
+      withoutAccessibilityMenu(html),
+      /AnotherUser|someone-else/,
+    );
   });
 
   it('escapes the signed-in name when rendering the dropdown and profile', async () => {

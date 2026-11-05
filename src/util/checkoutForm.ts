@@ -4,6 +4,8 @@
  * The backend checks everything again when the order is placed.
  */
 
+import { type MessageKey, t } from '../i18n/runtime';
+
 export const CHECKOUT_FIELDS = [
   'firstName',
   'lastName',
@@ -128,11 +130,14 @@ export function readCheckoutForm(body: unknown): CheckoutForm {
 function checkLength(
   values: CheckoutValues,
   field: CheckoutField,
-  label: string,
+  labelKey: MessageKey,
 ): CheckoutFieldError | null {
   const max = MAX_LENGTHS[field];
   return values[field].length > max
-    ? { field, message: `${label} must be ${max} characters or fewer` }
+    ? {
+        field,
+        message: t('checkout.error.tooLong', { label: t(labelKey), max }),
+      }
     : null;
 }
 
@@ -140,12 +145,12 @@ export function validatePostcode(
   values: CheckoutValues,
 ): CheckoutFieldError | null {
   if (!values.postcode) {
-    return { field: 'postcode', message: 'Enter your postcode' };
+    return { field: 'postcode', message: t('checkout.error.postcodeMissing') };
   }
   if (!normalisePostcode(values.postcode)) {
     return {
       field: 'postcode',
-      message: 'Enter a real UK postcode, like BT1 1AA',
+      message: t('checkout.error.postcodeInvalid'),
     };
   }
   return null;
@@ -155,40 +160,38 @@ export function validatePostcode(
 export function validateDetails(values: CheckoutValues): CheckoutFieldError[] {
   const errors: (CheckoutFieldError | null)[] = [
     values.firstName
-      ? checkLength(values, 'firstName', 'First name')
-      : { field: 'firstName', message: 'Enter your first name' },
+      ? checkLength(values, 'firstName', 'checkout.firstName')
+      : { field: 'firstName', message: t('checkout.error.firstName') },
     values.lastName
-      ? checkLength(values, 'lastName', 'Last name')
-      : { field: 'lastName', message: 'Enter your last name' },
+      ? checkLength(values, 'lastName', 'checkout.lastName')
+      : { field: 'lastName', message: t('checkout.error.lastName') },
     !values.email
-      ? { field: 'email', message: 'Enter your email address' }
+      ? { field: 'email', message: t('checkout.error.emailMissing') }
       : !isValidEmail(values.email)
         ? {
             field: 'email',
-            message:
-              'Enter an email address in the correct format, like name@example.com',
+            message: t('checkout.error.emailInvalid'),
           }
         : null,
     !values.phone
-      ? { field: 'phone', message: 'Enter your phone number' }
+      ? { field: 'phone', message: t('checkout.error.phoneMissing') }
       : !normaliseUkPhone(values.phone)
         ? {
             field: 'phone',
-            message:
-              'Enter a UK phone number using only numbers, like 07700 900123',
+            message: t('checkout.error.phoneInvalid'),
           }
         : null,
     validatePostcode(values),
     values.addressLine1
-      ? checkLength(values, 'addressLine1', 'Address line 1')
+      ? checkLength(values, 'addressLine1', 'checkout.addressLine1')
       : {
           field: 'addressLine1',
-          message: 'Enter address line 1, usually the house number and street',
+          message: t('checkout.error.addressLine1'),
         },
-    checkLength(values, 'addressLine2', 'Address line 2'),
+    checkLength(values, 'addressLine2', 'checkout.addressLine2'),
     values.town
-      ? checkLength(values, 'town', 'Town or city')
-      : { field: 'town', message: 'Enter your town or city' },
+      ? checkLength(values, 'town', 'checkout.town')
+      : { field: 'town', message: t('checkout.error.town') },
   ];
   return errors.filter((error) => error !== null);
 }
@@ -203,7 +206,7 @@ export function validateDelivery(
     : [
         {
           field: 'deliveryOption',
-          message: 'Choose how you would like to get your order',
+          message: t('checkout.error.delivery'),
         },
       ];
 }

@@ -7,7 +7,7 @@
 
 {% block content %}
 <section class="page-width welcome" aria-labelledby="error-heading">
-  <p class="eyebrow">Error {{ status }}</p>
+  <p class="eyebrow">{{ t('error.eyebrow', { status: status }) }}</p>
   <h1 id="error-heading">{{ title }}</h1>
   <p class="welcome-copy">{{ message }}</p>
 </section>

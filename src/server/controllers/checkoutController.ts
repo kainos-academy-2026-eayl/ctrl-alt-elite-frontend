@@ -5,6 +5,7 @@ import type {
   DeliveryOptionDto,
   OrderResultDto,
 } from '../../dtos/checkoutDto';
+import { t } from '../../i18n/runtime';
 import { renderErrorPage } from '../../middleware/errorHandler';
 import {
   type BasketService,
@@ -39,12 +40,10 @@ import {
   type CheckoutPageInput,
 } from '../../views/checkout.page';
 
-const POSTCODE_NOT_FOUND_MESSAGE =
-  'We could not find that postcode. Check it and try again.';
-const POSTCODE_UNAVAILABLE_MESSAGE =
-  'We could not check your postcode right now. Please try again in a moment.';
-const TOTAL_CHANGED_MESSAGE =
-  'Your basket or its prices have changed. Check your new order total and press Checkout again.';
+// Functions, not constants, so each message is in the visitor's language.
+const POSTCODE_NOT_FOUND_MESSAGE = () => t('checkout.postcodeNotFound');
+const POSTCODE_UNAVAILABLE_MESSAGE = () => t('checkout.postcodeUnavailable');
+const TOTAL_CHANGED_MESSAGE = () => t('checkout.totalChanged');
 // Long enough to catch a double-click or a refresh, short enough to forget.
 const RECENT_ORDER_MS = 10 * 60 * 1000;
 
@@ -169,7 +168,7 @@ export class CheckoutController {
       const real = await this.postcodeService.findPostcode(values.postcode);
       return real
         ? null
-        : { field: 'postcode', message: POSTCODE_NOT_FOUND_MESSAGE };
+        : { field: 'postcode', message: POSTCODE_NOT_FOUND_MESSAGE() };
     } catch (error) {
       if (error instanceof PostcodeServiceError) return error;
       throw error;
@@ -186,7 +185,7 @@ export class CheckoutController {
       this.render(res, 503, {
         ...page,
         step: 'details',
-        notice: POSTCODE_UNAVAILABLE_MESSAGE,
+        notice: POSTCODE_UNAVAILABLE_MESSAGE(),
       });
       return;
     }
@@ -258,7 +257,7 @@ export class CheckoutController {
       this.render(res, 409, {
         ...deliveryPage,
         step: 'payment',
-        notice: TOTAL_CHANGED_MESSAGE,
+        notice: TOTAL_CHANGED_MESSAGE(),
       });
       return;
     }
@@ -283,8 +282,7 @@ export class CheckoutController {
         console.error('Unable to place the order:', error);
         this.render(res, 503, {
           ...page,
-          notice:
-            'We could not confirm whether your order was placed. Please contact support before trying again.',
+          notice: t('checkout.unconfirmed'),
           orderOutcomeUnknown: true,
         });
       }

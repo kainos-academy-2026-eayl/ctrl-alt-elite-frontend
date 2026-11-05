@@ -1,3 +1,6 @@
+import './i18n';
+import { t } from '../i18n/runtime';
+
 const loginCurrentYear = document.querySelector('[data-current-year]');
 
 if (loginCurrentYear) {
@@ -13,11 +16,9 @@ if (loginPassword && passwordToggle) {
   passwordToggle.addEventListener('click', () => {
     const showPassword = loginPassword.type === 'password';
     loginPassword.type = showPassword ? 'text' : 'password';
-    const label = showPassword ? 'Hide password' : 'Show password';
+    const label = t(showPassword ? 'js.password.hide' : 'js.password.show');
     passwordToggle.setAttribute('aria-label', label);
     passwordToggle.title = label;
   });
   passwordToggle.hidden = false;
 }
-
-export {};

@@ -1,7 +1,7 @@
 {% extends "layout.njk" %}
 
-{% block title %}Order confirmed | Ctrl-Alt-Elite{% endblock %}
-{% block description %}Your order has been placed.{% endblock %}
+{% block title %}{{ t('confirmation.title') }}{% endblock %}
+{% block description %}{{ t('confirmation.description') }}{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="/assets/basket.css" />
@@ -11,55 +11,55 @@
 {% block content %}
 <section class="page-width checkout" aria-labelledby="confirmation-heading">
   <div class="checkout-confirmation-banner">
-    <h1 id="confirmation-heading">Order confirmed</h1>
-    <p>Thank you{% if firstName %}, {{ firstName }}{% endif %}! You have successfully made an order.</p>
-    <p>Order number<br /><strong class="checkout-order-number">{{ orderNumber }}</strong></p>
+    <h1 id="confirmation-heading">{{ t('confirmation.heading') }}</h1>
+    <p>{% if firstName %}{{ t('confirmation.thanksName', { name: firstName }) }}{% else %}{{ t('confirmation.thanks') }}{% endif %}</p>
+    <p>{{ t('confirmation.orderNumber') }}<br /><strong class="checkout-order-number">{{ orderNumber }}</strong></p>
   </div>
 
-  <p>Placed on {{ orderDate }}.</p>
+  <p>{{ t('confirmation.placedOn', { date: orderDate }) }}</p>
 
   <section class="checkout-panel" aria-labelledby="order-items-heading">
-    <h2 id="order-items-heading">Your order</h2>
+    <h2 id="order-items-heading">{{ t('confirmation.yourOrder') }}</h2>
     <table class="basket-table">
-      <caption class="basket-visually-hidden">Items in your order</caption>
+      <caption class="basket-visually-hidden">{{ t('confirmation.caption') }}</caption>
       <thead>
         <tr>
-          <th scope="col">Product</th>
-          <th scope="col">Unit price</th>
-          <th scope="col">Quantity</th>
-          <th scope="col">Line total</th>
+          <th scope="col">{{ t('basket.product') }}</th>
+          <th scope="col">{{ t('basket.unitPrice') }}</th>
+          <th scope="col">{{ t('basket.quantity') }}</th>
+          <th scope="col">{{ t('basket.lineTotal') }}</th>
         </tr>
       </thead>
       <tbody>
         {% for line in lines %}
         <tr>
           <th scope="row">{{ line.name }}</th>
-          <td data-label="Unit price">{{ line.unitPrice }}</td>
-          <td data-label="Quantity">{{ line.quantity }}</td>
-          <td data-label="Line total" class="basket-line-total">{{ line.lineTotal }}</td>
+          <td data-label="{{ t('basket.unitPrice') }}">{{ line.unitPrice }}</td>
+          <td data-label="{{ t('basket.quantity') }}">{{ line.quantity }}</td>
+          <td data-label="{{ t('basket.lineTotal') }}" class="basket-line-total">{{ line.lineTotal }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
     <dl class="checkout-summary-list checkout-payment">
-      <div><dt>Items</dt><dd>{{ itemsTotal }}</dd></div>
-      <div><dt>Delivery</dt><dd>{{ deliveryPrice }}</dd></div>
-      <div class="checkout-payment-total"><dt>Paid from credit</dt><dd>{{ total }}</dd></div>
-      <div><dt>Remaining credit balance</dt><dd>{{ creditBalance }}</dd></div>
+      <div><dt>{{ t('checkout.items') }}</dt><dd>{{ itemsTotal }}</dd></div>
+      <div><dt>{{ t('checkout.deliveryLabel') }}</dt><dd>{{ deliveryPrice }}</dd></div>
+      <div class="checkout-payment-total"><dt>{{ t('confirmation.paidFromCredit') }}</dt><dd>{{ total }}</dd></div>
+      <div><dt>{{ t('confirmation.remainingCredit') }}</dt><dd>{{ creditBalance }}</dd></div>
     </dl>
   </section>
 
   <section class="checkout-panel" aria-labelledby="order-delivery-heading">
-    <h2 id="order-delivery-heading">Delivery details</h2>
+    <h2 id="order-delivery-heading">{{ t('confirmation.deliveryDetails') }}</h2>
     <dl class="checkout-summary-list">
-      {% if delivery %}<div><dt>Delivery</dt><dd>{{ delivery.name }}, {{ delivery.description }}</dd></div>{% endif %}
-      <div><dt>Name</dt><dd>{{ contact.name }}</dd></div>
-      <div><dt>Email</dt><dd>{{ contact.email }}</dd></div>
-      <div><dt>Phone</dt><dd>{{ contact.phone }}</dd></div>
-      <div><dt>Address</dt><dd>{% for line in addressLines %}{{ line }}{% if not loop.last %}<br />{% endif %}{% endfor %}</dd></div>
+      {% if delivery %}<div><dt>{{ t('checkout.deliveryLabel') }}</dt><dd>{{ delivery.name }}, {{ delivery.description }}</dd></div>{% endif %}
+      <div><dt>{{ t('checkout.name') }}</dt><dd>{{ contact.name }}</dd></div>
+      <div><dt>{{ t('checkout.emailShort') }}</dt><dd>{{ contact.email }}</dd></div>
+      <div><dt>{{ t('checkout.phoneShort') }}</dt><dd>{{ contact.phone }}</dd></div>
+      <div><dt>{{ t('checkout.address') }}</dt><dd>{% for line in addressLines %}{{ line }}{% if not loop.last %}<br />{% endif %}{% endfor %}</dd></div>
     </dl>
   </section>
 
-  <a class="basket-button" href="/">Continue shopping</a>
+  <a class="basket-button" href="/">{{ t('confirmation.continue') }}</a>
 </section>
 {% endblock %}

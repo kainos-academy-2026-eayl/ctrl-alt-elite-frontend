@@ -130,7 +130,10 @@ describe('buildBasketPage', () => {
     assert.deepEqual(page.basketSummary, {
       itemCount: 101,
       itemCountText: '101 items',
+      label: 'Basket, 101 items',
     });
+    // Prices are in pounds, so there is nothing to explain.
+    assert.equal(page.currencyNote, '');
     assert.equal(page.currentYear, 2026);
     assert.deepEqual(page.lines[0], {
       name: 'Swaggy Jeans',
@@ -227,7 +230,11 @@ describe('buildHomepage', () => {
         },
       ],
       conveyorCards: [],
-      basketSummary: { itemCount: 101, itemCountText: '101 items' },
+      basketSummary: {
+        itemCount: 101,
+        itemCountText: '101 items',
+        label: 'Basket, 101 items',
+      },
       addToBasketUrl: '/basket/items',
     });
   });

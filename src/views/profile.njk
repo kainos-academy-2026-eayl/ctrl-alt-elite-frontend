@@ -1,7 +1,7 @@
 {% extends "layout.njk" %}
 
-{% block title %}My Profile | Ctrl-Alt-Elite{% endblock %}
-{% block description %}Personalise your Ctrl-Alt-Elite profile.{% endblock %}
+{% block title %}{{ t('profile.title') }}{% endblock %}
+{% block description %}{{ t('profile.description') }}{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="/assets/profile.css" />
@@ -10,13 +10,13 @@
 {% block content %}
 <section class="page-width profile-page" aria-labelledby="profile-heading">
     <header class="profile-header">
-        <p class="eyebrow">Your account</p>
-        <h1 id="profile-heading">My Profile</h1>
-        <p class="profile-copy">A little about you. Make your profile feel like your own.</p>
+        <p class="eyebrow">{{ t('profile.eyebrow') }}</p>
+        <h1 id="profile-heading">{{ t('profile.heading') }}</h1>
+        <p class="profile-copy">{{ t('profile.intro') }}</p>
     </header>
 
     {% if profileLoadMessage %}
-    <p class="profile-notice" role="alert">{{ profileLoadMessage }} <a href="/login">Log in</a></p>
+    <p class="profile-notice" role="alert">{{ profileLoadMessage }} <a href="/login">{{ t('profile.login') }}</a></p>
     {% endif %}
     {% if message %}
     <p class="profile-notice" role="status">{{ message }}</p>
@@ -26,9 +26,9 @@
     {% endif %}
 
     <div class="profile-layout">
-        <aside class="profile-card profile-summary" aria-label="Current profile">
+        <aside class="profile-card profile-summary" aria-label="{{ t('profile.current') }}">
             <div data-profile-photo>
-            <img class="profile-preview-avatar" data-profile-image width="112" height="112" alt="Your profile picture"{% if profile.hasPhoto %} src="/api/profile/photo"{% else %} hidden{% endif %} />
+            <img class="profile-preview-avatar" data-profile-image width="112" height="112" alt="{{ t('profile.pictureAlt') }}"{% if profile.hasPhoto %} src="/api/profile/photo"{% else %} hidden{% endif %} />
             <svg class="profile-preview-avatar" data-profile-fallback viewBox="0 0 64 64" width="112" height="112" aria-hidden="true" focusable="false"{% if profile.hasPhoto %} hidden{% endif %}>
                 <circle cx="32" cy="32" r="32" fill="#dcfce7" />
                 <circle cx="32" cy="24" r="11" fill="#14532d" />
@@ -36,86 +36,86 @@
             </svg>
             </div>
             <h2>{{ account.name }}</h2>
-            <p class="profile-copy">Your personal space on Ctrl-Alt-Elite.</p>
+            <p class="profile-copy">{{ t('profile.personalSpace') }}</p>
             <section class="profile-credit" aria-labelledby="profile-credit-heading">
-                <h3 class="profile-credit-label" id="profile-credit-heading">Credit balance</h3>
+                <h3 class="profile-credit-label" id="profile-credit-heading">{{ t('profile.credit') }}</h3>
                 {% if creditBalance %}
                 <p class="profile-credit-amount">{{ creditBalance }}</p>
                 {% else %}
-                <p class="profile-credit-copy">Your credit balance is not available right now.</p>
+                <p class="profile-credit-copy">{{ t('profile.creditUnavailable') }}</p>
                 {% endif %}
             </section>
         </aside>
 
         <section class="profile-card profile-editor" aria-labelledby="profile-details-heading">
-            <h2 id="profile-details-heading">Profile details</h2>
-            <p class="profile-copy">The details that make you, you.</p>
+            <h2 id="profile-details-heading">{{ t('profile.details') }}</h2>
+            <p class="profile-copy">{{ t('profile.detailsIntro') }}</p>
 
             <div class="profile-picture-field" data-profile-photo-editor data-has-photo="{{ profile.hasPhoto }}">
-                <label for="profile-picture">Profile picture</label>
-                <p class="profile-hint" id="profile-picture-hint">Choose a JPG, PNG or WebP image, up to 20 MiB and 16 megapixels. Your picture is saved separately from your details.</p>
+                <label for="profile-picture">{{ t('profile.picture') }}</label>
+                <p class="profile-hint" id="profile-picture-hint">{{ t('profile.pictureHint') }}</p>
                 <input type="file" id="profile-picture" name="profilePicture" accept="image/jpeg,image/png,image/webp" aria-describedby="profile-picture-hint"{% if not profile %} disabled{% endif %} />
                 {% if profile %}
                 <div class="profile-photo-actions">
-                    <button class="profile-save-button" type="button" data-profile-photo-upload disabled>Upload picture</button>
-                    <button class="profile-save-button profile-secondary-button" type="button" data-profile-photo-remove{% if not profile.hasPhoto %} hidden{% endif %}>Remove picture</button>
+                    <button class="profile-save-button" type="button" data-profile-photo-upload disabled>{{ t('profile.upload') }}</button>
+                    <button class="profile-save-button profile-secondary-button" type="button" data-profile-photo-remove{% if not profile.hasPhoto %} hidden{% endif %}>{{ t('profile.removePicture') }}</button>
                 </div>
                 <p class="profile-hint" data-profile-photo-status role="status" aria-live="polite"></p>
                 <p class="profile-error" data-profile-photo-error role="alert" hidden></p>
-                <noscript><p class="profile-hint">Enable JavaScript to upload or remove your picture. Your details can still be saved below.</p></noscript>
+                <noscript><p class="profile-hint">{{ t('profile.noScript') }}</p></noscript>
                 {% endif %}
             </div>
 
             <form action="/profile" method="post">
             <fieldset class="profile-details-fields"{% if not profile %} disabled{% endif %}>
-            <legend class="profile-visually-hidden">Your profile details</legend>
+            <legend class="profile-visually-hidden">{{ t('profile.fieldsLegend') }}</legend>
             <div class="profile-fields">
                 <div class="profile-field profile-field-wide">
-                    <label for="profile-username">Username</label>
-                    <input type="text" id="profile-username" name="username" value="{{ form.username or '' }}" autocomplete="nickname" maxlength="30" placeholder="Your username" aria-describedby="profile-username-hint" />
-                    <p class="profile-hint" id="profile-username-hint">Display name only, not a login. Leave blank to use your first and last name.</p>
+                    <label for="profile-username">{{ t('profile.username') }}</label>
+                    <input type="text" id="profile-username" name="username" value="{{ form.username or '' }}" autocomplete="nickname" maxlength="30" placeholder="{{ t('profile.usernamePlaceholder') }}" aria-describedby="profile-username-hint" />
+                    <p class="profile-hint" id="profile-username-hint">{{ t('profile.usernameHint') }}</p>
                 </div>
 
                 <div class="profile-field">
-                    <label for="profile-first-name">First name</label>
-                    <input type="text" id="profile-first-name" name="firstName" value="{{ form.firstName }}" autocomplete="given-name" maxlength="100" placeholder="Your first name" required />
+                    <label for="profile-first-name">{{ t('profile.firstName') }}</label>
+                    <input type="text" id="profile-first-name" name="firstName" value="{{ form.firstName }}" autocomplete="given-name" maxlength="100" placeholder="{{ t('profile.firstNamePlaceholder') }}" required />
                 </div>
 
                 <div class="profile-field">
-                    <label for="profile-second-name">Second name</label>
-                    <input type="text" id="profile-second-name" name="lastName" value="{{ form.lastName }}" autocomplete="family-name" maxlength="100" placeholder="Your second name" required />
+                    <label for="profile-second-name">{{ t('profile.lastName') }}</label>
+                    <input type="text" id="profile-second-name" name="lastName" value="{{ form.lastName }}" autocomplete="family-name" maxlength="100" placeholder="{{ t('profile.lastNamePlaceholder') }}" required />
                 </div>
 
                 <div class="profile-field">
-                    <label for="profile-email">Email address</label>
+                    <label for="profile-email">{{ t('profile.email') }}</label>
                     <input type="email" id="profile-email" value="{{ profile.email }}" autocomplete="email" maxlength="254" readonly aria-describedby="profile-email-hint" />
-                    <p class="profile-hint" id="profile-email-hint">Your login email cannot be changed here.</p>
+                    <p class="profile-hint" id="profile-email-hint">{{ t('profile.emailHint') }}</p>
                 </div>
 
                 <div class="profile-field">
-                    <label for="profile-phone">Phone number</label>
-                    <input type="tel" id="profile-phone" name="phoneNumber" value="{{ form.phoneNumber or '' }}" autocomplete="tel" maxlength="30" placeholder="Your phone number" />
+                    <label for="profile-phone">{{ t('profile.phone') }}</label>
+                    <input type="tel" id="profile-phone" name="phoneNumber" value="{{ form.phoneNumber or '' }}" autocomplete="tel" maxlength="30" placeholder="{{ t('profile.phonePlaceholder') }}" />
                 </div>
 
                 <div class="profile-field profile-field-wide">
-                    <label for="profile-address-line-1">Address line 1</label>
-                    <input type="text" id="profile-address-line-1" name="addressLine1" value="{{ form.addressLine1 or '' }}" autocomplete="address-line1" maxlength="200" placeholder="Address line 1" />
+                    <label for="profile-address-line-1">{{ t('profile.addressLine1') }}</label>
+                    <input type="text" id="profile-address-line-1" name="addressLine1" value="{{ form.addressLine1 or '' }}" autocomplete="address-line1" maxlength="200" placeholder="{{ t('profile.addressLine1') }}" />
                 </div>
 
                 <div class="profile-field profile-field-wide">
-                    <label for="profile-address-line-2">Address line 2</label>
-                    <input type="text" id="profile-address-line-2" name="addressLine2" value="{{ form.addressLine2 or '' }}" autocomplete="address-line2" maxlength="200" placeholder="Address line 2" />
+                    <label for="profile-address-line-2">{{ t('profile.addressLine2') }}</label>
+                    <input type="text" id="profile-address-line-2" name="addressLine2" value="{{ form.addressLine2 or '' }}" autocomplete="address-line2" maxlength="200" placeholder="{{ t('profile.addressLine2') }}" />
                 </div>
 
                 <div class="profile-field">
-                    <label for="profile-postcode">Postcode</label>
-                    <input type="text" id="profile-postcode" name="postcode" value="{{ form.postcode or '' }}" autocomplete="postal-code" maxlength="20" placeholder="Your postcode" />
+                    <label for="profile-postcode">{{ t('profile.postcode') }}</label>
+                    <input type="text" id="profile-postcode" name="postcode" value="{{ form.postcode or '' }}" autocomplete="postal-code" maxlength="20" placeholder="{{ t('profile.postcodePlaceholder') }}" />
                 </div>
             </div>
 
             <div class="profile-actions">
-                <p class="profile-hint" id="profile-save-hint">First and last names are required. Address, phone and display name are optional.</p>
-                <button class="profile-save-button" type="submit" aria-describedby="profile-save-hint"{% if not profile %} disabled{% endif %}>Save changes</button>
+                <p class="profile-hint" id="profile-save-hint">{{ t('profile.saveHint') }}</p>
+                <button class="profile-save-button" type="submit" aria-describedby="profile-save-hint"{% if not profile %} disabled{% endif %}>{{ t('profile.save') }}</button>
             </div>
             </fieldset>
             </form>

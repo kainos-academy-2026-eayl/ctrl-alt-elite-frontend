@@ -5,14 +5,13 @@ import {
   isBasketResponseDto,
   type UpdateBasketItemRequestDto,
 } from '../dtos/basketDto';
+import { t } from '../i18n/runtime';
 
 const BASKETS_PATH = '/api/baskets';
 const REQUEST_TIMEOUT_MS = 10_000;
-const NOT_FOUND_MESSAGE = 'Basket not found.';
-const SERVER_ERROR_MESSAGE =
-  'Something went wrong with your basket. Please try again.';
-const UNREACHABLE_MESSAGE =
-  'We could not reach your basket right now. Please try again later.';
+const NOT_FOUND_MESSAGE = () => t('basket.notFound');
+const SERVER_ERROR_MESSAGE = () => t('basket.serverError');
+const UNREACHABLE_MESSAGE = () => t('basket.unreachable');
 
 export class BasketServiceError extends Error {
   /** HTTP status from the backend, or 0 when it could not be reached. */
@@ -109,7 +108,7 @@ export class BasketService {
 
   private basketPath(basketId: string): string {
     if (!isBasketId(basketId)) {
-      throw new BasketServiceError(404, NOT_FOUND_MESSAGE);
+      throw new BasketServiceError(404, NOT_FOUND_MESSAGE());
     }
     return `${BASKETS_PATH}/${encodeURIComponent(basketId)}`;
   }
@@ -126,7 +125,7 @@ export class BasketService {
     const response = await this.request(path, method, body);
     const basket: unknown = await response.json().catch(() => null);
     if (!isBasketResponseDto(basket)) {
-      throw new BasketServiceError(502, SERVER_ERROR_MESSAGE);
+      throw new BasketServiceError(502, SERVER_ERROR_MESSAGE());
     }
     return basket;
   }
@@ -149,7 +148,7 @@ export class BasketService {
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
     } catch (error) {
-      throw new BasketServiceError(0, UNREACHABLE_MESSAGE, { cause: error });
+      throw new BasketServiceError(0, UNREACHABLE_MESSAGE(), { cause: error });
     }
     if (!response.ok) {
       throw new BasketServiceError(
@@ -165,7 +164,7 @@ export class BasketService {
 async function readErrorMessage(response: Response): Promise<string> {
   if (response.status >= 500) {
     await response.body?.cancel();
-    return SERVER_ERROR_MESSAGE;
+    return SERVER_ERROR_MESSAGE();
   }
   const body: unknown = await response.json().catch(() => null);
   if (
@@ -177,5 +176,5 @@ async function readErrorMessage(response: Response): Promise<string> {
   ) {
     return body.message;
   }
-  return SERVER_ERROR_MESSAGE;
+  return SERVER_ERROR_MESSAGE();
 }

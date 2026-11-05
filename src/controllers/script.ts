@@ -1,3 +1,6 @@
+import './i18n';
+import { t } from '../i18n/runtime';
+
 const currentYear = document.querySelector('[data-current-year]');
 
 if (currentYear) {
@@ -151,7 +154,7 @@ function initialiseProfilePhoto(): void {
   };
   const showSaved = () => {
     releasePreview();
-    image.alt = 'Your profile picture';
+    image.alt = t('js.photo.alt');
     image.hidden = !hasPhoto;
     fallback.toggleAttribute('hidden', hasPhoto);
     if (hasPhoto) image.src = `/api/profile/photo?v=${Date.now()}`;
@@ -162,16 +165,12 @@ function initialiseProfilePhoto(): void {
     fallback.removeAttribute('hidden');
     validSelection = false;
     upload.disabled = true;
-    showError(
-      'Unable to display this picture. Choose another image or reload the page.',
-    );
+    showError(t('js.photo.cannotDisplay'));
   });
   if (image.hasAttribute('src') && image.complete && image.naturalWidth === 0) {
     image.hidden = true;
     fallback.removeAttribute('hidden');
-    showError(
-      'Unable to display your saved picture. Reload the page to retry.',
-    );
+    showError(t('js.photo.cannotDisplaySaved'));
   }
   input.addEventListener('change', () => {
     error.hidden = true;
@@ -182,21 +181,21 @@ function initialiseProfilePhoto(): void {
     const file = input.files?.[0];
     if (!file) return;
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      showError('Choose a JPG, PNG or WebP picture.');
+      showError(t('js.photo.wrongType'));
       return;
     }
     if (file.size === 0 || file.size > 20 * 1024 * 1024) {
-      showError('Choose a nonempty picture no larger than 20 MiB.');
+      showError(t('js.photo.tooLarge'));
       return;
     }
     preview = URL.createObjectURL(file);
     image.src = preview;
-    image.alt = 'Preview of your selected profile picture';
+    image.alt = t('js.photo.previewAlt');
     image.hidden = false;
     fallback.setAttribute('hidden', '');
     validSelection = true;
     upload.disabled = busy;
-    status.textContent = 'Preview only. Select Upload picture to save it.';
+    status.textContent = t('js.photo.previewOnly');
   });
 
   async function changePhoto(method: 'PUT' | 'DELETE'): Promise<void> {
@@ -208,7 +207,7 @@ function initialiseProfilePhoto(): void {
     remove.disabled = true;
     error.hidden = true;
     status.textContent =
-      method === 'PUT' ? 'Uploading picture...' : 'Removing picture...';
+      method === 'PUT' ? t('js.photo.uploading') : t('js.photo.removing');
     try {
       const response = await fetch('/api/profile/photo', {
         method,
@@ -232,7 +231,7 @@ function initialiseProfilePhoto(): void {
           'message' in result &&
           typeof result.message === 'string'
             ? result.message
-            : 'Unable to change your picture. Please try again.';
+            : t('js.photo.failed');
         throw new Error(message);
       }
       if (
@@ -249,14 +248,10 @@ function initialiseProfilePhoto(): void {
       remove.hidden = !hasPhoto;
       showSaved();
       status.textContent =
-        method === 'PUT'
-          ? 'Your picture has been saved.'
-          : 'Your picture has been removed.';
+        method === 'PUT' ? t('js.photo.saved') : t('js.photo.removed');
     } catch (failure) {
       showError(
-        failure instanceof Error
-          ? failure.message
-          : 'Unable to change your picture. Please try again.',
+        failure instanceof Error ? failure.message : t('js.photo.failed'),
       );
     } finally {
       busy = false;
@@ -273,5 +268,3 @@ function initialiseProfilePhoto(): void {
 
 void loadAccountProfile();
 initialiseProfilePhoto();
-
-export {};

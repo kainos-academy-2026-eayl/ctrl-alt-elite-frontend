@@ -6,29 +6,62 @@
  * request and turns the backend's facets into the panel's page model.
  */
 
+import { currentPreferences } from '../i18n/context';
+import { intlLocale } from '../i18n/locales';
+import {
+  currencySymbol,
+  formatPrice,
+  isConvertedCurrency,
+  toPounds,
+} from '../i18n/money';
+import { type MessageKey, t, tCategory } from '../i18n/runtime';
+
 export const SORT_OPTIONS = [
-  { value: 'recommended', label: 'Recommended' },
-  { value: 'price-asc', label: 'Price: low to high' },
-  { value: 'price-desc', label: 'Price: high to low' },
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
-  { value: 'most-bought', label: 'Most bought' },
-  { value: 'name-asc', label: 'Name: A to Z' },
-  { value: 'name-desc', label: 'Name: Z to A' },
+  { value: 'recommended' },
+  { value: 'price-asc' },
+  { value: 'price-desc' },
+  { value: 'newest' },
+  { value: 'oldest' },
+  { value: 'most-bought' },
+  { value: 'name-asc' },
+  { value: 'name-desc' },
 ] as const;
 
 export type SortValue = (typeof SORT_OPTIONS)[number]['value'];
 
+function sortLabel(value: SortValue): string {
+  return t(`filters.sort.${value}` as MessageKey);
+}
+
 /** Quick price ranges. The custom min/max boxes take priority over these. */
 export const PRICE_BANDS = [
-  { value: 'under-10', label: 'Under £10', min: null, max: '9.99' },
-  { value: '10-25', label: '£10 to £25', min: '10', max: '24.99' },
-  { value: '25-50', label: '£25 to £50', min: '25', max: '49.99' },
-  { value: '50-plus', label: '£50 and over', min: '50', max: null },
+  { value: 'under-10', min: null, max: '9.99', limit: 10 },
+  { value: '10-25', min: '10', max: '24.99', limit: 25 },
+  { value: '25-50', min: '25', max: '49.99', limit: 50 },
+  { value: '50-plus', min: '50', max: null, limit: 50 },
 ] as const;
 
-const STOCK_LABELS = { in: 'In stock', out: 'Out of stock' } as const;
-type StockValue = keyof typeof STOCK_LABELS;
+/** A whole-pound band limit, shown in the visitor's currency. */
+function bandAmount(pounds: number): string {
+  return formatPrice(pounds * 100).replace(/[.,]00(?=\D*$)/, '');
+}
+
+function bandLabel(band: (typeof PRICE_BANDS)[number]): string {
+  switch (band.value) {
+    case 'under-10':
+      return t('filters.under', { max: bandAmount(10) });
+    case '10-25':
+      return t('filters.between', { min: bandAmount(10), max: bandAmount(25) });
+    case '25-50':
+      return t('filters.between', { min: bandAmount(25), max: bandAmount(50) });
+    default:
+      return t('filters.andOver', { min: bandAmount(50) });
+  }
+}
+
+type StockValue = 'in' | 'out';
+const stockLabel = (stock: StockValue) =>
+  t(stock === 'in' ? 'filters.inStock' : 'filters.outOfStock');
 
 const MAX_CATEGORIES = 20;
 const MAX_CATEGORY_LENGTH = 100;
@@ -108,8 +141,13 @@ export function toBackendParams(query: FilterQuery): URLSearchParams {
   for (const stock of query.stock) params.append('stock', stock);
   for (const category of query.categories) params.append('category', category);
   const { min, max } = priceRange(query);
-  if (min) params.set('minPrice', min);
-  if (max) params.set('maxPrice', max);
+  // Custom amounts are typed in the visitor's currency; bands are in pounds.
+  const inPounds = (amount: string) =>
+    hasCustomPrice(query) && isConvertedCurrency()
+      ? toPounds(Number(amount)).toFixed(2)
+      : amount;
+  if (min) params.set('minPrice', inPounds(min));
+  if (max) params.set('maxPrice', inPounds(max));
   if (query.sort !== 'recommended') params.set('sort', query.sort);
   return params;
 }
@@ -134,27 +172,31 @@ function pageUrl(
   return search ? `${action}?${search}` : action;
 }
 
-function formatPounds(pounds: string): string {
-  return new Intl.NumberFormat('en-GB', {
+/** A typed amount, shown in the visitor's currency without converting it. */
+function formatAmount(amount: string): string {
+  const { currency, locale } = currentPreferences();
+  return new Intl.NumberFormat(intlLocale(locale), {
     style: 'currency',
-    currency: 'GBP',
-    minimumFractionDigits: pounds.includes('.') ? 2 : 0,
-  }).format(Number(pounds));
+    currency,
+    currencyDisplay: 'narrowSymbol',
+    minimumFractionDigits: amount.includes('.') ? 2 : 0,
+  }).format(Number(amount));
 }
 
 function priceLabel(query: FilterQuery): string | null {
   if (!hasCustomPrice(query)) {
-    return (
-      PRICE_BANDS.find((option) => option.value === query.priceBand)?.label ??
-      null
-    );
+    const band = PRICE_BANDS.find((option) => option.value === query.priceBand);
+    return band ? bandLabel(band) : null;
   }
   if (query.minPrice && query.maxPrice) {
-    return `${formatPounds(query.minPrice)} to ${formatPounds(query.maxPrice)}`;
+    return t('filters.between', {
+      min: formatAmount(query.minPrice),
+      max: formatAmount(query.maxPrice),
+    });
   }
   return query.minPrice
-    ? `From ${formatPounds(query.minPrice)}`
-    : `Up to ${formatPounds(query.maxPrice)}`;
+    ? t('filters.from', { min: formatAmount(query.minPrice) })
+    : t('filters.upTo', { max: formatAmount(query.maxPrice) });
 }
 
 export interface FilterChipView {
@@ -173,7 +215,12 @@ export interface FilterPanel {
     count: number;
     isChecked: boolean;
   }[];
-  categoryOptions: { value: string; count: number; isChecked: boolean }[];
+  categoryOptions: {
+    value: string;
+    label: string;
+    count: number;
+    isChecked: boolean;
+  }[];
   priceBands: { value: string; label: string; isChecked: boolean }[];
   isAnyPriceChecked: boolean;
   minPrice: string;
@@ -182,6 +229,8 @@ export interface FilterPanel {
   stockSummary: string;
   categorySummary: string;
   priceSummary: string;
+  /** The symbol shown on the custom price boxes, such as "£" or "€". */
+  currencySymbol: string;
   /** Number of active filters (sorting is not a filter). */
   activeCount: number;
   chips: FilterChipView[];
@@ -205,13 +254,13 @@ export function buildFilterPanel({
 
   const chips: FilterChipView[] = [
     ...query.stock.map((stock) => ({
-      label: STOCK_LABELS[stock],
+      label: stockLabel(stock),
       removeUrl: without({
         stock: query.stock.filter((value) => value !== stock),
       }),
     })),
     ...query.categories.map((category) => ({
-      label: category,
+      label: tCategory(category),
       removeUrl: without({
         categories: query.categories.filter((value) => value !== category),
       }),
@@ -238,25 +287,30 @@ export function buildFilterPanel({
     action,
     searchTerm,
     sortOptions: SORT_OPTIONS.map((option) => ({
-      ...option,
+      value: option.value,
+      label: sortLabel(option.value),
       isSelected: option.value === query.sort,
     })),
     stockOptions: (['in', 'out'] as const).map((stock) => ({
       value: stock,
-      label: STOCK_LABELS[stock],
+      label: stockLabel(stock),
       count: facets.stock[stock],
       isChecked: query.stock.includes(stock),
     })),
     categoryOptions: [...categories]
-      .sort(([a], [b]) => a.localeCompare(b, 'en-GB'))
-      .map(([value, count]) => ({
+      .map(([value, count]) => ({ value, label: tCategory(value), count }))
+      .sort((a, b) =>
+        a.label.localeCompare(b.label, intlLocale(currentPreferences().locale)),
+      )
+      .map(({ value, label, count }) => ({
         value,
+        label,
         count,
         isChecked: query.categories.includes(value),
       })),
     priceBands: PRICE_BANDS.map((band) => ({
       value: band.value,
-      label: band.label,
+      label: bandLabel(band),
       isChecked: band.value === bandChecked,
     })),
     isAnyPriceChecked: bandChecked === '',
@@ -264,15 +318,16 @@ export function buildFilterPanel({
     maxPrice: query.maxPrice,
     stockSummary:
       query.stock.length === 1
-        ? STOCK_LABELS[query.stock[0] as StockValue]
-        : 'Any',
+        ? stockLabel(query.stock[0] as StockValue)
+        : t('filters.any'),
     categorySummary:
       query.categories.length === 0
-        ? 'All'
+        ? t('filters.all')
         : query.categories.length === 1
-          ? (query.categories[0] as string)
-          : `${query.categories.length} selected`,
-    priceSummary: price ?? 'Any price',
+          ? tCategory(query.categories[0] as string)
+          : t('filters.selected', { count: query.categories.length }),
+    priceSummary: price ?? t('filters.anyPrice'),
+    currencySymbol: currencySymbol(),
     activeCount: chips.length,
     chips,
     clearUrl: pageUrl(action, searchTerm, {
@@ -283,9 +338,7 @@ export function buildFilterPanel({
       priceBand: '',
       sort: 'recommended',
     }),
-    sortLabel:
-      SORT_OPTIONS.find((option) => option.value === query.sort)?.label ??
-      'Recommended',
+    sortLabel: sortLabel(query.sort),
   };
 }
 

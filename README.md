@@ -193,6 +193,24 @@ Generated folders — `node_modules/` and `dist/` — are ignored by git and saf
 
 [src/app.ts](src/app.ts) creates and configures the Express app but never starts listening. [src/index.ts](src/index.ts) reads configuration and starts the server. Keeping those responsibilities separate makes route registration independent from server startup, and lets the tests call `createApp()` directly.
 
+## Accessibility, language and currency
+
+Every customer page has a "Skip to main content" link and a floating accessibility button. The button opens a panel to choose:
+
+- **Language:** English, Welsh (`cy`), Irish (`ga`) or French (`fr`). This translates page text and product names and descriptions.
+- **Currency:** pounds or euros. Euros are display-only, at a fixed rate in [src/i18n/locales.ts](src/i18n/locales.ts). Checkout, order confirmation and credit balances always show the exact amount in pounds.
+- **Button position:** any corner. You can also drag the button to a corner.
+
+The panel is a plain form that posts to `POST /preferences`. It saves the choices in the `lang`, `currency` and `a11y_position` cookies, so it works without JavaScript. With JavaScript, Escape closes the panel and the search filters. Without a `lang` cookie, the language comes from the browser's `Accept-Language` header. Staff pages (`/admin`, `/dashboard`) always stay in English and pounds.
+
+How it fits together:
+
+- [src/i18n/messages/en.ts](src/i18n/messages/en.ts) holds every English string and is the source of truth. `cy.ts`, `ga.ts` and `fr.ts` translate the same keys, and any missing key falls back to English.
+- Templates call `t('key')`, `tCount('key', n)` and `prefs()`. Server code imports `t` from [src/i18n/runtime.ts](src/i18n/runtime.ts). Keys starting with `js.` are also sent to browser scripts.
+- Product translations come from the backend's `GET /api/product-translations?lang=` and are cached for five minutes.
+
+To add a string, add the key to `en.ts` and each translation file. To add a language, add it to `LOCALES` in [src/i18n/locales.ts](src/i18n/locales.ts), add a messages file, register it in [src/i18n/server.ts](src/i18n/server.ts) and seed product translations in the backend. The translations were machine-made and should be checked by native speakers.
+
 ## Adding a new page
 
 Say you want a `/about` page.

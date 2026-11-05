@@ -1,3 +1,6 @@
+import { formatPrice } from '../../i18n/money';
+import { t } from '../../i18n/runtime';
+import { localiseProduct } from '../../i18n/server';
 import {
   type FilterQuery,
   isProductFacetsDto,
@@ -49,22 +52,20 @@ function getProducts(payload: unknown): BackendProduct[] {
   throw new Error('The products API returned an unexpected response.');
 }
 
+/** Adds display labels in the visitor's language and currency. */
 function toCatalogProduct(product: BackendProduct): CatalogProduct {
   const stock = getStock(product.stock);
   return {
-    ...product,
+    ...localiseProduct(product),
     stock,
     stockLabel:
       stock === null
-        ? 'Stock unavailable'
+        ? t('product.stockUnknown')
         : stock === 0
-          ? 'Out of stock'
-          : `${stock} in stock`,
+          ? t('product.stockOut')
+          : t('product.stockCount', { count: stock }),
     available: stock !== null && stock > 0,
-    priceLabel: new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
-    }).format(Number(product.price)),
+    priceLabel: formatPrice(Math.round(Number(product.price) * 100)),
   };
 }
 

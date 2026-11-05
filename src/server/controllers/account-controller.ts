@@ -1,10 +1,11 @@
 import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
+import { formatPounds } from '../../i18n/money';
+import { t } from '../../i18n/runtime';
 import type { CheckoutService } from '../../services/checkoutService';
 import { clearAuthCookie, readAuthCookie } from '../../util/authCookie';
 import { clearBasketCookie, clearBasketNotice } from '../../util/basketCookie';
 import type { LoginSession } from '../../util/loginSession';
-import { formatPrice } from '../../views/basket.page';
 import {
   ProfileAuthenticationError,
   type ProfileDetails,
@@ -43,7 +44,7 @@ export class AccountController {
     if (token) {
       try {
         const account = await this.checkoutService.getAccount(token);
-        creditBalance = formatPrice(account.creditBalancePence);
+        creditBalance = formatPounds(account.creditBalancePence);
       } catch {
         // The profile remains available when the credit balance cannot load.
       }
@@ -76,9 +77,7 @@ export class AccountController {
           profile,
           creditBalance,
           form,
-          profileLoadMessage: profile
-            ? ''
-            : 'Sign in again to load and save your profile.',
+          profileLoadMessage: profile ? '' : t('profile.signInAgain'),
           message,
           error,
           currentYear: new Date().getFullYear(),
@@ -123,7 +122,7 @@ export class AccountController {
       }
       await this.renderProfile(res, account, profile, {
         token,
-        message: req.query.saved === '1' ? 'Your profile has been saved.' : '',
+        message: req.query.saved === '1' ? t('profile.saved') : '',
       });
     } catch (error) {
       this.profileError(res, error);
@@ -148,7 +147,7 @@ export class AccountController {
         await this.renderProfile(res, account, profile, {
           token,
           status: 415,
-          error: 'Please submit the profile form.',
+          error: t('profile.error.form'),
         });
         return;
       }
