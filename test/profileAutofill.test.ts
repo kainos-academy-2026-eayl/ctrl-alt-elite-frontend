@@ -186,6 +186,10 @@ describe('saved profile autofill', () => {
         assert.ok(input.includes(`value="${value}"`));
       }
       assert.match(html, /<form action="\/profile" method="post">/);
+      assert.match(
+        html,
+        /<\/form>[\s\S]*<a class="profile-save-button profile-orders-link" href="\/orders">View orders<\/a>/,
+      );
       const saveButton = html.match(/<button[^>]*>Save changes<\/button>/)?.[0];
       assert.ok(saveButton);
       assert.match(saveButton, /type="submit"/);

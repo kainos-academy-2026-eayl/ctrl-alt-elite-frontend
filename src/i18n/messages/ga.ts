@@ -173,6 +173,7 @@ const ga: Partial<Record<string, string>> = {
   'basket.heading': 'Do chiseán',
   'basket.empty': 'Tá do chiseán folamh.',
   'basket.browse': 'Brabhsáil táirgí',
+  'basket.backToProducts': 'Ar ais chuig na táirgí',
   'basket.caption': 'Earraí i do chiseán',
   'basket.product': 'Táirge',
   'basket.unitPrice': 'Praghas aonaid',
@@ -398,6 +399,14 @@ const ga: Partial<Record<string, string>> = {
   'profile.saveHint':
     'Tá an céadainm agus an sloinne riachtanach. Tá an seoladh, an uimhir ghutháin agus an t-ainm taispeána roghnach.',
   'profile.save': 'Sábháil na hathruithe',
+  'profile.viewOrders': 'Féach ar orduithe',
+  'orders.heading': 'Stair na n-orduithe',
+  'orders.description': 'Féach ar d’orduithe roimhe seo ó Ctrl-Alt-Elite.',
+  'orders.number': 'Ordú #{id}',
+  'orders.product': 'Táirge #{id} - Cainníocht: {amount}',
+  'orders.total': 'Iomlán: {total}',
+  'orders.empty': 'Níl aon orduithe roimhe seo agat.',
+  'orders.unavailable': 'Níl orduithe ar fáil faoi láthair.',
   'profile.saved': 'Sábháladh do phróifíl.',
   'profile.signInAgain':
     'Logáil isteach arís chun do phróifíl a lódáil agus a shábháil.',

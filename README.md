@@ -43,6 +43,8 @@ The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service t
 | `/api/*` | Proxied to `BACKEND_ORIGIN` |
 | `GET /health` | Service status and uptime |
 
+### Profile pictures
+
 Profile pictures are loaded, previewed, uploaded and removed by the existing
 [browser script](src/controllers/script.ts). Uploads go through the authenticated
 API proxy as raw JPG, PNG or WebP bytes (20 MiB and 16 megapixels maximum).
@@ -52,6 +54,45 @@ is saved and an explicit notice if profile data cannot be loaded.
 JavaScript is required for picture changes, but the details form works without it.
 The backend profile contact-details migration must be applied before using these
 fields; email cannot be changed through the profile API.
+
+### Order history
+
+The profile page includes a **View orders** link below the profile details.
+`GET /orders` renders the customer's order history using the shared layout.
+Visitors without an authentication cookie are redirected to `/login`; backend
+failures display an explicit unavailable message with HTTP status 502.
+
+[OrderService](src/server/services/order-service.ts) exposes
+`getOrders(token)` and sends `GET /api/orders` to `BACKEND_ORIGIN` with
+`Accept: application/json` and `Authorization: Bearer <token>`. It does not
+send a request body or a customer ID; the backend must authenticate the token
+and return only that customer's orders, including their `products` relation.
+The backend must implement this endpoint for order history to load.
+
+The agreed response shape is:
+
+```json
+{
+  "orders": [
+    {
+      "id": "order-1",
+      "order_total": 52.5,
+      "order_status": "COMPLETED",
+      "createdAt": "2026-11-04T12:00:00.000Z",
+      "delivery_price_pence": 250,
+      "products": [
+        { "product_id": "product-1", "amount": 2, "unit_price_pence": 2500 }
+      ]
+    }
+  ]
+}
+```
+
+Return `{ "orders": [] }` for a customer with no orders. Fields retain the
+schema names; prices ending in `_pence` remain integer pence. Additional
+checkout fields may be present or null and are preserved. The service rejects
+malformed responses and non-success HTTP statuses rather than treating them as
+an empty history.
 
 ### Login flow
 

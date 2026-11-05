@@ -69,7 +69,8 @@
   cursor: not-allowed;
 }
 
-.basket button:focus-visible {
+.basket button:focus-visible,
+.basket-button:focus-visible {
   outline: 3px solid #22c55e;
   outline-offset: 3px;
 }
