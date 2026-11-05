@@ -354,6 +354,15 @@ const fr: Partial<Record<string, string>> = {
   'profile.saveHint':
     'Le prénom et le nom sont obligatoires. L’adresse, le téléphone et le nom affiché sont facultatifs.',
   'profile.save': 'Enregistrer les modifications',
+  'profile.viewOrders': 'Voir les commandes',
+  'orders.heading': 'Historique des commandes',
+  'orders.description':
+    'Consultez vos commandes précédentes chez Ctrl-Alt-Elite.',
+  'orders.number': 'Commande n° {id}',
+  'orders.product': 'Produit n° {id} - Quantité : {amount}',
+  'orders.total': 'Total : {total}',
+  'orders.empty': "Vous n'avez aucune commande précédente.",
+  'orders.unavailable': 'Les commandes sont temporairement indisponibles.',
   'profile.saved': 'Votre profil a bien été enregistré.',
   'profile.signInAgain':
     'Reconnectez-vous pour charger et enregistrer votre profil.',

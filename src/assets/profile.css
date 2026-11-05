@@ -212,6 +212,11 @@
   outline-offset: 3px;
 }
 
+.profile-orders-link {
+  text-align: center;
+  text-decoration: none;
+}
+
 .profile-secondary-button {
   background: #fff;
   color: #14532d;

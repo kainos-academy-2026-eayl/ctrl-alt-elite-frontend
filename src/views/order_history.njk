@@ -1,63 +1,29 @@
-<!doctype html>
-<html lang="en">
+{% extends "layout.njk" %}
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Review your past orders from Ctrl-Alt-Elite.">
-    <title>Order History | Ctrl-Alt-Elite</title>
-    <link rel="stylesheet" href="/product-catalog/product_catalog.css">
-    <script src="/controllers/product_catalog.js" defer></script>
-</head>
+{% block title %}{{ t('orders.heading') }} | {{ t('site.name') }}{% endblock %}
+{% block description %}{{ t('orders.description') }}{% endblock %}
 
-<body>
-    <header class="site-header">
-        <div class="header-inner">
-            <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">Ctrl-Alt-Elite</a>
-        </div>
-    </header>
-
-    <main class="catalog-main">
-        <section class="catalog-toolbar" aria-labelledby="catalogTitle">
-            <div>
-                <h1 id="catalogTitle">Order History</h1>
-                <p class="catalog-summary">Review your past orders from Ctrl-Alt-Elite.</p>
-            </div>
-        </section>
-
-
-        <p class="results-count" id="resultsCount" aria-live="polite">{{ orders.length }} orders</p>
-
-        <section class="product-grid" id="productGrid" aria-label="Products">
-            {% if orderError %}
-            <p class="empty-state" role="alert">{{ orderError }}</p>
-            {% else %}
-        {% for order in orders %}
-        <article class="product-tile">
-            <div class="product-content">
-                <h2>Order #{{ order.id }}</h2>
-
-                <ul>
-                    {% for product in order.products %}
-                    <li>
-                        Product #{{ product.product_id }}
-                        — Quantity: {{ product.amount }}
-                    </li>
-                    {% endfor %}
-                </ul>
-
-                <p class="product-price">
-                    Total: {{ order.total }}
-                </p>
-            </div>
-        </article>
-        {% else %}
-        <p class="empty-state">You have no previous orders.</p>
-        {% endfor %}
-        </section>
-        <button class="cta-button" onclick="location.href='/'">Go Home</button>
-    </main>
-
-</body>
-
-</html>
+{% block content %}
+<section class="page-width basket" aria-labelledby="orders-heading">
+    <h1 id="orders-heading">{{ t('orders.heading') }}</h1>
+    <p>{{ t('orders.description') }}</p>
+    {% if orderError %}
+    <p class="basket-alert" role="alert">{{ orderError }}</p>
+    {% else %}
+    {% for order in orders %}
+    <article class="basket-alert">
+        <h2>{{ t('orders.number', { id: order.id }) }}</h2>
+        <p>{{ order.order_status }}</p>
+        <ul>
+            {% for product in order.products %}
+            <li>{{ t('orders.product', { id: product.product_id, amount: product.amount }) }}</li>
+            {% endfor %}
+        </ul>
+        <p>{{ t('orders.total', { total: order.total }) }}</p>
+    </article>
+    {% else %}
+    <p>{{ t('orders.empty') }}</p>
+    {% endfor %}
+    {% endif %}
+</section>
+{% endblock %}

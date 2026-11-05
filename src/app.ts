@@ -19,12 +19,14 @@ import { CatalogController } from './server/controllers/catalog-controller';
 import { CheckoutController } from './server/controllers/checkoutController';
 import { HomeController } from './server/controllers/home-controller';
 import { LoginController } from './server/controllers/login';
+import { OrderController } from './server/controllers/order-controller';
 import { ProductDetailController } from './server/controllers/productDetailController';
 import { SearchController } from './server/controllers/searchController';
 import { StatusController } from './server/controllers/status-controller';
 import { SupportController } from './server/controllers/support-controller';
 import { createAdminRouter } from './server/routes/admin';
 import { CatalogService } from './server/services/catalog-service';
+import { OrderService } from './server/services/order-service';
 import { ProfileService } from './server/services/profile-service';
 import {
   addSiteNavigationGlobal,
@@ -196,6 +198,8 @@ export function createApp(
   );
 
   app.get('/profile', accountController.showProfile);
+  const orderController = new OrderController(new OrderService(backendOrigin));
+  app.get('/orders', orderController.showOrders);
   app.post(
     '/profile',
     requireSameOrigin,

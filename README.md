@@ -55,15 +55,19 @@ JavaScript is required for picture changes, but the details form works without i
 The backend profile contact-details migration must be applied before using these
 fields; email cannot be changed through the profile API.
 
-### Order history API contract (backend pending)
+### Order history
+
+The profile page includes a **View orders** link below the profile details.
+`GET /orders` renders the customer's order history using the shared layout.
+Visitors without an authentication cookie are redirected to `/login`; backend
+failures display an explicit unavailable message with HTTP status 502.
 
 [OrderService](src/server/services/order-service.ts) exposes
 `getOrders(token)` and sends `GET /api/orders` to `BACKEND_ORIGIN` with
 `Accept: application/json` and `Authorization: Bearer <token>`. It does not
 send a request body or a customer ID; the backend must authenticate the token
 and return only that customer's orders, including their `products` relation.
-The backend endpoint is not implemented yet, and the service is not wired to
-a page route.
+The backend must implement this endpoint for order history to load.
 
 The agreed response shape is:
 
