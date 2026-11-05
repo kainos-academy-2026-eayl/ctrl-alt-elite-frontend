@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'vitest';
-import type { ProductSearchResponseDto } from '../src/dtos/productSearchDto';
 import {
   MAX_SEARCH_TERM_LENGTH,
   normaliseSearchTerm,
-} from '../src/server/controllers/searchController';
+} from '../src/controllers/searchController';
+import type { ProductSearchResponseDto } from '../src/dtos/productSearchDto';
 import { ProductService } from '../src/services/productService';
 import { buildSearchPage } from '../src/views/search.page';
 

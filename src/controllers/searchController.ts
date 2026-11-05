@@ -1,10 +1,10 @@
 import type { Request, Response } from 'express';
-import type { BasketResponseDto } from '../../dtos/basketDto';
-import { t } from '../../i18n/runtime';
-import { renderErrorPage } from '../../middleware/errorHandler';
-import type { ProductService } from '../../services/productService';
-import { readFilterQuery } from '../../util/productFilters';
-import { buildSearchPage } from '../../views/search.page';
+import type { BasketResponseDto } from '../dtos/basketDto';
+import { t } from '../i18n/runtime';
+import { renderErrorPage } from '../middleware/errorHandler';
+import type { ProductService } from '../services/productService';
+import { readFilterQuery } from '../util/productFilters';
+import { buildSearchPage } from '../views/search.page';
 
 /** Matches the backend, which caps search terms at 100 characters. */
 export const MAX_SEARCH_TERM_LENGTH = 100;

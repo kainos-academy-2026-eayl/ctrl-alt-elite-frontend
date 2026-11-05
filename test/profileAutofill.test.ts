@@ -7,7 +7,7 @@ import { createApp } from '../src/app';
 import {
   type ProfileDetails,
   ProfileService,
-} from '../src/server/services/profile-service';
+} from '../src/services/profile-service';
 import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const SECRET = 'profile-autofill-test-secret-at-least-32-bytes';

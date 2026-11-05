@@ -1,12 +1,12 @@
-import { formatPrice } from '../../i18n/money';
-import { t } from '../../i18n/runtime';
-import { localiseProduct } from '../../i18n/server';
+import { formatPrice } from '../i18n/money';
+import { t } from '../i18n/runtime';
+import { localiseProduct } from '../i18n/server';
 import {
   type FilterQuery,
   isProductFacetsDto,
   type ProductFacetsDto,
   toBackendParams,
-} from '../../util/productFilters';
+} from '../util/productFilters';
 
 type BackendProduct = {
   id: string | number;

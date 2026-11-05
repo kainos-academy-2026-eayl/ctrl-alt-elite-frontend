@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
-import { CatalogController } from '../src/server/controllers/catalog-controller';
-import type { CatalogService } from '../src/server/services/catalog-service';
+import { CatalogController } from '../src/controllers/catalog-controller';
+import type { CatalogService } from '../src/services/catalog-service';
 import { readFilterQuery } from '../src/util/productFilters';
 
 const NO_FILTERS = readFilterQuery({});

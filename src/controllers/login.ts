@@ -1,10 +1,10 @@
 import type { Request, Response } from 'express';
-import { t } from '../../i18n/runtime';
-import { clearAuthCookie, setAuthCookie } from '../../util/authCookie';
-import type { LoginSession } from '../../util/loginSession';
+import { t } from '../i18n/runtime';
+import { clearAuthCookie, setAuthCookie } from '../util/authCookie';
+import type { LoginSession } from '../util/loginSession';
 
-import { isAdminPath, safeReturnPath } from '../../util/returnPath';
-import { landingPathForRole, normaliseRole, Role } from '../../util/staffRoles';
+import { isAdminPath, safeReturnPath } from '../util/returnPath';
+import { landingPathForRole, normaliseRole, Role } from '../util/staffRoles';
 
 function extractRole(payload: unknown): string | undefined {
   if (typeof payload !== 'object' || payload === null) return undefined;

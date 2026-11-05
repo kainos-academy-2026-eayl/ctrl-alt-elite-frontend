@@ -1,6 +1,6 @@
 import express, { Router } from 'express';
+import type { CheckoutController } from '../controllers/checkoutController';
 import { requireSameOrigin } from '../middleware/requireSameOrigin';
-import type { CheckoutController } from '../server/controllers/checkoutController';
 
 export function createCheckoutRouter(controller: CheckoutController): Router {
   const router = Router();

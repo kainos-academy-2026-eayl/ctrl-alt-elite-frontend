@@ -1,21 +1,21 @@
 import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
-import { ORDER_SORT_OPTIONS, ORDER_STATUSES } from '../../util/adminOrders';
-import { findAdminModule, navItemsForRole } from '../../util/adminPortal';
+import { getStaffContext } from '../middleware/admin-guard';
+import { ORDER_SORT_OPTIONS, ORDER_STATUSES } from '../util/adminOrders';
+import { findAdminModule, navItemsForRole } from '../util/adminPortal';
 import {
   ADMIN_QUICK_ACTIONS,
   ADMIN_SUMMARY_CARDS,
   ADMIN_SYSTEM_STATUS,
   CUSTOMER_SERVICE_SHORTCUTS,
-} from '../../util/adminResources';
-import { DASHBOARD_WIDGETS } from '../../util/adminSettings';
-import { STOCK_STATUS_OPTIONS } from '../../util/adminStock';
-import { loadAdminFirstName } from '../../util/adminUser';
-import { readAuthCookie } from '../../util/authCookie';
-import { CUSTOMER_SORT_OPTIONS } from '../../util/customers';
-import { hasPermission } from '../../util/staffRoles';
-import { TICKET_CATEGORIES, TICKET_STATUSES } from '../../util/supportTickets';
-import { getStaffContext } from '../middleware/admin-guard';
+} from '../util/adminResources';
+import { DASHBOARD_WIDGETS } from '../util/adminSettings';
+import { STOCK_STATUS_OPTIONS } from '../util/adminStock';
+import { loadAdminFirstName } from '../util/adminUser';
+import { readAuthCookie } from '../util/authCookie';
+import { CUSTOMER_SORT_OPTIONS } from '../util/customers';
+import { hasPermission } from '../util/staffRoles';
+import { TICKET_CATEGORIES, TICKET_STATUSES } from '../util/supportTickets';
 import { sendAccessDenied } from './access-denied';
 
 // The server only serves page shells. Live data is loaded in the browser by the

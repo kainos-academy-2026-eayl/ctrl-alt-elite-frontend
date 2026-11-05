@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
-import { t, tCount } from '../../i18n/runtime';
-import { buildFilterPanel, readFilterQuery } from '../../util/productFilters';
+import { t, tCount } from '../i18n/runtime';
 import type { CatalogService } from '../services/catalog-service';
+import { buildFilterPanel, readFilterQuery } from '../util/productFilters';
 
 function productCount(count: number): string {
   return tCount('count.products', count);

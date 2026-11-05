@@ -1,7 +1,7 @@
 {#
   Customer site navigation, rendered by layout.njk inside the header. Its data
   (account, categories, basket count, current page) comes from siteNav(); see
-  src/server/siteNavigation.ts. Staff dashboards use admin/layout.njk instead.
+  src/middleware/siteNavigation.ts. Staff dashboards use admin/layout.njk instead.
 #}
 {% set fallbackNav = { currentPath: "", categories: [], accountName: "Account", basketSummary: { itemCount: 0, itemCountText: "0 items" } } %}
 {% set nav = siteNav() if siteNav else fallbackNav %}

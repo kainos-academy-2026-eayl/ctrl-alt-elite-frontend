@@ -1,6 +1,6 @@
 import express, { Router } from 'express';
+import type { BasketController } from '../controllers/basketController';
 import { requireSameOrigin } from '../middleware/requireSameOrigin';
-import type { BasketController } from '../server/controllers/basketController';
 
 export function createBasketRouter(controller: BasketController): Router {
   const router = Router();

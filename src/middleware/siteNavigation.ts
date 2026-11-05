@@ -2,12 +2,12 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import type { Environment } from 'nunjucks';
 import type { BasketResponseDto } from '../dtos/basketDto';
+import type { CatalogService } from '../services/catalog-service';
 import { loadStaffAccount } from '../util/adminUser';
 import { readAuthCookie } from '../util/authCookie';
 import type { LoginSession } from '../util/loginSession';
 import { findStaffRole } from '../util/staffRoles';
 import { type BasketSummary, toBasketSummary } from '../views/basket.page';
-import type { CatalogService } from './services/catalog-service';
 
 /**
  * What the customer site navigation (views/_siteNav.njk) shows. It is built
