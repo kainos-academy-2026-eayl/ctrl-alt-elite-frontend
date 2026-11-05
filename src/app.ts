@@ -20,6 +20,10 @@ import { SupportController } from './server/controllers/support-controller';
 import { createAdminRouter } from './server/routes/admin';
 import { CatalogService } from './server/services/catalog-service';
 import { ProfileService } from './server/services/profile-service';
+import {
+  addSiteNavigationGlobal,
+  createSiteNavigationMiddleware,
+} from './server/siteNavigation';
 import { BasketService } from './services/basketService';
 import { CheckoutService } from './services/checkoutService';
 import { PostcodeService } from './services/postcodeService';
@@ -70,11 +74,13 @@ export function createApp(
 ): Express {
   const app = express();
   app.set('views', VIEWS_DIRECTORY);
-  nunjucks.configure([VIEWS_DIRECTORY], {
-    autoescape: true,
-    express: app,
-    noCache: process.env.NODE_ENV !== 'production',
-  });
+  addSiteNavigationGlobal(
+    nunjucks.configure([VIEWS_DIRECTORY], {
+      autoescape: true,
+      express: app,
+      noCache: process.env.NODE_ENV !== 'production',
+    }),
+  );
   app.set('view engine', 'njk');
   const loginSession = new LoginSession(jwtSecret);
   const loginController = new LoginController(backendOrigin, loginSession);
@@ -96,6 +102,7 @@ export function createApp(
     }),
     { autoescape: true },
   );
+  addSiteNavigationGlobal(adminTemplates);
 
   const productService = new ProductService(backendOrigin);
   const catalogService = new CatalogService(backendOrigin);
@@ -139,6 +146,15 @@ export function createApp(
       { index: false },
     ),
   );
+  app.use(
+    createSiteNavigationMiddleware({
+      backendOrigin,
+      loginSession,
+      catalogService,
+      getHeaderBasket: basketController.getHeaderBasket,
+    }),
+  );
+
   const catalogController = new CatalogController(catalogService);
   app.get('/products', catalogController.showProducts);
 

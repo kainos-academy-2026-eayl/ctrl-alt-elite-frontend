@@ -1,0 +1,288 @@
+/* Customer site navigation (views/_siteNav.njk). Staff dashboards use admin.css. */
+
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background: #14532d;
+  color: #f8fafc;
+  font-weight: 700;
+  transform: translateY(-120%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.site-nav {
+  display: flex;
+  min-width: 0;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.site-nav-check {
+  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.site-nav-toggle {
+  display: none;
+}
+
+.site-nav-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.site-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav-link,
+.site-nav-dropdown > summary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  color: #14532d;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  list-style: none;
+}
+
+.site-nav-dropdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-nav-dropdown > summary::after {
+  content: " \25BE";
+  white-space: pre;
+}
+
+.site-nav-link:hover,
+.site-nav-dropdown > summary:hover,
+.site-nav-dropdown[open] > summary {
+  background: #f0fdf4;
+}
+
+.site-nav-link[aria-current="page"],
+.site-nav-link.is-active {
+  background: #dcfce7;
+  box-shadow: inset 0 -3px 0 #15803d;
+}
+
+.site-nav-link:focus-visible,
+.site-nav-dropdown > summary:focus-visible,
+.site-nav-dropdown-link:focus-visible,
+.site-nav-toggle:focus-visible {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.site-nav-dropdown {
+  position: relative;
+}
+
+.site-nav-dropdown-list {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 10;
+  min-width: 12rem;
+  max-height: min(24rem, 70vh);
+  margin: 0;
+  padding: 0.35rem;
+  overflow-y: auto;
+  border: 1px solid #14532d;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(20, 83, 45, 0.12);
+  list-style: none;
+}
+
+.site-nav-dropdown-link {
+  display: block;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.35rem;
+  color: #14532d;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site-nav-dropdown-link:hover,
+.site-nav-dropdown-link[aria-current="page"] {
+  background: #f0fdf4;
+}
+
+.site-nav .account-menu-link[aria-current="page"] {
+  background: #dcfce7;
+}
+
+.site-nav .search-input {
+  width: 11rem;
+}
+
+.site-nav-basket[aria-current="page"] {
+  border-radius: 0.5rem;
+  background: #dcfce7;
+}
+
+.site-nav-toggle-bars,
+.site-nav-toggle-bars::before,
+.site-nav-toggle-bars::after {
+  display: block;
+  width: 1.4rem;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.15s ease-in-out;
+}
+
+.site-nav-toggle-bars {
+  position: relative;
+}
+
+.site-nav-toggle-bars::before,
+.site-nav-toggle-bars::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.site-nav-toggle-bars::before {
+  top: -0.45rem;
+}
+
+.site-nav-toggle-bars::after {
+  top: 0.45rem;
+}
+
+.site-nav-check:focus-visible + .site-nav-toggle {
+  outline: 3px solid #22c55e;
+  outline-offset: 2px;
+}
+
+.site-nav-check:checked + .site-nav-toggle .site-nav-toggle-bars {
+  background: transparent;
+}
+
+.site-nav-check:checked + .site-nav-toggle .site-nav-toggle-bars::before {
+  transform: translateY(0.45rem) rotate(45deg);
+}
+
+.site-nav-check:checked + .site-nav-toggle .site-nav-toggle-bars::after {
+  transform: translateY(-0.45rem) rotate(-45deg);
+}
+
+/* Below this width the links collapse behind the menu button. */
+@media (max-width: 960px) {
+  .site-nav-check {
+    display: block;
+  }
+
+  .header-content {
+    flex-flow: row wrap;
+    gap: 0.5rem 0.75rem;
+    justify-content: flex-start;
+    min-height: 4.5rem;
+    padding-block: 0.5rem;
+  }
+
+  .brand {
+    margin-right: auto;
+  }
+
+  .site-nav {
+    display: contents;
+  }
+
+  .site-nav-basket {
+    order: 1;
+  }
+
+  .site-nav-toggle {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    order: 2;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #14532d;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    color: #14532d;
+    cursor: pointer;
+  }
+
+  .site-nav-panel {
+    display: none;
+    flex: 1 0 100%;
+    flex-direction: column;
+    align-items: stretch;
+    order: 3;
+    max-height: calc(100vh - 6rem);
+    padding-bottom: 0.75rem;
+    overflow-y: auto;
+  }
+
+  .site-nav-check:checked ~ .site-nav-panel {
+    display: flex;
+  }
+
+  .site-nav-links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .site-nav-link,
+  .site-nav-dropdown > summary {
+    width: 100%;
+  }
+
+  .site-nav-dropdown-list {
+    position: static;
+    max-height: none;
+    margin-top: 0.25rem;
+    box-shadow: none;
+  }
+
+  .site-nav .search-form,
+  .site-nav .search-input {
+    width: 100%;
+  }
+
+  .site-nav .account-menu summary {
+    max-width: none;
+  }
+
+  .site-nav .account-menu-list {
+    position: static;
+    margin-top: 0.25rem;
+    box-shadow: none;
+  }
+}

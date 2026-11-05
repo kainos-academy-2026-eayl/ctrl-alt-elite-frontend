@@ -36,6 +36,10 @@ export class CatalogController {
         categories,
         filterPanel,
         resultsSummary,
+        // A single chosen category, e.g. from the site navigation, titles the page.
+        ...(filters.categories.length === 1
+          ? { pageHeading: filters.categories[0] }
+          : {}),
       });
     } catch (error) {
       console.error('Unable to load products from the backend:', error);

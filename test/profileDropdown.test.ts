@@ -188,14 +188,15 @@ describe('homepage profile dropdown', () => {
       profileHtml,
       /<fieldset class="profile-details-fields" disabled>/,
     );
-    assert.match(profileHtml, /href="\/">Back to home/);
+    assert.match(profileHtml, /aria-label="Main navigation"/);
+    assert.match(profileHtml, /href="\/"[^>]*>Home<\/a>/);
     assert.match(profileHtml, /href="\/assets\/profile\.css"/);
     assert.match(profileHtml, /<form action="\/profile" method="post">/);
-    assert.match(
-      profileHtml,
-      /<script src="\/controllers\/script\.js" defer><\/script>/,
-    );
     assert.doesNotMatch(profileHtml, /{{|{%/);
+    // The layout loads the shared script once; the profile page adds no other.
+    assert.deepEqual(profileHtml.match(/<script\b[^>]*>/g), [
+      '<script src="/controllers/script.js" defer>',
+    ]);
     const stylesheet = await fetch(`${base}/assets/profile.css`);
     assert.equal(stylesheet.status, 200);
     assert.match(stylesheet.headers.get('content-type') ?? '', /text\/css/);
@@ -268,6 +269,9 @@ describe('homepage profile dropdown', () => {
         html,
         /Design preview only|changes are not saved|{{|{%/,
       );
+      assert.deepEqual(html.match(/<script\b[^>]*>/g), [
+        '<script src="/controllers/script.js" defer>',
+      ]);
       assert.equal(backendRequest.mock.calls.length, 0);
     } finally {
       backend.off('request', backendRequest);

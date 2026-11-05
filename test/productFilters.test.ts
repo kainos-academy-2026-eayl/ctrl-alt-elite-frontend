@@ -290,8 +290,10 @@ describe('Filter and sort on the search and catalogue pages (no JavaScript)', ()
     const html = await page(
       '/search?q=shirt&stock=in&category=Shirt&price=10-25&sort=price-desc',
     );
-    const sent = backendUrls[0];
-    assert.equal(sent?.pathname, '/api/products/search');
+    // The site navigation also asks the backend for the category list.
+    const sent = backendUrls.find(
+      (url) => url.pathname === '/api/products/search',
+    );
     assert.equal(
       sent?.search,
       '?stock=in&category=Shirt&minPrice=10&maxPrice=24.99&sort=price-desc&q=shirt',
@@ -326,7 +328,9 @@ describe('Filter and sort on the search and catalogue pages (no JavaScript)', ()
       /class="filters-chip" href="\/search\?q=shirt&amp;category=Shirt&amp;price=10-25&amp;sort=price-desc">In stock/,
     );
     assert.match(html, /Showing 1 of 7 products found for &quot;shirt&quot;\./);
-    assert.doesNotMatch(html, /<script/);
+    assert.deepEqual(html.match(/<script\b[^>]*>/g), [
+      '<script src="/controllers/script.js" defer>',
+    ]);
   });
 
   it('explains when the filters leave nothing to show', async () => {
@@ -359,14 +363,21 @@ describe('Filter and sort on the search and catalogue pages (no JavaScript)', ()
     const html = await page(
       '/products?category=Shirt&minPrice=10&sort=name-desc',
     );
-    const sent = backendUrls[0];
+    // The site navigation also asks the backend for the category list.
+    const sent = backendUrls.find(
+      (url) => url.pathname === '/api/products' && url.search !== '',
+    );
     assert.equal(sent?.pathname, '/api/products');
     assert.equal(sent?.search, '?category=Shirt&minPrice=10&sort=name-desc');
     assert.match(
       html,
       /<form class="filters-form" action="\/products" method="get">/,
     );
-    assert.doesNotMatch(html, /name="q"/);
+    // The header's search box has name="q"; the filter panel must not.
+    assert.doesNotMatch(
+      /<form class="filters-form"[\s\S]*?<\/form>/.exec(html)?.[0] ?? '',
+      /name="q"/,
+    );
     assert.match(
       html,
       /class="filters-chip" href="\/products\?category=Shirt&amp;sort=name-desc">From £10/,

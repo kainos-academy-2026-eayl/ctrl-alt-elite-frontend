@@ -6,22 +6,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="{% block description %}Welcome to Ctrl-Alt-Elite.{% endblock %}" />
   <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/basket.css" />
+  <link rel="stylesheet" href="/assets/search.css" />
+  <link rel="stylesheet" href="/assets/nav.css" />
   {% block styles %}{% endblock %}
   <title>{% block title %}Ctrl-Alt-Elite{% endblock %}</title>
 </head>
 
 <body class="{% block bodyClass %}{% endblock %}">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <header class="site-header">
     <div class="page-width header-content">
       <a class="brand" href="/" aria-label="Ctrl-Alt-Elite home">
         <span class="brand-mark" aria-hidden="true">C</span>
         <span>Ctrl-Alt-Elite</span>
       </a>
-      {% block navigation %}{% endblock %}
+      {% block navigation %}{% include "_siteNav.njk" %}{% endblock %}
     </div>
   </header>
 
-  <main>
+  <main id="main-content">
     {% block content %}{% endblock %}
   </main>
 
@@ -30,6 +34,7 @@
       <p>&copy; {{ currentYear }} Ctrl-Alt-Elite</p>
     </div>
   </footer>
+  <script src="/controllers/script.js" defer></script>
   {% block scripts %}{% endblock %}
 </body>
 

@@ -8,16 +8,6 @@
   <link rel="stylesheet" href="/assets/support.css" />
 {% endblock %}
 
-{% block navigation %}
-      <nav class="primary-nav" aria-label="Main navigation">
-        <a class="nav-link" href="/">Home</a>
-        <a class="nav-link" href="/account/support">My tickets</a>
-        <form action="/logout" method="post">
-          <button class="support-link-button" type="submit">Log out</button>
-        </form>
-      </nav>
-{% endblock %}
-
 {% block content %}
     <div class="support-container" data-support-page="{{ page }}">
       <header class="support-header">

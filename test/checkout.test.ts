@@ -28,6 +28,8 @@ import {
 
 const BACKEND_ORIGIN = 'https://backend.example.test';
 const POSTCODES_ORIGIN = 'https://api.postcodes.io';
+// The only script a storefront page loads: the shared navigation script.
+const SHARED_NAV_SCRIPT = '<script src="/controllers/script.js" defer>';
 /** Postcodes the fake postcodes.io knows, with their council area. */
 const REAL_POSTCODES: Record<string, string> = {
   BT11AA: 'Belfast',
@@ -345,7 +347,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
       /<a class="checkout-secondary-button" href="\/register">Create an account<\/a>/,
     );
     assert.doesNotMatch(html, /name="firstName"/);
-    assert.doesNotMatch(html, /<script/);
+    assert.deepEqual(html.match(/<script\b[^>]*>/g), [SHARED_NAV_SCRIPT]);
   });
 
   it('treats an expired login like a guest', async () => {
@@ -383,7 +385,7 @@ describe('checkout (server-rendered, no JavaScript)', () => {
     );
     assert.match(html, /value="continue-to-delivery">Continue to delivery/);
     assert.match(html, /2 × Desk Lamp/);
-    assert.doesNotMatch(html, /<script/);
+    assert.deepEqual(html.match(/<script\b[^>]*>/g), [SHARED_NAV_SCRIPT]);
   });
 
   it('keeps manually entered addresses and rejects invalid postcodes', async () => {
