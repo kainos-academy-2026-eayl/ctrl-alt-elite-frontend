@@ -5,10 +5,12 @@ import nunjucks from 'nunjucks';
 import { errorHandler } from './middleware/errorHandler';
 import { requireSameOrigin } from './middleware/requireSameOrigin';
 import { createBasketRouter } from './routes/basketRouter';
+import { createCheckoutRouter } from './routes/checkoutRouter';
 import { AccountController } from './server/controllers/account-controller';
 import { AdminController } from './server/controllers/admin-controller';
 import { BasketController } from './server/controllers/basketController';
 import { CatalogController } from './server/controllers/catalog-controller';
+import { CheckoutController } from './server/controllers/checkoutController';
 import { HomeController } from './server/controllers/home-controller';
 import { LoginController } from './server/controllers/login';
 import { ProductDetailController } from './server/controllers/productDetailController';
@@ -22,6 +24,8 @@ import {
   createSiteNavigationMiddleware,
 } from './server/siteNavigation';
 import { BasketService } from './services/basketService';
+import { CheckoutService } from './services/checkoutService';
+import { PostcodeService } from './services/postcodeService';
 import { ProductService } from './services/productService';
 import { createApiProxy } from './util/apiProxy';
 import { createCustomerGuard } from './util/customerGuard';
@@ -79,8 +83,15 @@ export function createApp(
   app.set('view engine', 'njk');
   const loginSession = new LoginSession(jwtSecret);
   const loginController = new LoginController(backendOrigin, loginSession);
-  const basketController = new BasketController(
-    new BasketService(backendOrigin),
+  const basketService = new BasketService(backendOrigin);
+  const basketController = new BasketController(basketService);
+  const checkoutService = new CheckoutService(backendOrigin);
+  const postcodeService = new PostcodeService();
+  const checkoutController = new CheckoutController(
+    checkoutService,
+    basketService,
+    loginSession,
+    postcodeService,
   );
 
   // noCache is a loader option, so it must be set on the loader to take effect.
@@ -101,7 +112,11 @@ export function createApp(
     basketController,
     catalogService,
   );
-  const accountController = new AccountController(loginSession, adminTemplates);
+  const accountController = new AccountController(
+    loginSession,
+    adminTemplates,
+    checkoutService,
+  );
   const supportController = new SupportController();
   const statusController = new StatusController(adminTemplates);
   const adminController = new AdminController(
@@ -160,7 +175,7 @@ export function createApp(
   app.post('/logout', requireSameOrigin, accountController.logout);
   app.get('/register', accountController.showRegister);
 
-  app.get('/checkout', basketController.showCheckout);
+  app.use('/checkout', createCheckoutRouter(checkoutController));
   app.use('/basket', createBasketRouter(basketController));
 
   app.use('/account', createCustomerGuard());
