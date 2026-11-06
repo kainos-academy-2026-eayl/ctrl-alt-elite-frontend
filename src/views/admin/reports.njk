@@ -1,0 +1,30 @@
+{% extends "admin/layout.njk" %}
+
+{% block content %}
+<header class="admin-page-header">
+  <h1>Reports</h1>
+  <p class="admin-subtitle">Sales performance for the selected period.</p>
+</header>
+
+<form class="customer-toolbar" action="/admin/reports" method="get" novalidate data-report-form>
+  <div class="customer-field">
+    <label for="report-from">From</label>
+    <input id="report-from" name="from" type="date" required />
+  </div>
+  <div class="customer-field">
+    <label for="report-to">To</label>
+    <input id="report-to" name="to" type="date" required />
+  </div>
+  <button class="customer-button" type="submit">Run report</button>
+</form>
+<p class="admin-error" role="alert" hidden data-report-error></p>
+
+<div data-report-results aria-live="polite">
+  <p class="admin-empty">Loading report&hellip;</p>
+</div>
+<noscript><p class="admin-empty">JavaScript is required to load reports.</p></noscript>
+{% endblock %}
+
+{% block scripts %}
+<script src="/client/adminReports.js" defer></script>
+{% endblock %}

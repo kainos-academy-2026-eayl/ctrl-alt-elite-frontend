@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
-import type { BasketResponseDto } from '../../dtos/basketDto';
-import { renderErrorPage } from '../../middleware/errorHandler';
-import { buildProductDetailPage } from '../../views/product-detail.page';
+import type { BasketResponseDto } from '../dtos/basketDto';
+import { renderErrorPage } from '../middleware/errorHandler';
 import type { CatalogService } from '../services/catalog-service';
+import { buildProductDetailPage } from '../views/product-detail.page';
 
 const MAX_PRODUCT_ID_LENGTH = 100;
 

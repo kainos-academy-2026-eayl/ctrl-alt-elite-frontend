@@ -245,7 +245,11 @@ const ga: Partial<Record<string, string>> = {
   'checkout.phoneHint': 'Uimhir UK, mar shampla 07700 900123',
   'checkout.homeAddress': 'Seoladh baile',
   'checkout.addressHint':
-    'Cuir isteach do sheoladh thíos. Seiceálfaimid go bhfuil do chód poist ann.',
+    'Cuir isteach do chód poist agus roghnaigh Aimsigh seoladh, nó clóscríobh do sheoladh thíos.',
+  'checkout.findAddress': 'Aimsigh seoladh',
+  'checkout.chooseAddress': 'Roghnaigh do sheoladh',
+  'checkout.useAddress': 'Úsáid an seoladh seo',
+  'checkout.error.chooseAddress': 'Roghnaigh do sheoladh ón liosta',
   'checkout.postcode': 'Cód poist',
   'checkout.addressLine1': 'Líne 1 den seoladh',
   'checkout.addressLine2': 'Líne 2 den seoladh',

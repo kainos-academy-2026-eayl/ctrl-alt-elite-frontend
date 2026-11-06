@@ -1,3 +1,5 @@
+import { DEFAULT_ORDER_SORT } from './adminOrders';
+import type { OrdersApi } from './adminOrdersApi';
 import {
   type Customer,
   type CustomerSource,
@@ -5,6 +7,8 @@ import {
   formatRegistrationDate,
 } from './customers';
 import { escapeHtml } from './customerViews';
+
+const PENDING_STATUS = 'PENDING';
 
 const RECENT_ACTIVITY_LIMIT = 5;
 const NEW_CUSTOMER_WINDOW_DAYS = 7;
@@ -86,12 +90,66 @@ export async function loadProductCount(
   }
 }
 
-export function buildNotifications(data: DashboardCustomerData): string[] {
-  if (data.newCustomers === 0) return [];
-  const noun = data.newCustomers === 1 ? 'customer' : 'customers';
-  return [
-    `${data.newCustomers} new ${noun} registered in the last ${NEW_CUSTOMER_WINDOW_DAYS} days`,
-  ];
+export interface DashboardOrderData {
+  available: boolean;
+  totalOrders: number;
+  pendingOrders: number;
+}
+
+export const UNAVAILABLE_ORDER_DATA: DashboardOrderData = {
+  available: false,
+  totalOrders: 0,
+  pendingOrders: 0,
+};
+
+// Never throws: the dashboard must stay usable when the backend is down or the
+// signed-in role may not read orders. Only the totals are needed, so each query
+// asks for a single row.
+export async function loadDashboardOrderData(
+  api: Pick<OrdersApi, 'listOrders'>,
+): Promise<DashboardOrderData> {
+  const base = { search: '', sort: DEFAULT_ORDER_SORT, page: 1 } as const;
+  try {
+    const [all, pending] = await Promise.all([
+      api.listOrders({ ...base, status: '' }, 1),
+      api.listOrders({ ...base, status: PENDING_STATUS }, 1),
+    ]);
+    return {
+      available: true,
+      totalOrders: all.total,
+      pendingOrders: pending.total,
+    };
+  } catch (error) {
+    console.error('Unable to load dashboard order data:', error);
+    return UNAVAILABLE_ORDER_DATA;
+  }
+}
+
+export interface DashboardNotification {
+  text: string;
+  href: string;
+}
+
+export function buildNotifications(
+  customers: DashboardCustomerData,
+  orders: DashboardOrderData = UNAVAILABLE_ORDER_DATA,
+): DashboardNotification[] {
+  const notifications: DashboardNotification[] = [];
+  if (orders.available && orders.pendingOrders > 0) {
+    const noun = orders.pendingOrders === 1 ? 'order is' : 'orders are';
+    notifications.push({
+      text: `${orders.pendingOrders} ${noun} awaiting processing`,
+      href: `/admin/orders?status=${PENDING_STATUS}`,
+    });
+  }
+  if (customers.newCustomers > 0) {
+    const noun = customers.newCustomers === 1 ? 'customer' : 'customers';
+    notifications.push({
+      text: `${customers.newCustomers} new ${noun} registered in the last ${NEW_CUSTOMER_WINDOW_DAYS} days`,
+      href: '/admin/customers?sort=newest',
+    });
+  }
+  return notifications;
 }
 
 const SYSTEM_SERVICES = [
@@ -113,14 +171,16 @@ export function buildSystemStatus(backendAvailable: boolean) {
   });
 }
 
-export function renderNotifications(messages: string[]): string {
-  if (messages.length === 0) {
+export function renderNotifications(
+  notifications: DashboardNotification[],
+): string {
+  if (notifications.length === 0) {
     return '<p class="admin-empty">No active notifications</p>';
   }
-  const items = messages
+  const items = notifications
     .map(
-      (message) =>
-        `<li><a href="/admin/customers?sort=newest">${escapeHtml(message)}</a></li>`,
+      ({ text, href }) =>
+        `<li><a href="${escapeHtml(href)}">${escapeHtml(text)}</a></li>`,
     )
     .join('');
   return `<ul class="admin-feed">${items}</ul>`;

@@ -1,4 +1,4 @@
-import { HIDDEN_HOMEPAGE_PRODUCT_IDS } from '../../data/hiddenProducts';
+import { HIDDEN_HOMEPAGE_PRODUCT_IDS } from '../data/hiddenProducts';
 import type { CatalogProduct } from './catalog-service';
 
 export const FEATURED_PRODUCT_COUNT = 6;

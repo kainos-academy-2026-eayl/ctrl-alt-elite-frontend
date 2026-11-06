@@ -231,7 +231,11 @@ const cy: Partial<Record<string, string>> = {
   'checkout.phoneHint': 'Rhif UK, er enghraifft 07700 900123',
   'checkout.homeAddress': 'Cyfeiriad cartref',
   'checkout.addressHint':
-    'Rhowch eich cyfeiriad isod. Byddwn yn gwirio bod eich cod post yn bodoli.',
+    'Rhowch eich cod post a dewiswch Dod o hyd i gyfeiriad, neu teipiwch eich cyfeiriad isod.',
+  'checkout.findAddress': 'Dod o hyd i gyfeiriad',
+  'checkout.chooseAddress': 'Dewiswch eich cyfeiriad',
+  'checkout.useAddress': "Defnyddio'r cyfeiriad hwn",
+  'checkout.error.chooseAddress': "Dewiswch eich cyfeiriad o'r rhestr",
   'checkout.postcode': 'Cod post',
   'checkout.addressLine1': 'Llinell 1 y cyfeiriad',
   'checkout.addressLine2': 'Llinell 2 y cyfeiriad',

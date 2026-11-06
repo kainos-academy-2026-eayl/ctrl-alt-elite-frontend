@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'vitest';
 import { HIDDEN_HOMEPAGE_PRODUCT_IDS } from '../src/data/hiddenProducts';
-import type { CatalogProduct } from '../src/server/services/catalog-service';
-import { pickHomepageProducts } from '../src/server/services/homepage-products';
+import type { CatalogProduct } from '../src/services/catalog-service';
+import { pickHomepageProducts } from '../src/services/homepage-products';
 import { ProductService } from '../src/services/productService';
 import { buildHomepage } from '../src/views/homepage.page';
 import { buildProductDetailPage } from '../src/views/product-detail.page';

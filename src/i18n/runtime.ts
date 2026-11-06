@@ -3,7 +3,7 @@ import en, { type MessageKey } from './messages/en';
 /*
  * The translator used by server code, templates and browser scripts alike.
  * It has no Node or browser dependencies: the server (i18n/server.ts) and the
- * browser (controllers/i18n.ts) each register the other languages and say
+ * browser (client/i18n.ts) each register the other languages and say
  * how to find the current one. English is complete; other languages fall
  * back to it key by key, and unknown keys are shown as-is.
  */

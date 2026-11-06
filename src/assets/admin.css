@@ -1266,3 +1266,15 @@ html[data-theme="dark"] .stock-input {
   background: #0f172a;
   color: #f9fafb;
 }
+
+.report-meter {
+  width: 8rem;
+  max-width: 100%;
+  height: 0.75rem;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.report-daily {
+  margin-top: 1.25rem;
+}

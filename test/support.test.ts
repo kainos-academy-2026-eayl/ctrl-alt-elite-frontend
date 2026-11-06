@@ -338,7 +338,7 @@ describe('support pages', () => {
     assert.match(html, /data-support-page="list"/);
     assert.match(html, /data-support-list/);
     assert.match(html, /href="\/account\/support\/new"/);
-    assert.match(html, /src="\/controllers\/support\.js"/);
+    assert.match(html, /src="\/client\/support\.js"/);
   });
 
   it('serves the create form with every category', async () => {

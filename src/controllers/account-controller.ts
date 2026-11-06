@@ -1,11 +1,8 @@
 import type { Request, Response } from 'express';
 import type { Environment } from 'nunjucks';
-import { formatPounds } from '../../i18n/money';
-import { t } from '../../i18n/runtime';
-import type { CheckoutService } from '../../services/checkoutService';
-import { clearAuthCookie, readAuthCookie } from '../../util/authCookie';
-import { clearBasketCookie, clearBasketNotice } from '../../util/basketCookie';
-import type { LoginSession } from '../../util/loginSession';
+import { formatPounds } from '../i18n/money';
+import { t } from '../i18n/runtime';
+import type { CheckoutService } from '../services/checkoutService';
 import {
   ProfileAuthenticationError,
   type ProfileDetails,
@@ -13,6 +10,9 @@ import {
   ProfileUpdateError,
   profileDisplayName,
 } from '../services/profile-service';
+import { clearAuthCookie, readAuthCookie } from '../util/authCookie';
+import { clearBasketCookie, clearBasketNotice } from '../util/basketCookie';
+import type { LoginSession } from '../util/loginSession';
 
 export class AccountController {
   constructor(

@@ -53,6 +53,8 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
 // These entries have their own pages, so they are not placeholder modules.
 const NON_MODULE_KEYS: ReadonlySet<string> = new Set([
   'dashboard',
+  'orders',
+  'reports',
   'stock-dashboard',
   'stock',
 ]);

@@ -1,11 +1,11 @@
 import type { Request, Response } from 'express';
-import { t } from '../../i18n/runtime';
-import { renderErrorPage } from '../../middleware/errorHandler';
+import { t } from '../i18n/runtime';
+import { renderErrorPage } from '../middleware/errorHandler';
 import {
   MAX_DESCRIPTION_LENGTH,
   MAX_SUBJECT_LENGTH,
   TICKET_CATEGORIES,
-} from '../../util/supportTickets';
+} from '../util/supportTickets';
 
 type SupportPage = 'list' | 'new' | 'detail';
 

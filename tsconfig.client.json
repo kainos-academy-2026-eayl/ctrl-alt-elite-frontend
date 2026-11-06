@@ -5,6 +5,6 @@
     "types": [],
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.client"
   },
-  "include": ["src/controllers/**/*"],
+  "include": ["src/client/**/*"],
   "exclude": ["node_modules", "dist"]
 }

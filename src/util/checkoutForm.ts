@@ -24,6 +24,8 @@ export type CheckoutValues = Record<CheckoutField, string>;
 export const CHECKOUT_ACTIONS = [
   'use-profile-details',
   'use-manual-details',
+  'find-address',
+  'use-address',
   'continue-to-delivery',
   'edit-details',
   'continue-to-payment',
@@ -35,7 +37,7 @@ export type CheckoutAction = (typeof CHECKOUT_ACTIONS)[number];
 export type CheckoutDetailsSource = 'manual' | 'profile';
 
 export interface CheckoutFieldError {
-  field: CheckoutField;
+  field: CheckoutField | 'selectedAddress';
   message: string;
 }
 
@@ -43,6 +45,8 @@ export interface CheckoutForm {
   values: CheckoutValues;
   action: CheckoutAction;
   detailsSource: CheckoutDetailsSource;
+  /** Index of the suggested address the customer picked, if any. */
+  selectedAddress: number | null;
   /** The order total (pence) shown on the payment step when Checkout was pressed. */
   confirmedTotalPence: number | null;
 }
@@ -119,6 +123,7 @@ export function readCheckoutForm(body: unknown): CheckoutForm {
     values[field] = readText(fields, field);
   }
   const action = readText(fields, 'action');
+  const selected = readText(fields, 'selectedAddress');
   const confirmedTotal = readText(fields, 'confirmedTotalPence');
   return {
     values,
@@ -127,6 +132,7 @@ export function readCheckoutForm(body: unknown): CheckoutForm {
     action: (CHECKOUT_ACTIONS as readonly string[]).includes(action)
       ? (action as CheckoutAction)
       : 'edit-details',
+    selectedAddress: /^\d{1,2}$/.test(selected) ? Number(selected) : null,
     confirmedTotalPence: /^\d{1,9}$/.test(confirmedTotal)
       ? Number(confirmedTotal)
       : null,

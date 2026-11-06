@@ -359,7 +359,7 @@ describe('inventory management access', () => {
       assert.equal(page.status, 200);
       const html = await page.text();
       assert.match(html, /<h1>Inventory Dashboard<\/h1>/);
-      assert.match(html, /src="\/controllers\/adminStockDashboard\.js"/);
+      assert.match(html, /src="\/client\/adminStockDashboard\.js"/);
       assert.match(html, /data-stock-summary/);
       assert.match(html, /admin-profile-role">Inventory Manager</);
 
@@ -381,10 +381,7 @@ describe('inventory management access', () => {
         headers: { cookie: cookies },
       });
       assert.equal(listPage.status, 200);
-      assert.match(
-        await listPage.text(),
-        /src="\/controllers\/adminStockList\.js"/,
-      );
+      assert.match(await listPage.text(), /src="\/client\/adminStockList\.js"/);
 
       const update = await fetch(`${base}/api/admin/inventory/p-2/stock`, {
         method: 'PATCH',

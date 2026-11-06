@@ -108,7 +108,7 @@ describe('customer site navigation', () => {
       assert.match(nav, /class="nav-link basket-icon-link/, path);
       assert.match(nav, /class="site-nav-check" type="checkbox"/, path);
       assert.equal(
-        html.match(/<script src="\/controllers\/script\.js" defer><\/script>/g)
+        html.match(/<script src="\/client\/script\.js" defer><\/script>/g)
           ?.length,
         1,
         path,

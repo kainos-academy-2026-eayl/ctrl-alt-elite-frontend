@@ -30,5 +30,5 @@
     "test/**/*",
     "product_catalog/product_catalog_content.ts"
   ],
-  "exclude": ["node_modules", "dist", "src/controllers"]
+  "exclude": ["node_modules", "dist", "src/client"]
 }

@@ -7,7 +7,7 @@ import { createApp } from '../src/app';
 import {
   type ProfileDetails,
   ProfileService,
-} from '../src/server/services/profile-service';
+} from '../src/services/profile-service';
 import { withoutAccessibilityMenu } from './accessibilityMenu';
 
 const SECRET = 'profile-autofill-test-secret-at-least-32-bytes';
@@ -193,10 +193,7 @@ describe('saved profile autofill', () => {
       assert.match(saveButton, /type="submit"/);
       assert.doesNotMatch(saveButton, /\bdisabled\b/);
       assert.match(html, /<fieldset class="profile-details-fields">/);
-      assert.match(
-        html,
-        /<script src="\/controllers\/script\.js" defer><\/script>/,
-      );
+      assert.match(html, /<script src="\/client\/script\.js" defer><\/script>/);
       assert.doesNotMatch(
         html,
         /Design preview only|changes are not saved|{{|{%/,

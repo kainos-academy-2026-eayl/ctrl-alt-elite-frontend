@@ -3,7 +3,7 @@
   the Tab key reaches) and the floating accessibility button. The button opens
   a panel for language, currency and the button's own position. It is a
   normal <details> and form, so it works without JavaScript;
-  controllers/a11yMenu.ts adds dragging and closing with Escape.
+  client/a11yMenu.ts adds dragging and closing with Escape.
 #}
 {% set p = prefs() %}
 <a class="skip-link" href="#main-content">{{ t('site.skipToContent') }}</a>
@@ -52,4 +52,4 @@
     <p class="a11y-note" data-a11y-drag-hint hidden>{{ t('preferences.dragHint') }}</p>
   </div>
 </details>
-<script src="/controllers/a11yMenu.js" defer></script>
+<script src="/client/a11yMenu.js" defer></script>
