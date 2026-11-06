@@ -11,6 +11,7 @@ import { t } from '../i18n/runtime';
 import { localiseProduct } from '../i18n/server';
 import type { LookedUpAddress } from '../services/addressLookupService';
 import {
+  type CheckoutDetailsSource,
   type CheckoutFieldError,
   type CheckoutValues,
   emptyCheckoutValues,
@@ -81,6 +82,7 @@ export interface CheckoutErrorView {
 }
 
 export interface CheckoutPage {
+  detailsSource: CheckoutDetailsSource;
   basketSummary: BasketSummary;
   currentYear: number;
   isGuest: boolean;
@@ -123,6 +125,7 @@ export interface CheckoutPage {
 }
 
 export interface CheckoutPageInput {
+  detailsSource?: CheckoutDetailsSource;
   basket: BasketResponseDto;
   /** null for a guest, who is asked to log in or create an account. */
   account: AccountDto | null;
@@ -165,6 +168,7 @@ export function buildCheckoutPage({
   account,
   step = 'details',
   values,
+  detailsSource = 'manual',
   errors = [],
   notice = '',
   orderOutcomeUnknown = false,
@@ -184,6 +188,7 @@ export function buildCheckoutPage({
   const creditPence = account?.creditBalancePence ?? 0;
 
   return {
+    detailsSource,
     basketSummary: toBasketSummary(basket),
     currentYear: now.getFullYear(),
     isGuest: account === null,

@@ -147,6 +147,7 @@ describe('saved profile autofill', () => {
         firstName: `Saved-${visit}`,
         addressLine1: `${visit + 1} Example Street`,
         addressLine2: `Flat ${visit + 1}`,
+        town: `Saved Town ${visit}`,
         postcode: `AB${visit + 1} 2CD`,
         phoneNumber: `+44 20 1234 567${visit}`,
       });
@@ -177,6 +178,7 @@ describe('saved profile autofill', () => {
         ['profile-phone', profile.phoneNumber],
         ['profile-address-line-1', profile.addressLine1],
         ['profile-address-line-2', profile.addressLine2],
+        ['profile-town', profile.town],
         ['profile-postcode', profile.postcode],
       ]) {
         const input = html.match(
@@ -205,6 +207,73 @@ describe('saved profile autofill', () => {
       })),
     );
   });
+
+  it('disables the town input with a notice when the backend does not support it yet', async () => {
+    const response = await getProfile();
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    const input = html.match(/<input[^>]*id="profile-town"[^>]*>/)?.[0];
+    assert.ok(input);
+    assert.match(input, /name="town" value=""/);
+    assert.match(input, /\bdisabled\b/);
+    assert.match(input, /aria-describedby="profile-town-hint"/);
+    assert.match(
+      html,
+      /Saving town or city on your profile is not available yet/,
+    );
+    assert.doesNotMatch(
+      html,
+      /<button[^>]*disabled[^>]*>Save changes<\/button>/,
+    );
+    const profile = await new ProfileService(backendOrigin).getOwnProfile(
+      BACKEND_TOKEN,
+    );
+    assert.equal('town' in profile, false);
+  });
+
+  it.each(['Belfast', ''])(
+    'submits and reloads a supported profile town %j',
+    async (town) => {
+      body = makeProfile({ town: 'Saved Town' });
+      const fields = {
+        username: 'saved-user',
+        firstName: 'Saved',
+        lastName: 'Customer',
+        addressLine1: '',
+        addressLine2: '',
+        postcode: '',
+        phoneNumber: '',
+        town,
+      };
+      patchBody = makeProfile({ town: town || null });
+      const response = await fetch(`${base}/profile`, {
+        method: 'POST',
+        headers: {
+          origin: base,
+          cookie: `${loginCookie}; auth_token=${BACKEND_TOKEN}`,
+        },
+        body: new URLSearchParams(fields),
+        redirect: 'manual',
+      });
+      assert.equal(response.status, 303);
+      assert.equal(response.headers.get('location'), '/profile?saved=1');
+      assert.deepEqual(
+        requests.find((request) => request.method === 'PATCH')?.body,
+        fields,
+      );
+      const html = await (await getProfile()).text();
+      const input = html.match(/<input[^>]*id="profile-town"[^>]*>/)?.[0];
+      assert.ok(input);
+      assert.match(input, new RegExp(`name="town" value="${town}"`));
+      assert.match(input, /autocomplete="address-level2"/);
+      assert.match(input, /maxlength="60"/);
+      assert.doesNotMatch(input, /\bdisabled\b/);
+      assert.doesNotMatch(
+        html,
+        /Saving town or city on your profile is not available yet/,
+      );
+    },
+  );
 
   it.each([
     { username: 'updated-user', displayName: 'updated-user' },
@@ -306,12 +375,14 @@ describe('saved profile autofill', () => {
   ])(
     'retains submitted profile fields after a $code PATCH response',
     async ({ code, message }) => {
+      body = makeProfile({ town: 'Saved Town' });
       const fields = {
         username: 'unsaved-user',
         firstName: 'Unsaved',
         lastName: 'Edits',
         addressLine1: '34 Unsaved Street',
         addressLine2: '',
+        town: 'Unsaved Town',
         postcode: 'XY9 8ZZ',
         phoneNumber: 'invalid-phone',
       };
@@ -337,7 +408,7 @@ describe('saved profile autofill', () => {
         assert.ok(html.includes(`name="${field}" value="${value}"`));
       }
       assert.match(html, /id="profile-email" value="saved@example.invalid"/);
-      assert.deepEqual(body, makeProfile());
+      assert.deepEqual(body, makeProfile({ town: 'Saved Town' }));
       assert.deepEqual(requests, [
         { url: '/api/profile', authorization: `Bearer ${BACKEND_TOKEN}` },
         {
@@ -356,6 +427,7 @@ describe('saved profile autofill', () => {
       username: null,
       firstName: 'A'.repeat(100),
       lastName: 'B'.repeat(100),
+      town: null,
     });
     const response = await getProfile();
     assert.equal(response.status, 200);
@@ -370,6 +442,7 @@ describe('saved profile autofill', () => {
       'profile-phone',
       'profile-address-line-1',
       'profile-address-line-2',
+      'profile-town',
       'profile-postcode',
     ]) {
       const input = html.match(new RegExp(`<input[^>]*id="${id}"[^>]*>`))?.[0];
@@ -390,6 +463,7 @@ describe('saved profile autofill', () => {
       lastName: '" autofocus onfocus="alert(1)',
       addressLine1: '" onfocus="alert(2)',
       addressLine2: '<script>alert(3)</script>',
+      town: '<script>alert(4)</script>',
     });
     const response = await getProfile();
     assert.equal(response.status, 200);
@@ -399,6 +473,10 @@ describe('saved profile autofill', () => {
     assert.match(html, /value="&quot; autofocus onfocus=&quot;/);
     assert.match(html, /value="&quot; onfocus=&quot;alert\(2\)/);
     assert.match(html, /value="&lt;script&gt;alert\(3\)&lt;\/script&gt;"/);
+    assert.match(
+      html,
+      /name="town" value="&lt;script&gt;alert\(4\)&lt;\/script&gt;"/,
+    );
     assert.doesNotMatch(
       html,
       /<script>|<img src=x|value="" autofocus|value="" onfocus/,
@@ -486,6 +564,8 @@ describe('saved profile autofill', () => {
       { ...makeProfile(), hasPhoto: 'false' },
       { ...makeProfile(), addressLine1: 42 },
       { ...makeProfile(), addressLine2: undefined },
+      { ...makeProfile(), town: 42 },
+      { ...makeProfile(), town: {} },
       { ...makeProfile(), postcode: 42 },
       { ...makeProfile(), phoneNumber: undefined },
     ];

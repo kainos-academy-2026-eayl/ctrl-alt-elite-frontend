@@ -23,7 +23,11 @@ import {
   type PostcodeService,
   PostcodeServiceError,
 } from '../services/postcodeService';
-import { readAuthCookie } from '../util/authCookie';
+import {
+  ProfileAuthenticationError,
+  type ProfileService,
+} from '../services/profile-service';
+import { clearAuthCookie, readAuthCookie } from '../util/authCookie';
 import { clearBasketCookie, readBasketCookie } from '../util/basketCookie';
 import {
   type CheckoutFieldError,
@@ -79,6 +83,7 @@ export class CheckoutController {
     private readonly basketService: BasketService,
     private readonly loginSession: LoginSession,
     private readonly postcodeService: PostcodeService,
+    private readonly profileService: ProfileService,
     private readonly addressLookup: AddressLookupService,
   ) {}
 
@@ -106,8 +111,19 @@ export class CheckoutController {
     }
 
     const form = readCheckoutForm(req.body);
-    const page: StepPage = { basket, account, values: form.values };
+    const page: StepPage = {
+      basket,
+      account,
+      values: form.values,
+      detailsSource: form.detailsSource,
+    };
     switch (form.action) {
+      case 'use-profile-details':
+        await this.useProfileDetails(res, page, token);
+        return;
+      case 'use-manual-details':
+        this.render(res, 200, { ...page, detailsSource: 'manual' });
+        return;
       case 'find-address':
         await this.findAddress(res, page);
         return;
@@ -124,6 +140,44 @@ export class CheckoutController {
         this.render(res, 200, page);
     }
   };
+
+  private async useProfileDetails(
+    res: Response,
+    page: StepPage,
+    token: string,
+  ): Promise<void> {
+    try {
+      const profile = await this.profileService.getOwnProfile(token);
+      this.render(res, 200, {
+        ...page,
+        detailsSource: 'profile',
+        values: {
+          ...page.values,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          email: profile.email,
+          phone: profile.phoneNumber ?? '',
+          addressLine1: profile.addressLine1 ?? '',
+          addressLine2: profile.addressLine2 ?? '',
+          town: profile.town ?? page.values.town,
+          postcode: profile.postcode ?? '',
+        },
+      });
+    } catch (error) {
+      if (error instanceof ProfileAuthenticationError) {
+        console.warn('Checkout profile access denied: login required.');
+        clearAuthCookie(res);
+        this.loginSession.clear(res);
+        res.redirect(303, CHECKOUT_LOGIN_URL);
+        return;
+      }
+      console.error('Unable to load profile details for checkout:', error);
+      this.render(res, 503, {
+        ...page,
+        notice: t('checkout.profileUnavailable'),
+      });
+    }
+  }
 
   showConfirmation = async (req: Request, res: Response): Promise<void> => {
     res.setHeader('Cache-Control', 'no-store');

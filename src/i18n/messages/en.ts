@@ -209,6 +209,17 @@ const en = {
   'checkout.error': 'Error:',
   'checkout.optional': '{label} (optional)',
   'checkout.step.details': 'Your details',
+  'checkout.detailsChoice': 'Choose your checkout details',
+  'checkout.useProfile': 'Use my profile details',
+  'checkout.useManual': 'Enter different details',
+  'checkout.detailsChoiceHint':
+    'Using your profile replaces the fields below with your saved details. Changes here apply to this order only, not your profile.',
+  'checkout.profileSelected':
+    'Profile details loaded. You can edit them for this order. Complete any missing fields, including town or city.',
+  'checkout.manualSelected':
+    'Enter or edit details for this order. Existing entries are kept; your profile will not change.',
+  'checkout.profileUnavailable':
+    'We could not load your profile details. Your entries have been kept. Enter your details manually or try again.',
   'checkout.step.delivery': 'Delivery',
   'checkout.step.payment': 'Payment',
   'checkout.firstName': 'First name',
@@ -378,6 +389,9 @@ const en = {
   'profile.addressLine1': 'Address line 1',
   'profile.addressLine2': 'Address line 2',
   'profile.postcode': 'Postcode',
+  'profile.town': 'Town or city',
+  'profile.townPending':
+    'Saving town or city on your profile is not available yet. You can still enter it at checkout.',
   'profile.postcodePlaceholder': 'Your postcode',
   'profile.saveHint':
     'First and last names are required. Address, phone and display name are optional.',

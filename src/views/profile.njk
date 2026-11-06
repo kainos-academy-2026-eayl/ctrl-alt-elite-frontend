@@ -108,6 +108,14 @@
                 </div>
 
                 <div class="profile-field">
+                    <label for="profile-town">{{ t('profile.town') }}</label>
+                    <input type="text" id="profile-town" name="town" value="{{ form.town or '' }}" autocomplete="address-level2" maxlength="60"{% if not profileTownSupported %} disabled aria-describedby="profile-town-hint"{% endif %} />
+                    {% if profile and not profileTownSupported %}
+                    <p class="profile-hint" id="profile-town-hint">{{ t('profile.townPending') }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="profile-field">
                     <label for="profile-postcode">{{ t('profile.postcode') }}</label>
                     <input type="text" id="profile-postcode" name="postcode" value="{{ form.postcode or '' }}" autocomplete="postal-code" maxlength="20" placeholder="{{ t('profile.postcodePlaceholder') }}" />
                 </div>

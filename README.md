@@ -91,6 +91,38 @@ Server-side controllers live in `src/controllers/` and are not bundled for the
 browser. Browser scripts live in `src/client/`; registration still uses its
 existing browser script and API proxy.
 
+## Saved details at checkout
+
+The details step offers **Use my profile details** and **Enter different
+details**, using ordinary form posts so both work without JavaScript.
+Checkout POST responses load the same authenticated navigation as GET pages,
+so changing details or moving between steps does not show guest account links.
+`use-profile-details` loads the signed-in customer's existing `GET /api/profile`
+through [ProfileService](src/server/services/profile-service.ts), replacing the
+name, email, phone and address fields only when explicitly requested. Customers
+can edit the result for this order; checkout never updates their profile.
+
+The frontend supports an optional `town` profile API field (`string` or `null`).
+The profile page includes a town/city input with a 60-character limit, and
+checkout fills it from the saved profile when available. Existing APIs that
+omit `town` remain supported: the profile input is disabled with an availability
+notice, and customers can enter town/city at checkout as before. Once the backend
+returns `town` (including `null` for an empty value), the input becomes editable
+and is submitted to the existing profile PATCH endpoint. Backend persistence,
+validation and a database migration are still required; none are implemented
+by this frontend change.
+
+Missing or invalid saved details are checked using the same checkout validation as
+manual entries, including checkout's stricter address and phone limits.
+Switching to manual entry keeps existing values so edits are not lost. The
+`detailsSource` form field preserves the selection through validation and each
+checkout step; it is not an identity or authorization field.
+
+Profile failures are logged and show a message without discarding entered
+values or preventing manual checkout. Expired profile authentication clears
+the login cookies and returns the customer to login. No backend or database
+changes are needed.
+
 ## Requirements
 
 | Tool | Version | Notes |

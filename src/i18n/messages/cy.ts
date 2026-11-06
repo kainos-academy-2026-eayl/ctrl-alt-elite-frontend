@@ -210,6 +210,17 @@ const cy: Partial<Record<string, string>> = {
   'checkout.error': 'Gwall:',
   'checkout.optional': '{label} (dewisol)',
   'checkout.step.details': 'Eich manylion',
+  'checkout.detailsChoice': 'Dewiswch eich manylion ar gyfer y ddesg dalu',
+  'checkout.useProfile': 'Defnyddio manylion fy mhroffil',
+  'checkout.useManual': 'Rhoi manylion gwahanol',
+  'checkout.detailsChoiceHint':
+    "Bydd defnyddio eich proffil yn llenwi'r meysydd isod â'ch manylion wedi'u cadw. Mae newidiadau yma ar gyfer yr archeb hon yn unig, nid eich proffil.",
+  'checkout.profileSelected':
+    "Mae manylion eich proffil wedi'u llwytho. Gallwch eu golygu ar gyfer yr archeb hon. Llenwch unrhyw feysydd coll, gan gynnwys tref neu ddinas.",
+  'checkout.manualSelected':
+    'Rhowch neu golygwch fanylion ar gyfer yr archeb hon. Cedwir eich cofnodion presennol; ni fydd eich proffil yn newid.',
+  'checkout.profileUnavailable':
+    'Nid oedd modd llwytho manylion eich proffil. Cedwir eich cofnodion. Rhowch eich manylion â llaw neu rhowch gynnig arall arni.',
   'checkout.step.delivery': 'Dosbarthu',
   'checkout.step.payment': 'Talu',
   'checkout.firstName': 'Enw cyntaf',
@@ -369,6 +380,9 @@ const cy: Partial<Record<string, string>> = {
   'profile.addressLine1': 'Llinell 1 y cyfeiriad',
   'profile.addressLine2': 'Llinell 2 y cyfeiriad',
   'profile.postcode': 'Cod post',
+  'profile.town': 'Tref neu ddinas',
+  'profile.townPending':
+    'Nid yw cadw tref neu ddinas ar eich proffil ar gael eto. Gallwch ei rhoi wrth dalu.',
   'profile.postcodePlaceholder': 'Eich cod post',
   'profile.saveHint':
     "Mae angen enw cyntaf a chyfenw. Mae'r cyfeiriad, y rhif ffôn a'r enw arddangos yn ddewisol.",

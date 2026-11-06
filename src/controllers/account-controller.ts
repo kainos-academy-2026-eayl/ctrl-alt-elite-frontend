@@ -57,6 +57,7 @@ export class AccountController {
         'lastName',
         'addressLine1',
         'addressLine2',
+        'town',
         'postcode',
         'phoneNumber',
       ] as const) {
@@ -75,6 +76,7 @@ export class AccountController {
             ? { ...account, name: profileDisplayName(profile) }
             : account,
           profile,
+          profileTownSupported: profile?.town !== undefined,
           creditBalance,
           form,
           profileLoadMessage: profile ? '' : t('profile.signInAgain'),

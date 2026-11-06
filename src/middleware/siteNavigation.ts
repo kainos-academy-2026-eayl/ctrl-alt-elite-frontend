@@ -56,7 +56,10 @@ const navigationStore = new AsyncLocalStorage<SiteNavigation>();
 function isCustomerPage(req: Request): boolean {
   if (
     req.method !== 'GET' &&
-    !(req.method === 'POST' && req.path === '/login')
+    !(
+      req.method === 'POST' &&
+      (req.path === '/login' || req.path === '/checkout')
+    )
   ) {
     return false;
   }

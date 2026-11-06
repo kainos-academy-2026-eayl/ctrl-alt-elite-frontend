@@ -6,6 +6,7 @@ export interface ProfileDetails {
   email: string;
   addressLine1: string | null;
   addressLine2: string | null;
+  town?: string | null;
   postcode: string | null;
   phoneNumber: string | null;
   hasPhoto: boolean;
@@ -79,6 +80,10 @@ export class ProfileService {
       throw new Error(`Profile API returned ${response.status}.`);
     }
     const body: unknown = await response.json();
+    const town =
+      typeof body === 'object' && body !== null && 'town' in body
+        ? body.town
+        : undefined;
     if (
       typeof body !== 'object' ||
       body === null ||
@@ -98,6 +103,7 @@ export class ProfileService {
       (body.addressLine1 !== null && typeof body.addressLine1 !== 'string') ||
       !('addressLine2' in body) ||
       (body.addressLine2 !== null && typeof body.addressLine2 !== 'string') ||
+      (town !== undefined && town !== null && typeof town !== 'string') ||
       !('postcode' in body) ||
       (body.postcode !== null && typeof body.postcode !== 'string') ||
       !('phoneNumber' in body) ||
@@ -113,6 +119,7 @@ export class ProfileService {
       email: body.email,
       addressLine1: body.addressLine1,
       addressLine2: body.addressLine2,
+      ...(town === undefined ? {} : { town }),
       postcode: body.postcode,
       phoneNumber: body.phoneNumber,
       hasPhoto: body.hasPhoto,
