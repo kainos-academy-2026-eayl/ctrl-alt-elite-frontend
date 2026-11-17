@@ -1,27 +1,18 @@
-# Leave out Git files and editor settings.
 .git
 .github
 .husky
 .vscode
 .idea
-
-# Let Docker install packages and build the app instead of using local copies.
 **/node_modules
 dist
-
-# Leave out local settings files and files that may contain private keys.
 **/.env
 **/.env.*
 **/*.pem
 **/*.key
 **/*.p12
 **/*.pfx
-
-# Leave out logs and macOS folder settings.
 **/*.log
 **/.DS_Store
-
-# Leave out test results and code review reports.
 coverage
 code_reviews
 test-results
