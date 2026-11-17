@@ -3,12 +3,7 @@ FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
 COPY package.json package-lock.json .npmrc ./
-RUN --mount=type=secret,id=corporate_ca \
-    if [ -s /run/secrets/corporate_ca ]; then \
-      NODE_EXTRA_CA_CERTS=/run/secrets/corporate_ca HUSKY=0 npm ci; \
-    else \
-      HUSKY=0 npm ci; \
-    fi
+RUN HUSKY=0 npm ci
 
 COPY . .
 RUN npm run build
