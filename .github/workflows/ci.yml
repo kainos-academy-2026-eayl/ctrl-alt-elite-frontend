@@ -56,6 +56,9 @@ jobs:
           token: ${{ secrets.TEST_HARNESS_READ_TOKEN }}
           persist-credentials: false
 
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -93,6 +96,17 @@ jobs:
           npx playwright test tests/login.spec.ts tests/navigation.spec.ts \
             --project=chromium \
             --grep 'opens the account dropdown before login|shows an accessible login form with a masked password|shows and hides the password without changing its value or submitting|prevents submission when|redirects an unauthenticated visitor away from their profile|shows Home, Shop, search, account menu and basket in the header|guest account menu offers Login, Register and Support|the links are hidden until the menu button is used'
+
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm run test
+      - name: Display message
+        run: echo "schweet"
 
   build:
     name: Build container image
