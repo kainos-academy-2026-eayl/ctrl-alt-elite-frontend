@@ -33,6 +33,67 @@ jobs:
       - name: Display message
         run: echo "schweet"
 
+  playwright-ui:
+    name: Playwright frontend UI checks
+    needs: test
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE_URL: http://127.0.0.1:3000
+      BACKEND_ORIGIN: http://127.0.0.1:3001
+      JWT_SECRET: ci-only-secret-at-least-32-characters-long
+    steps:
+      - name: Check out frontend
+        uses: actions/checkout@v4
+
+      - name: Check out test harness
+        uses: actions/checkout@v4
+        with:
+          repository: kainos-academy-2026-eayl/ctrl-alt-elite-test-harness
+          ref: 79473c121a4b8bb99ea18921ccbcf8819e619d2e
+          path: test-harness
+          token: ${{ secrets.TEST_HARNESS_READ_TOKEN }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            test-harness/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install test harness dependencies
+        working-directory: test-harness
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: test-harness
+        run: npx playwright install --with-deps chromium
+
+      - name: Run pre-made frontend-only login and navigation checks
+        run: |
+          PORT=3000 node --use-system-ca dist/index.js > "$RUNNER_TEMP/frontend.log" 2>&1 &
+          frontend_pid=$!
+          trap 'kill "$frontend_pid" 2>/dev/null || true' EXIT
+          if ! curl --fail --silent --show-error --retry 30 --retry-delay 1 \
+            --retry-all-errors --retry-max-time 60 --max-time 2 "$BASE_URL/health"; then
+            cat "$RUNNER_TEMP/frontend.log"
+            exit 1
+          fi
+          cd test-harness
+          npx playwright test tests/login.spec.ts tests/navigation.spec.ts \
+            --project=chromium \
+            --grep 'opens the account dropdown before login|shows an accessible login form with a masked password|shows and hides the password without changing its value or submitting|prevents submission when|redirects an unauthenticated visitor away from their profile|shows Home, Shop, search, account menu and basket in the header|guest account menu offers Login, Register and Support|the links are hidden until the menu button is used'
+
   build:
     name: Build container image
     needs: test
