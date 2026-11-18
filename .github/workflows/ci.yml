@@ -35,7 +35,7 @@ jobs:
 
   playwright:
     name: Playwright test harness
-    needs: test
+    needs: build
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -181,3 +181,30 @@ jobs:
         uses: actions/checkout@v4
       - name: Build image
         run: docker build -t ctrl-alt-elite-frontend:${{ github.sha }} .
+      - name: Smoke-test built image
+        env:
+          IMAGE_TAG: ctrl-alt-elite-frontend:${{ github.sha }}
+        run: |
+          container_id=$(docker run --detach \
+            --health-interval=2s --health-start-period=0s --health-retries=10 \
+            --env JWT_SECRET=ci-smoke-test-secret-at-least-32-bytes \
+            --env BACKEND_ORIGIN=http://127.0.0.1:3001 \
+            "$IMAGE_TAG")
+          trap 'docker rm --force "$container_id" > /dev/null' EXIT
+          for attempt in $(seq 1 30); do
+            status=$(docker inspect --format '{{.State.Status}} {{.State.Health.Status}}' "$container_id")
+            case "$status" in
+              "running healthy")
+                echo "Built image passed its /health check."
+                exit 0
+                ;;
+              *unhealthy|exited*|dead*)
+                break
+                ;;
+            esac
+            sleep 2
+          done
+          echo "::error::Built image failed to become healthy."
+          docker logs "$container_id"
+          docker inspect --format '{{json .State}}' "$container_id"
+          exit 1
