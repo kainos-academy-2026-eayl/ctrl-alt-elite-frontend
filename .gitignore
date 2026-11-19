@@ -2,3 +2,7 @@ node_modules
 dist/
 .env
 code_reviews/
+.terraform/
+*.tfstate
+*.tfstate.*
+tfplan
