@@ -22,3 +22,21 @@ jobs:
       - run: npm run lint:fix
       - run: npm run lint
       - run: npm test
+      
+  release:
+    needs: build-lint-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      - name: Generate release notes
+        uses: release-drafter/release-drafter@v6
+        with:
+          publish: false
+          disable-autolabeler: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
