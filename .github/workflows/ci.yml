@@ -24,6 +24,11 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Audit production dependencies (warning only)
+        run: |
+          if ! npm audit --omit=dev --audit-level=high; then
+            echo "::warning::Production dependency audit reported high/critical vulnerabilities or could not complete. Review the audit output above; this check does not block the pipeline."
+          fi
       - name: Build
         run: npm run build
       - name: Lint
