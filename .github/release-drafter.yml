@@ -1,0 +1,40 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+# Label pull requests before merging to group their titles in the notes.
+categories:
+  - title: Breaking changes
+    labels:
+      - breaking-change
+  - title: Features and enhancements
+    labels:
+      - feature
+      - enhancement
+  - title: Bug fixes
+    labels:
+      - bug
+  - title: Documentation
+    labels:
+      - documentation
+
+version-resolver:
+  major:
+    labels:
+      - breaking-change
+  minor:
+    labels:
+      - feature
+      - enhancement
+  patch:
+    labels:
+      - bug
+      - documentation
+  default: patch
+
+change-template: '- $TITLE (#$NUMBER)'
+change-title-escapes: '\<*_&'
+
+template: |
+  ## What's changed
+
+  $CHANGES
