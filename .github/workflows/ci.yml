@@ -10,6 +10,23 @@ permissions:
   contents: read
 
 jobs:
+  release:
+    # Generate a draft only after all existing checks pass on main.
+    needs: [test, build, playwright]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Generate release notes
+        uses: release-drafter/release-drafter@v6
+        with:
+          publish: false
+          disable-autolabeler: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   test:
     name: Test and quality checks
     runs-on: ubuntu-latest
