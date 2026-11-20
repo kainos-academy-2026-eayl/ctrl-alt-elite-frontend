@@ -20,6 +20,27 @@ push access to the registry. On an RBAC-only registry, `AcrPush` grants access
 across the registry. Publishing is automatic and has no GitHub Environment
 approval gate.
 
+### Publishing a PR image
+
+Add the `publish-image` label to a pull request from this repository to request
+an image tagged `ctrl-alt-elite-frontend:pr-<PR-number>-<merge-SHA>`.
+Fork pull requests cannot publish. The build job saves the smoke-tested image;
+publishing downloads that image only after the build and Playwright jobs pass.
+It does not update `latest` or deploy the application. New commits do not
+automatically publish another PR image: remove and re-add the label to request one.
+
+Unlike the existing automatic `main` publishing, PR publishing uses the
+`pr-images` GitHub Environment. Before using it:
+
+- Create that environment in repository settings, configure required reviewers,
+  and allow pull request merge refs in its deployment rules.
+- Add an Azure federated credential to the frontend identity with subject
+  `repo:kainos-academy-2026-eayl/ctrl-alt-elite-frontend:environment:pr-images`.
+  Match the issuer actually used by this organisation (including any enterprise
+  customisation) and audience `api://AzureADTokenExchange`. If customised OIDC
+  subjects are enabled, use the actual subject from the login logs instead.
+  Keep the existing `main` branch credential.
+
 | Route | What it does |
 | --- | --- |
 | `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Products come from the backend `/api/products` catalogue (via [CatalogService](src/services/catalog-service.ts)) and are chosen by [homepage-products.ts](src/services/homepage-products.ts): "Featured products" is the first six in-stock products, and a looping CSS-only conveyor shows six other in-stock products picked at random on each visit, each linking to its product page. The products listed in [src/data/hiddenProducts.ts](src/data/hiddenProducts.ts) are never shown on the homepage. |

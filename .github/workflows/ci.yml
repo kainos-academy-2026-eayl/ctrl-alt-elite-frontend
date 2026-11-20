@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, master]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, labeled]
 
 permissions:
   contents: read
@@ -96,6 +96,13 @@ jobs:
 
   test:
     name: Test and quality checks
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.action != 'labeled' ||
+      (
+        github.event.label.name == 'publish-image' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -171,6 +178,7 @@ jobs:
       - name: Display message
         run: echo "schweet"
 
+  # Reports known vulnerabilities in the image; findings do not block publishing.
   scout:
     name: Docker Scout vulnerability scan
     needs: test
@@ -192,6 +200,8 @@ jobs:
           summary: true
           exit-code: false
 
+  # After checks pass on main, uploads the image to ACR with its commit SHA tag.
+  # This stores the image in the registry; it does not deploy the application.
   push:
     name: Publish frontend image to ACR
     needs: [test, build, playwright]
@@ -221,6 +231,51 @@ jobs:
           docker build --tag "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:$GITHUB_SHA" .
           docker push "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:$GITHUB_SHA"
 
+  # The publish-image label requests a test image for a same-repository PR.
+  # Waits for build, Playwright and any configured environment approval.
+  # Uses a PR-specific tag without changing latest.
+  publish_pr:
+    name: Publish PR frontend image to ACR
+    needs: [build, playwright]
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'publish-image' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pr-images
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download PR image
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-image
+          path: ${{ runner.temp }}
+      - name: Load PR image
+        run: docker load --input "$RUNNER_TEMP/pr-image.tar"
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Log Docker in to ACR
+        env:
+          ACR_NAME: ${{ vars.ACR_CTRL }}
+        run: az acr login --name "$ACR_NAME"
+      - name: Tag and push PR image
+        env:
+          ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          docker tag "ctrl-alt-elite-frontend:$GITHUB_SHA" \
+            "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:pr-$PR_NUMBER-$GITHUB_SHA"
+          docker push "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:pr-$PR_NUMBER-$GITHUB_SHA"
+
+  # Also tags the published image as latest, only if its commit is still main HEAD.
   update_latest:
     name: Update latest frontend image tag
     needs: push
@@ -448,3 +503,22 @@ jobs:
           docker logs "$container_id"
           docker inspect --format '{{json .State}}' "$container_id"
           exit 1
+      - name: Save requested PR image
+        id: save_pr_image
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.action == 'labeled' &&
+          github.event.label.name == 'publish-image' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          docker save --output "$RUNNER_TEMP/pr-image.tar" \
+            "ctrl-alt-elite-frontend:$GITHUB_SHA"
+      - name: Upload PR image
+        if: steps.save_pr_image.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-image
+          path: ${{ runner.temp }}/pr-image.tar
+          if-no-files-found: error
+          retention-days: 7
+          overwrite: true
