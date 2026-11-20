@@ -2,6 +2,24 @@
 
 The web frontend for Ctrl-Alt-Elite. A Node.js 22 / TypeScript Express service that serves the static pages and proxies `/api/*` requests to the backend.
 
+## CI image publishing
+
+After a push to `main` passes the test, image-build and Playwright jobs, the
+[CI workflow](.github/workflows/ci.yml) rebuilds the frontend image and pushes
+it to Azure Container Registry with the commit SHA as its tag. A separate job
+updates `latest`, serialises those updates and checks that the commit is still
+the current `main` HEAD immediately before pushing. The published image is
+rebuilt separately from the image smoke-tested in CI. Publishing does not
+deploy the application.
+
+The workflow uses a frontend-specific Azure identity with OIDC authentication
+and requires repository variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
+`AZURE_SUBSCRIPTION_ID`, `ACR_CTRL` and `ACR_LOGIN_SERVER`. The identity needs
+an appropriate federated credential for the repository's `main` branch and
+push access to the registry. On an RBAC-only registry, `AcrPush` grants access
+across the registry. Publishing is automatic and has no GitHub Environment
+approval gate.
+
 | Route | What it does |
 | --- | --- |
 | `GET /` | Homepage ([src/views/homepage.njk](src/views/homepage.njk)). Products come from the backend `/api/products` catalogue (via [CatalogService](src/services/catalog-service.ts)) and are chosen by [homepage-products.ts](src/services/homepage-products.ts): "Featured products" is the first six in-stock products, and a looping CSS-only conveyor shows six other in-stock products picked at random on each visit, each linking to its product page. The products listed in [src/data/hiddenProducts.ts](src/data/hiddenProducts.ts) are never shown on the homepage. |
