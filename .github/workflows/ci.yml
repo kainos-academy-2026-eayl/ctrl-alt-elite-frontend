@@ -96,6 +96,13 @@ jobs:
 
   test:
     name: Test and quality checks
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.action != 'labeled' ||
+      (
+        github.event.label.name == 'publish-image' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
