@@ -75,6 +75,88 @@ jobs:
           write-comment: false
           summary: true 
           exit-code: false
+
+  push:
+    name: Publish frontend image to ACR
+    needs: [test, build, playwright]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Log Docker in to ACR
+        env:
+          ACR_NAME: ${{ vars.ACR_CTRL }}
+        run: az acr login --name "$ACR_NAME"
+      - name: Build and push commit image
+        env:
+          ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+        run: |
+          docker build --tag "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:$GITHUB_SHA" .
+          docker push "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:$GITHUB_SHA"
+
+  update_latest:
+    name: Update latest frontend image tag
+    needs: push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: acr-frontend-main-latest
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Log Docker in to ACR
+        env:
+          ACR_NAME: ${{ vars.ACR_CTRL }}
+        run: az acr login --name "$ACR_NAME"
+      - name: Prepare latest image tag
+        env:
+          ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+        run: |
+          docker pull "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:$GITHUB_SHA"
+          docker tag "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:$GITHUB_SHA" \
+            "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:latest"
+      - name: Check current main HEAD
+        id: main_head
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/main',
+            });
+            const isCurrent = data.object.sha === context.sha;
+            core.setOutput('is_current', isCurrent);
+            if (!isCurrent) {
+              core.info('Skipping latest: this run no longer matches main HEAD.');
+            }
+      - name: Push latest image tag
+        if: steps.main_head.outputs.is_current == 'true'
+        env:
+          ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+        run: docker push "$ACR_LOGIN_SERVER/ctrl-alt-elite-frontend:latest"
+
   playwright:
     name: Playwright test harness
     needs: build
