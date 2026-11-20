@@ -171,6 +171,26 @@ jobs:
       - name: Display message
         run: echo "schweet"
 
+  scout:
+    name: Docker Scout vulnerability scan
+    needs: test
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t ctrl-alt-elite-frontend:${{ github.sha }} .
+      - name: Scan image with Docker Scout
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: local://ctrl-alt-elite-frontend:${{ github.sha }}
+          dockerhub-user: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
+          write-comment: false
+          summary: true
+          exit-code: false
   playwright:
     name: Playwright test harness
     needs: build
