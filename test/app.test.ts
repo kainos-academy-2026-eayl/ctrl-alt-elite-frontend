@@ -993,6 +993,63 @@ describe('frontend routes', () => {
       await res.text();
     });
 
+    it('accepts same-origin HTTPS behind the configured proxy but rejects other origins', async () => {
+      const server = createServer(
+        createApp(BACKEND_ORIGIN, {
+          jwtSecret: TEST_JWT_SECRET,
+          trustProxy: true,
+        }),
+      );
+      const proxyBase = await listen(server);
+      try {
+        const submitThroughProxy = (origin: string) =>
+          fetch(`${proxyBase}/login`, {
+            method: 'POST',
+            headers: {
+              origin,
+              'x-forwarded-proto': 'https',
+            },
+            body: new URLSearchParams({
+              email: 'user@example.com',
+              password: 'CorrectPassword@1',
+            }),
+            redirect: 'manual',
+          });
+
+        const allowed = await submitThroughProxy(
+          proxyBase.replace('http:', 'https:'),
+        );
+        assert.equal(allowed.status, 303, await allowed.clone().text());
+        assert.equal(loginRequests.length, 1);
+        await allowed.text();
+
+        const denied = await submitThroughProxy('https://attacker.example');
+        assert.equal(denied.status, 403);
+        assert.equal(loginRequests.length, 1);
+        await denied.text();
+      } finally {
+        await close(server);
+      }
+    });
+
+    it('ignores a forwarded protocol when proxy trust is not enabled', async () => {
+      const res = await fetch(`${base}/login`, {
+        method: 'POST',
+        headers: {
+          origin: base.replace('http:', 'https:'),
+          'x-forwarded-proto': 'https',
+        },
+        body: new URLSearchParams({
+          email: 'user@example.com',
+          password: 'CorrectPassword@1',
+        }),
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 403);
+      assert.equal(loginRequests.length, 0);
+      await res.text();
+    });
+
     it('renders a safe error when the backend fails', async () => {
       const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
       try {

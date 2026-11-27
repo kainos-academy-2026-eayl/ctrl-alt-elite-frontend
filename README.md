@@ -12,6 +12,14 @@ the current `main` HEAD immediately before pushing. The published image is
 rebuilt separately from the image smoke-tested in CI. Publishing does not
 deploy the application.
 
+For Azure Container Apps, set `TRUST_PROXY=true` to trust the single ingress
+proxy's forwarded protocol when checking same-origin forms. Azure ingress
+overwrites client-supplied `X-Forwarded-Proto`; only enable this setting behind
+an ingress that does the same and prevents direct access to the app. It defaults
+to `false` for local use. Publish the frontend image first, then configure the
+Container App with the published commit-SHA image and `TRUST_PROXY=true`.
+Verify login and another form submission after the new revision is deployed.
+
 The workflow uses a frontend-specific Azure identity with OIDC authentication
 and requires repository variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
 `AZURE_SUBSCRIPTION_ID`, `ACR_CTRL` and `ACR_LOGIN_SERVER`. The identity needs
