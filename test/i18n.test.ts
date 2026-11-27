@@ -204,7 +204,7 @@ describe('language, currency and the accessibility menu (no JavaScript)', () => 
       /<option value="en" lang="en" selected>English<\/option>/,
     );
     assert.match(html, /<option value="GBP" selected>£ GBP<\/option>/);
-    assert.match(html, /<h3>Baseball Cap<\/h3>/);
+    assert.match(html, />Baseball Cap<\/a><\/h2>/);
     assert.match(html, /£10\.00/);
     assert.deepEqual(translationRequests, []);
   });
@@ -213,8 +213,9 @@ describe('language, currency and the accessibility menu (no JavaScript)', () => 
     const html = await (await search('lang=fr; currency=EUR')).text();
     assert.match(html, /<html lang="fr">/);
     assert.match(html, new RegExp(`>${fr['search.heading']}</h1>`));
-    assert.match(html, /<h3>Casquette<\/h3>/);
-    assert.match(html, /<p class="product-description">Une casquette\.<\/p>/);
+    assert.match(html, />Casquette<\/a><\/h2>/);
+    assert.match(html, new RegExp(`>${fr['nav.shop']}</a>`));
+    assert.match(html, new RegExp(`>${fr['product.viewDetails']}</a>`));
     assert.match(html, /11,70\s€/);
     assert.match(html, /a11y-note/);
     assert.deepEqual(translationRequests, ['fr']);

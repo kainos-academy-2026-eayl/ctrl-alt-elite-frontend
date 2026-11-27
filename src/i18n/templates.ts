@@ -21,6 +21,7 @@ export function addI18nGlobals(env: Environment): void {
   env.addGlobal('t', t);
   env.addGlobal('tCount', tCount);
   env.addGlobal('tCategory', tCategory);
+  env.addGlobal('calendarYear', () => new Date().getFullYear());
   env.addGlobal('prefs', () => {
     const { locale, currency, currentPath, widgetPosition } =
       currentPreferences();

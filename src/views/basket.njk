@@ -21,7 +21,7 @@
   {% elif isEmpty %}
   <div class="basket-empty">
     <p>{{ t('basket.empty') }}</p>
-    <a class="basket-button" href="/">{{ t('basket.browse') }}</a>
+    <a class="basket-button" href="/products">{{ t('basket.browse') }}</a>
   </div>
   {% else %}
   <table class="basket-table">
@@ -38,7 +38,7 @@
     <tbody>
       {% for line in lines %}
       <tr>
-        <th scope="row">{{ line.name }}</th>
+        <th scope="row"><a class="basket-product" href="/products/{{ line.id | urlencode }}">{{ line.name }}</a></th>
         <td data-label="{{ t('basket.unitPrice') }}">{{ line.unitPrice }}</td>
         <td data-label="{{ t('basket.quantity') }}">
           <div class="basket-quantity">
@@ -72,9 +72,12 @@
     {% if currencyNote %}
     <p class="basket-currency-note">{{ currencyNote }}</p>
     {% endif %}
-    <form action="/basket/checkout" method="post">
-      <button type="submit" class="basket-button">{{ t('basket.checkout') }}</button>
-    </form>
+    <div class="basket-summary-actions">
+      <a class="details-button" href="/products">{{ t('basket.continue') }}</a>
+      <form action="/basket/checkout" method="post">
+        <button type="submit" class="basket-button">{{ t('basket.checkout') }}</button>
+      </form>
+    </div>
   </div>
   {% endif %}
 </section>

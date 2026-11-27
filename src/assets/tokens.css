@@ -1,0 +1,70 @@
+/*
+ * Ctrl-Alt-Elite design tokens. Every stylesheet takes its colours, radii,
+ * shadows and fonts from here, so the whole site (storefront and admin
+ * portal) can be re-themed by editing this one file.
+ */
+:root {
+  /* Deep forest green used for the footer, admin sidebar and banners. */
+  --cae-chrome: #14291c;
+  --cae-chrome-raised: #1c3626;
+  --cae-chrome-hover: #264531;
+  --cae-chrome-line: #31503c;
+  --cae-chrome-text: #e9efe9;
+  --cae-chrome-muted: #a9bdaf;
+  --cae-highlight: #b9dcc3;
+  --cae-highlight-hover: #d5eadb;
+
+  /* Accent used on light surfaces (buttons, links, highlights). */
+  --cae-accent: #1f5134;
+  --cae-accent-hover: #153b25;
+  --cae-accent-strong: #153b25;
+  --cae-accent-soft: #e2ebe4;
+  --cae-accent-tint: #eef3ef;
+  --cae-accent-line: #9fbea8;
+  --cae-accent-line-soft: #c8dacd;
+  --cae-on-accent: #ffffff;
+  --cae-focus: #2e7d4f;
+
+  /* Neutrals: near-black ink on warm off-white. */
+  --cae-ink: #141414;
+  --cae-text: #262626;
+  --cae-muted: #5b5a55;
+  --cae-line: #dcd9d0;
+  --cae-line-strong: #8e8b83;
+  --cae-bg: #f6f5f0;
+  --cae-surface: #ffffff;
+  --cae-surface-muted: #ebe8e0;
+
+  /* Feedback. */
+  --cae-danger: #b42318;
+  --cae-danger-strong: #8f1d14;
+  --cae-danger-soft: #fdf1ef;
+  --cae-danger-line: #f1b5ad;
+
+  /* Admin dark mode. */
+  --cae-dark-bg: #0e1310;
+  --cae-dark-surface: #171d19;
+  --cae-dark-raised: #202a23;
+  --cae-dark-line: #313c34;
+  --cae-dark-text: #e7ebe7;
+  --cae-dark-muted: #a2aca4;
+
+  /* Shape and depth: square edges and flat surfaces; only menus float. */
+  --cae-radius-sm: 2px;
+  --cae-radius-md: 3px;
+  --cae-radius-lg: 4px;
+  --cae-radius-xl: 4px;
+  --cae-radius-pill: 999px;
+  --cae-shadow-sm: none;
+  --cae-shadow-md: none;
+  --cae-shadow-lg: 0 10px 28px rgb(20 20 20 / 14%);
+
+  /* Page width: content stretches to 1600px with gutters that grow with the
+     screen, so wide monitors are not left with large empty margins. */
+  --cae-page-max: 1600px;
+  --cae-gutter: clamp(0.75rem, 4vw, 3rem);
+
+  /* Type. */
+  --cae-font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --cae-tracking-caps: 0.08em;
+}

@@ -1,5 +1,9 @@
 {% extends "admin/layout.njk" %}
 
+{% block styles %}
+<link rel="stylesheet" href="/client/admin-tailwind.css" />
+{% endblock %}
+
 {% block content %}
 <header class="admin-page-header">
   <h1>Welcome{% if firstName %}, {{ firstName }}{% endif %}</h1>
@@ -8,9 +12,9 @@
 
 <section aria-labelledby="summary-heading">
   <h2 id="summary-heading" class="visually-hidden">Summary</h2>
-  <ul class="admin-summary-grid">
+  <ul class="m-0 grid list-none grid-cols-1 gap-4 p-0 min-[481px]:grid-cols-2 min-[1101px]:grid-cols-4">
     {% for card in summaryCards %}
-    <li class="admin-card admin-summary-card"{% if card.label == "Customers" %} data-widget="customerCount"{% endif %}>
+    <li class="admin-card admin-summary-card shadow-sm"{% if card.label == "Customers" %} data-widget="customerCount"{% endif %}>
       <span class="admin-summary-label">{{ card.label }}</span>
       <span class="admin-summary-value" data-summary-card="{{ card.label }}">{{ card.value }}</span>
     </li>
@@ -18,8 +22,8 @@
   </ul>
 </section>
 
-<div class="admin-grid">
-  <section class="admin-card" aria-labelledby="quick-actions-heading">
+<div class="mt-6 grid items-start gap-4 min-[769px]:grid-cols-2">
+  <section class="admin-card shadow-sm" aria-labelledby="quick-actions-heading">
     <h2 id="quick-actions-heading">Quick Actions</h2>
     <ul class="admin-action-list">
       {% for action in quickActions %}
@@ -28,21 +32,21 @@
     </ul>
   </section>
 
-  <section class="admin-card" aria-labelledby="notifications-heading" data-widget="notifications">
+  <section class="admin-card shadow-sm" aria-labelledby="notifications-heading" data-widget="notifications">
     <h2 id="notifications-heading">Notifications</h2>
     <div data-dashboard-notifications>
       <p class="admin-empty">No active notifications</p>
     </div>
   </section>
 
-  <section class="admin-card" aria-labelledby="activity-heading" data-widget="recentActivity">
+  <section class="admin-card shadow-sm" aria-labelledby="activity-heading" data-widget="recentActivity">
     <h2 id="activity-heading">Recent Activity</h2>
     <div data-dashboard-activity>
       <p class="admin-empty">No recent activity available</p>
     </div>
   </section>
 
-  <section class="admin-card" aria-labelledby="status-heading" data-widget="systemStatus">
+  <section class="admin-card shadow-sm" aria-labelledby="status-heading" data-widget="systemStatus">
     <h2 id="status-heading">System Status</h2>
     <ul class="admin-status-list" data-dashboard-status>
       {% for service in systemStatus %}

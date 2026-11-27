@@ -7,9 +7,11 @@
   "scripts": {
     "dev": "npm run build:client && node --use-system-ca --import tsx --watch src/index.ts",
     "dev:client": "npm run build:client -- --watch",
+    "dev:css": "npm run build:css -- --watch",
     "build": "npm run typecheck && npm run build:client && esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --packages=external --outfile=dist/index.js --sourcemap",
     "typecheck": "tsc && tsc -p tsconfig.client.json",
-    "build:client": "esbuild src/client/*.ts --bundle --format=iife --target=es2022 --outdir=dist/public/client --sourcemap",
+    "build:css": "tailwindcss -i ./src/assets/admin-tailwind.css -o ./dist/public/client/admin-tailwind.css",
+    "build:client": "npm run build:css && esbuild src/client/*.ts --bundle --format=iife --target=es2022 --outdir=dist/public/client --sourcemap",
     "start": "node --use-system-ca dist/index.js",
     "prepare": "husky",
     "lint": "biome check .",
@@ -23,11 +25,13 @@
   "license": "ISC",
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@tailwindcss/cli": "4.3.5",
     "@types/express": "^5.0.6",
     "@types/node": "26.4.1",
     "@types/nunjucks": "^3.2.6",
     "esbuild": "0.28.2",
     "husky": "^9.1.7",
+    "tailwindcss": "4.3.5",
     "tsx": "4.23.13",
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"

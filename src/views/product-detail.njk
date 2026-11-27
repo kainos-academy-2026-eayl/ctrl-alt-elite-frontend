@@ -8,10 +8,19 @@
 {% block description %}{{ t('product.detailDescription', { name: product.name }) }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="/assets/conveyor.css" />
+<link rel="stylesheet" href="/assets/product-detail.css" />
 {% endblock %}
 
 {% block content %}
+<nav class="page-width breadcrumb" aria-label="{{ t('site.breadcrumb') }}">
+  <ol>
+    <li><a href="/products">{{ t('nav.shop') }}</a></li>
+    {% if product.category %}
+    <li><a href="/products?category={{ product.category | urlencode }}">{{ tCategory(product.category) }}</a></li>
+    {% endif %}
+    <li aria-current="page">{{ product.name }}</li>
+  </ol>
+</nav>
 <article class="page-width product-detail" aria-labelledby="product-heading">
   <img class="product-detail-image" src="{{ product.imageUrl }}" alt="{{ product.name }}" width="480" height="360" />
   <div class="product-detail-info">

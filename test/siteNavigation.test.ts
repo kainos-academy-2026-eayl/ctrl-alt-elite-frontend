@@ -51,6 +51,13 @@ describe('customer site navigation', () => {
         res.end('{}');
         return;
       }
+      const detail = /^\/api\/products\/(p\d+)$/.exec(req.url ?? '');
+      if (detail) {
+        const product = PRODUCTS.find((item) => item.id === detail[1]);
+        res.statusCode = product ? 200 : 404;
+        res.end(JSON.stringify(product ? { product } : {}));
+        return;
+      }
       if (req.url?.startsWith('/api/products')) {
         productRequests += 1;
         const category = new URL(req.url, 'http://backend').searchParams.get(
@@ -99,7 +106,14 @@ describe('customer site navigation', () => {
     ]) {
       const html = await page(path);
       const nav = navOf(html);
+      assert.match(html, /href="\/assets\/tokens\.css"/, path);
+      assert.match(html, /href="\/assets\/components\.css"/, path);
       assert.match(nav, /aria-label="Main navigation"/, path);
+      assert.match(
+        html,
+        /<a class="brand" href="\/" aria-label="Ctrl-Alt-Elite home">\s*<span class="brand-keys" aria-hidden="true">/,
+        path,
+      );
       assert.match(nav, /href="\/"[^>]*>Home<\/a>/, path);
       assert.match(nav, /href="\/products"[^>]*>Shop<\/a>/, path);
       assert.match(nav, /role="search"/, path);
@@ -129,6 +143,46 @@ describe('customer site navigation', () => {
       const res = await fetch(`${base}${path}`, { redirect: 'manual' });
       assert.equal(res.headers.get('cache-control'), 'no-store', path);
     }
+  });
+
+  it('shows the current year in the shared footer across customer pages', async () => {
+    for (const path of ['/products', '/', '/login']) {
+      const html = await page(path);
+      assert.match(
+        html,
+        new RegExp(`© ${new Date().getFullYear()} Ctrl-Alt-Elite`),
+        path,
+      );
+      assert.doesNotMatch(html, /© undefined/);
+    }
+  });
+
+  it('shows the site’s own page-not-found page for unknown addresses', async () => {
+    const res = await fetch(`${base}/no-such-page`);
+    assert.equal(res.status, 404);
+    const html = await res.text();
+    assert.match(html, /Page not found|not found/i);
+    assert.match(navOf(html), /aria-label="Main navigation"/);
+    assert.match(html, /class="cta-button" href="\/products"/);
+  });
+
+  it('links the product page breadcrumb back to its category', async () => {
+    const html = await page('/products/p3');
+    assert.match(
+      html,
+      /<nav class="page-width breadcrumb" aria-label="Breadcrumb">/,
+    );
+    assert.match(
+      html,
+      /href="\/products\?category=Kitchen%20%26%20Home">Kitchen &amp; Home<\/a>/,
+    );
+    assert.match(html, /<li aria-current="page">Mug<\/li>/);
+  });
+
+  it('keeps the homepage shop link accessible beside its decorative images', async () => {
+    const html = await page('/');
+    assert.match(html, /class="cta-button" href="\/products">Shop all/);
+    assert.match(html, /class="hero-images" aria-hidden="true"/);
   });
 
   it('includes navigation data on failed login submissions', async () => {
@@ -173,14 +227,14 @@ describe('customer site navigation', () => {
     assert.match(html, /<h1 id="catalogTitle">Audio<\/h1>/);
     assert.match(html, /Headphones/);
     assert.match(html, /Speaker/);
-    assert.doesNotMatch(html, /<h2>Mug<\/h2>/);
+    assert.doesNotMatch(html, />Mug<\/a><\/h2>/);
     assert.match(
       navOf(html),
       /href="\/products\?category=Audio" aria-current="page"/,
     );
 
     const unknown = await page('/products?category=Nope');
-    assert.doesNotMatch(unknown, /<h2>(Mug|Headphones|Speaker)<\/h2>/);
+    assert.doesNotMatch(unknown, />(Mug|Headphones|Speaker)<\/a><\/h2>/);
   });
 
   it('marks the current page in the navigation', async () => {
@@ -234,6 +288,8 @@ describe('customer site navigation', () => {
     const html = await res.text();
     assert.equal(res.status, 200);
     assert.match(html, /admin-nav/);
+    assert.match(html, /href="\/assets\/tokens\.css"/);
+    assert.match(html, /href="\/assets\/components\.css"/);
     assert.doesNotMatch(html, /site-nav|skip-link/);
     assert.equal(productRequests, before);
   });

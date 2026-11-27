@@ -217,7 +217,7 @@ describe('homepage profile dropdown', () => {
         ['profile-picture', 'Profile picture'],
         ['profile-username', 'Username'],
         ['profile-first-name', 'First name'],
-        ['profile-second-name', 'Second name'],
+        ['profile-second-name', 'Last name'],
         ['profile-email', 'Email address'],
         ['profile-phone', 'Phone number'],
         ['profile-address-line-1', 'Address line 1'],

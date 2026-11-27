@@ -191,6 +191,24 @@ describe('admin portal pages', () => {
   });
 
   describe('dashboard', () => {
+    it('serves the dashboard Tailwind stylesheet without loading it on other admin pages', async () => {
+      const dashboard = await get('/admin');
+      assert.match(dashboard.html, /href="\/client\/admin-tailwind\.css"/);
+
+      const stylesheet = await get('/client/admin-tailwind.css');
+      assert.equal(stylesheet.status, 200);
+      assert.match(
+        stylesheet.res.headers.get('content-type') ?? '',
+        /text\/css/,
+      );
+      assert.match(stylesheet.html, /width >= 481px/);
+      assert.match(stylesheet.html, /width >= 769px/);
+      assert.match(stylesheet.html, /width >= 1101px/);
+
+      const customers = await get('/admin/customers');
+      assert.doesNotMatch(customers.html, /admin-tailwind\.css/);
+    });
+
     it('serves the navigation and every placeholder section', async () => {
       const { status, res, html } = await get('/admin');
       assert.equal(status, 200);

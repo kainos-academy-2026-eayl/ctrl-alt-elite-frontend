@@ -1,21 +1,5 @@
-/* Customer site navigation (views/_siteNav.njk). Staff dashboards use admin.css. */
-
-.skip-link {
-  position: absolute;
-  top: 0;
-  left: 1rem;
-  z-index: 100;
-  padding: 0.6rem 1rem;
-  border-radius: 0 0 0.5rem 0.5rem;
-  background: #14532d;
-  color: #f8fafc;
-  font-weight: 700;
-  transform: translateY(-120%);
-}
-
-.skip-link:focus {
-  transform: translateY(0);
-}
+/* Customer site navigation (views/_siteNav.njk). Staff dashboards use admin.css.
+   The skip link lives in a11y.css. */
 
 .site-header {
   position: sticky;
@@ -65,11 +49,13 @@
   display: inline-flex;
   min-height: 44px;
   align-items: center;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  color: #14532d;
+  padding: 0.5rem 0.6rem;
+  color: var(--cae-ink);
+  font-size: 0.8rem;
   font-weight: 700;
+  letter-spacing: var(--cae-tracking-caps);
   text-decoration: none;
+  text-transform: uppercase;
   cursor: pointer;
   list-style: none;
 }
@@ -85,21 +71,19 @@
 
 .site-nav-link:hover,
 .site-nav-dropdown > summary:hover,
-.site-nav-dropdown[open] > summary {
-  background: #f0fdf4;
-}
-
+.site-nav-dropdown[open] > summary,
 .site-nav-link[aria-current="page"],
 .site-nav-link.is-active {
-  background: #dcfce7;
-  box-shadow: inset 0 -3px 0 #15803d;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.45em;
 }
 
 .site-nav-link:focus-visible,
 .site-nav-dropdown > summary:focus-visible,
 .site-nav-dropdown-link:focus-visible,
 .site-nav-toggle:focus-visible {
-  outline: 3px solid #22c55e;
+  outline: 3px solid var(--cae-focus);
   outline-offset: 2px;
 }
 
@@ -117,10 +101,10 @@
   margin: 0;
   padding: 0.35rem;
   overflow-y: auto;
-  border: 1px solid #14532d;
-  border-radius: 0.5rem;
-  background: #ffffff;
-  box-shadow: 0 4px 10px rgba(20, 83, 45, 0.12);
+  border: 1px solid var(--cae-line);
+  border-radius: var(--cae-radius-sm);
+  background: var(--cae-surface);
+  box-shadow: var(--cae-shadow-lg);
   list-style: none;
 }
 
@@ -129,27 +113,42 @@
   min-height: 44px;
   padding: 0.65rem 0.75rem;
   border-radius: 0.35rem;
-  color: #14532d;
+  color: var(--cae-ink);
   font-weight: 700;
   text-decoration: none;
 }
 
 .site-nav-dropdown-link:hover,
 .site-nav-dropdown-link[aria-current="page"] {
-  background: #f0fdf4;
+  background: var(--cae-accent-tint);
 }
 
 .site-nav .account-menu-link[aria-current="page"] {
-  background: #dcfce7;
+  background: var(--cae-accent-soft);
 }
 
 .site-nav .search-input {
   width: 11rem;
 }
 
+.site-nav .search-button {
+  border-color: var(--cae-ink);
+  background: var(--cae-ink);
+  color: var(--cae-surface);
+}
+
+.site-nav .search-button:hover {
+  border-color: var(--cae-accent);
+  background: var(--cae-accent);
+}
+
+.site-nav-basket {
+  color: var(--cae-ink);
+}
+
+.site-nav-basket:hover,
 .site-nav-basket[aria-current="page"] {
-  border-radius: 0.5rem;
-  background: #dcfce7;
+  color: var(--cae-accent);
 }
 
 .site-nav-toggle-bars,
@@ -183,7 +182,7 @@
 }
 
 .site-nav-check:focus-visible + .site-nav-toggle {
-  outline: 3px solid #22c55e;
+  outline: 3px solid var(--cae-focus);
   outline-offset: 2px;
 }
 
@@ -232,10 +231,10 @@
     order: 2;
     align-items: center;
     justify-content: center;
-    border: 1px solid #14532d;
-    border-radius: 0.5rem;
-    background: #ffffff;
-    color: #14532d;
+    border: 1px solid var(--cae-ink);
+    border-radius: var(--cae-radius-sm);
+    background: transparent;
+    color: var(--cae-ink);
     cursor: pointer;
   }
 

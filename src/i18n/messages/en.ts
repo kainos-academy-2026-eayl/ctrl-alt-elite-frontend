@@ -13,6 +13,14 @@ const en = {
   'site.name': 'Ctrl-Alt-Elite',
   'site.home': 'Ctrl-Alt-Elite home',
   'site.skipToContent': 'Skip to main content',
+  'nav.shop': 'Shop',
+  'nav.categories': 'Categories',
+  'nav.allProducts': 'All products',
+  'nav.menu': 'Menu',
+  'footer.tagline': 'Clothing for people who live on the keyboard.',
+  'footer.help': 'Help',
+  'footer.navigation': 'Footer',
+  'site.breadcrumb': 'Breadcrumb',
   'site.mainNavigation': 'Main navigation',
   'site.copyright': '© {year} Ctrl-Alt-Elite',
   'site.backToHome': 'Back to home',
@@ -61,14 +69,15 @@ const en = {
 
   // Homepage
   'home.title': 'Ctrl-Alt-Elite | Home',
-  'home.description': 'Welcome to Ctrl-Alt-Elite. Log in or browse products.',
-  'home.eyebrow': 'Welcome to Ctrl-Alt-Elite',
-  'home.heading': 'Find your next favourite.',
+  'home.description':
+    'Ctrl-Alt-Elite sells hoodies, tees, denim and jackets. Shop the collection or log in.',
+  'home.eyebrow': 'Hoodies, tees, denim and jackets',
+  'home.heading': 'Log off. Get dressed.',
   'home.intro':
-    'Explore our collection and find something made for your everyday.',
-  'home.browse': 'Browse Products',
-  'home.conveyor': 'Shop our range',
-  'home.featured': 'Featured products',
+    'Clothes that last through every sprint, stand-up and late-night deploy. Plus a few things for your desk.',
+  'home.browse': 'Shop all',
+  'home.conveyor': 'More from the rails',
+  'home.featured': 'In stock now',
 
   // Product cards and pages
   'product.viewDetails': 'View details',
@@ -158,6 +167,7 @@ const en = {
   'basket.heading': 'Your basket',
   'basket.empty': 'Your basket is empty.',
   'basket.browse': 'Browse products',
+  'basket.continue': 'Continue shopping',
   'basket.caption': 'Items in your basket',
   'basket.product': 'Product',
   'basket.unitPrice': 'Unit price',
@@ -328,6 +338,7 @@ const en = {
   'login.email': 'Email address',
   'login.password': 'Password',
   'login.submit': 'Log in',
+  'login.newHere': 'New to Ctrl-Alt-Elite?',
   'login.error.form': 'Please submit the login form.',
   'login.error.missing': 'Please enter your email and password.',
   'login.error.unreachable':
@@ -350,6 +361,9 @@ const en = {
   'register.password': 'Password',
   'register.confirmPassword': 'Confirm password',
   'register.submit': 'Register',
+  'register.passwordHint':
+    'At least 8 characters, with a number and one of @ £ $ % &.',
+  'register.haveAccount': 'Already have an account?',
 
   // Profile
   'profile.title': 'My Profile | Ctrl-Alt-Elite',
@@ -380,8 +394,8 @@ const en = {
     'Display name only, not a login. Leave blank to use your first and last name.',
   'profile.firstName': 'First name',
   'profile.firstNamePlaceholder': 'Your first name',
-  'profile.lastName': 'Second name',
-  'profile.lastNamePlaceholder': 'Your second name',
+  'profile.lastName': 'Last name',
+  'profile.lastNamePlaceholder': 'Your last name',
   'profile.email': 'Email address',
   'profile.emailHint': 'Your login email cannot be changed here.',
   'profile.phone': 'Phone number',

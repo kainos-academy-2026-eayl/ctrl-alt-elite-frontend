@@ -6,6 +6,7 @@ import {
   loadDashboardCustomerData,
   loadDashboardOrderData,
   loadProductCount,
+  loadStockAlertCount,
   renderActivity,
   renderNotifications,
   renderSystemStatus,
@@ -14,6 +15,35 @@ import type { Customer, CustomerSource } from '../src/util/customers';
 import { createInMemoryCustomerSource } from './customerFixtures';
 
 const NOW = new Date('2026-10-22T10:00:00Z');
+
+describe('dashboard stock alerts', () => {
+  const summary = {
+    totalProducts: 35,
+    inStock: 28,
+    lowStock: 5,
+    outOfStock: 2,
+    totalUnits: 1600,
+  };
+
+  it('counts low-stock and out-of-stock products', async () => {
+    const api = {
+      getDashboard: async () => ({ summary, lowStockProducts: [] }),
+    };
+    assert.equal(await loadStockAlertCount(api), 7);
+  });
+
+  it('returns null so the placeholder stays when inventory is unavailable', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const api = {
+        getDashboard: async () => Promise.reject(new Error('down')),
+      };
+      assert.equal(await loadStockAlertCount(api), null);
+    } finally {
+      errorLog.mockRestore();
+    }
+  });
+});
 
 describe('dashboard product count', () => {
   const respond = (body: unknown, status = 200) =>

@@ -1,10 +1,6 @@
 .login-container {
   width: min(100% - 2rem, 440px);
   padding: 2rem;
-  border: 1px solid #14532d;
-  border-radius: 0.7rem;
-  background: #fff;
-  box-shadow: 0 4px 10px rgba(20, 83, 45, 0.12);
 }
 
 .login-container .eyebrow,
@@ -20,7 +16,7 @@
 
 .login-container h2 {
   margin: 0.5rem 0 1.5rem;
-  color: #111827;
+  color: var(--cae-ink);
   font-size: 1rem;
   font-weight: 400;
 }
@@ -32,24 +28,11 @@
 .login-form-group label {
   display: block;
   margin-bottom: 0.35rem;
-  color: #14532d;
-  font-weight: 700;
 }
 
 .login-form-group input {
   width: 100%;
   padding: 0.65rem 0.75rem;
-  border: 1px solid #14532d;
-  border-radius: 0.5rem;
-  background: #f8fafc;
-  color: #111827;
-  font: inherit;
-}
-
-.login-form-group input:focus-visible {
-  outline: 3px solid #22c55e;
-  outline-offset: 2px;
-  border-color: #15803d;
 }
 
 .password-field {
@@ -71,7 +54,7 @@
   border: none;
   border-radius: 0.5rem;
   background: transparent;
-  color: #14532d;
+  color: var(--cae-accent-strong);
   cursor: pointer;
 }
 
@@ -89,44 +72,26 @@
 }
 
 .password-toggle:hover {
-  background: #f0fdf4;
+  background: var(--cae-accent-tint);
 }
 
 .login-btn {
   width: 100%;
-  padding: 0.8rem;
-  border: none;
-  border-radius: 0.5rem;
-  background: #15803d;
-  color: #f8fafc;
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
 }
 
-.login-btn:hover:not(:disabled) {
-  background: #14532d;
-}
-
-.login-btn:focus-visible,
 .password-toggle:focus-visible {
-  outline: 3px solid #22c55e;
+  outline: 3px solid var(--cae-focus);
   outline-offset: 3px;
 }
 
 .password-toggle:focus-visible {
-  outline-color: #15803d;
+  outline-color: var(--cae-accent);
   outline-offset: -4px;
-}
-
-.login-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .login-message {
   margin: 0 0 1rem;
-  color: #b91c1c;
+  color: var(--cae-danger);
   font-weight: 700;
 }
 
