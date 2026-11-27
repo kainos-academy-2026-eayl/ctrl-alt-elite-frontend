@@ -122,6 +122,24 @@ const DETAIL_PRODUCTS: Record<string, unknown> = {
     description: 'Out of stock.',
     stock: 0,
   },
+  'shirt-1': {
+    id: 'shirt-1',
+    name: 'POU Shirt',
+    category: 'Shirt',
+    price: 12.5,
+    image: 'data:image/png;base64,iVBORw0KGgo=',
+    description: 'POU Shirt description',
+    stock: 40,
+  },
+  'shirt-2': {
+    id: 'shirt-2',
+    name: 'Band Shirt',
+    category: 'Shirt',
+    price: 15.99,
+    image: 'data:image/png;base64,iVBORw0KGgo=',
+    description: 'Band Shirt description',
+    stock: 0,
+  },
 };
 
 function searchItem(id: string, name: string, price: string, isInStock = true) {
@@ -461,8 +479,8 @@ describe('frontend routes', () => {
         assert.equal(res.status, 200);
         const html = await res.text();
         assert.doesNotMatch(html, /class="conveyor"/);
-        assert.doesNotMatch(html, /Featured products/);
-        assert.match(html, /Find your next favourite\./);
+        assert.doesNotMatch(html, /In stock now/);
+        assert.match(html, /Log off\. Get dressed\./);
         assert.equal(errorLog.mock.calls.length, 1);
       } finally {
         isCatalogueFailing = false;
@@ -535,7 +553,7 @@ describe('frontend routes', () => {
       );
       assert.match(
         html,
-        /<img class="product-image featured-image" src="data:image\/png;base64,feat-1" alt="" width="160" height="120" \/>/,
+        /<img class="product-image" src="data:image\/png;base64,feat-1" alt="" width="400" height="500" \/>/,
       );
       assert.equal(
         (html.match(/class="details-button"/g) ?? []).length,
@@ -559,13 +577,19 @@ describe('frontend routes', () => {
       assert.equal(res.status, 200);
       const html = await res.text();
       assert.match(html, /2 products found for &quot;shirt&quot;\./);
-      assert.match(html, /<h3>POU Shirt<\/h3>/);
+      assert.match(
+        html,
+        /<a class="product-name" href="\/products\/shirt-1">POU Shirt<\/a>/,
+      );
       assert.match(html, /£12\.50/);
       assert.match(
         html,
         /<input type="hidden" name="productId" value="shirt-1" \/>/,
       );
-      assert.doesNotMatch(html, /value="shirt-2"/);
+      assert.match(
+        html,
+        /value="shirt-2" \/>\s*<button class="button button-primary" type="submit" disabled>/,
+      );
       assert.match(html, /Out of Stock/);
       assertOnlySharedNavigationScript(withoutAccessibilityMenu(html));
     });

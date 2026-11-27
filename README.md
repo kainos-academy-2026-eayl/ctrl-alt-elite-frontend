@@ -216,9 +216,11 @@ Use `npm ci` rather than `npm install`. It installs the exact versions recorded 
 | Script | Command | What it does |
 | --- | --- | --- |
 | `npm run dev` | `build:client` then `node --use-system-ca --import tsx --watch src/index.ts` | Compiles the browser scripts once, then runs the service from TypeScript source with the system CA store and restarts on file changes. Use this while developing. |
-| `npm run dev:client` | `esbuild … --watch` | Rebuilds the browser scripts whenever `src/client/*.ts` changes. Run it in a second terminal alongside `npm run dev`. |
+| `npm run dev:client` | `build:css` then `esbuild … --watch` | Rebuilds browser scripts when `src/client/*.ts` changes. Run it in another terminal alongside `npm run dev`. |
+| `npm run dev:css` | `tailwindcss … --watch` | Rebuilds the dashboard Tailwind stylesheet when its template or input CSS changes. Run it in another terminal alongside `npm run dev`. |
 | `npm run typecheck` | `tsc` and `tsc -p tsconfig.client.json` | Checks types without emitting files: the server code and tests, then the browser scripts (which use DOM types). |
-| `npm run build:client` | `esbuild` | Compiles `src/client/*.ts` to browser JavaScript in `dist/public/client/`. Runs automatically before `build` and `test`. |
+| `npm run build:css` | `tailwindcss` | Compiles the admin Tailwind utilities into `dist/public/client/admin-tailwind.css`. |
+| `npm run build:client` | `build:css` then `esbuild` | Builds the admin stylesheet and compiles browser JavaScript in `dist/public/client/`. Runs automatically before `build` and `test`. |
 | `npm run build` | typecheck, `build:client`, then `esbuild` | Type-checks, compiles the browser scripts, then bundles the service into `dist/index.js` for production. |
 | `npm start` | `node --use-system-ca dist/index.js` | Runs the built output with the system CA store. Requires `npm run build` first. |
 | `npm run lint` | `biome check .` | Lints and checks formatting/import order with [Biome](https://biomejs.dev/). Reports issues without changing files. |
@@ -289,15 +291,28 @@ How it fits together:
 
 To add a string, add the key to `en.ts` and each translation file. To add a language, add it to `LOCALES` in [src/i18n/locales.ts](src/i18n/locales.ts), add a messages file, register it in [src/i18n/server.ts](src/i18n/server.ts) and seed product translations in the backend. The translations were machine-made and should be checked by native speakers.
 
+## Styling and theme
+
+The storefront and admin portal share one theme, layered like this:
+
+| File | Holds |
+| --- | --- |
+| [tokens.css](src/assets/tokens.css) | Every colour, radius, shadow and font, plus the page width (`--cae-page-max`) and side gutters (`--cae-gutter`), as `--cae-*` custom properties. Change the theme here. |
+| [styles.css](src/assets/styles.css) | Base page layout, the header, footer and brand mark. |
+| [components.css](src/assets/components.css) | Shared buttons, cards, inputs, labels and status pills. |
+| Page files, e.g. [home.css](src/assets/home.css) | Layout and sizing for one page only. |
+
+Page stylesheets should use `var(--cae-…)` rather than hex colours, and reuse a class from `components.css` (for example `basket-button` for a primary action or `details-button` for a secondary one) instead of restyling buttons, cards or inputs.
+
 ## Adding a new page
 
 Say you want a `/about` page.
 
-**1. Create the view** at `src/views/about.njk`. File names are lowercase, because Linux filesystems are case-sensitive. Reference assets and scripts with absolute paths, so they resolve whatever the page URL is:
+**1. Create the view** at `src/views/about.njk`. File names are lowercase, because Linux filesystems are case-sensitive. Customer pages should extend `layout.njk`, which already loads the shared stylesheets and site script; add page CSS in its `styles` block. Reference assets and scripts with absolute paths, so they resolve whatever the page URL is:
 
 ```html
-<link rel="stylesheet" href="/assets/styles.css" />
-<script src="/client/script.js" defer></script>
+{% extends "layout.njk" %}
+{% block styles %}<link rel="stylesheet" href="/assets/about.css" />{% endblock %}
 ```
 
 Put page-specific CSS in `src/assets/` and browser scripts in `src/client/` as TypeScript (e.g. `about.ts`). Reference the compiled output with `src="/client/about.js"`. Browsers cannot run `.ts`, so `npm run build:client` compiles each file to `dist/public/client/`. Keep server-side request handlers in `src/controllers/`.

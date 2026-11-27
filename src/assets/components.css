@@ -1,0 +1,298 @@
+/*
+ * Shared UI components for the storefront and admin portal. Colours come from
+ * tokens.css; page stylesheets only add layout and sizing on top of these.
+ * Several existing class names map to each component so templates and
+ * scripts keep working unchanged.
+ */
+
+/* Section label above headings, e.g. "SHOP". */
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--cae-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: var(--cae-tracking-caps);
+  text-transform: uppercase;
+}
+
+/* Primary button. */
+.cta-button,
+.basket-button,
+.button-link,
+.button-primary,
+.login-btn,
+.register-btn,
+.support-button,
+.profile-save-button,
+.customer-button,
+.filters-apply,
+.a11y-save {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--cae-accent);
+  border-radius: var(--cae-radius-sm);
+  background: var(--cae-accent);
+  color: var(--cae-on-accent);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: var(--cae-tracking-caps);
+  line-height: 1.2;
+  text-transform: uppercase;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out,
+    color 0.15s ease-in-out;
+}
+
+.cta-button:hover,
+.basket-button:hover:not(:disabled),
+.button-link:hover,
+.button-primary:hover:not(:disabled),
+.login-btn:hover:not(:disabled),
+.register-btn:hover:not(:disabled),
+.support-button:hover:not(:disabled),
+.profile-save-button:hover:not(:disabled),
+.customer-button:hover:not(:disabled),
+.filters-apply:hover,
+.a11y-save:hover {
+  border-color: var(--cae-accent-hover);
+  background: var(--cae-accent-hover);
+}
+
+/* Secondary (outlined) button. Listed after the primary button so that
+   elements carrying both classes, e.g. profile-save-button
+   profile-secondary-button, take the secondary look. On hover it fills
+   with ink. */
+.details-button,
+.button-secondary,
+.checkout-secondary-button,
+.profile-secondary-button,
+.admin-secondary-button,
+.customer-button-secondary {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--cae-ink);
+  border-radius: var(--cae-radius-sm);
+  background: transparent;
+  color: var(--cae-ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: var(--cae-tracking-caps);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease-in-out,
+    color 0.15s ease-in-out;
+}
+
+.details-button:hover,
+.button-secondary:hover,
+.checkout-secondary-button:hover,
+.profile-secondary-button:hover:not(:disabled),
+.admin-secondary-button:hover,
+.customer-button-secondary:hover:not(:disabled),
+.checkout-secondary-button[aria-pressed="true"] {
+  border-color: var(--cae-ink);
+  background: var(--cae-ink);
+  color: var(--cae-surface);
+}
+
+.customer-button-danger {
+  border-color: var(--cae-danger);
+  background: var(--cae-danger);
+}
+
+.customer-button-danger:hover:not(:disabled) {
+  border-color: var(--cae-danger-strong);
+  background: var(--cae-danger-strong);
+}
+
+.basket-button:disabled,
+.button-primary:disabled,
+.login-btn:disabled,
+.register-btn:disabled,
+.support-button:disabled,
+.profile-save-button:disabled,
+.customer-button:disabled {
+  border-color: var(--cae-line);
+  background: var(--cae-surface-muted);
+  color: var(--cae-muted);
+  cursor: not-allowed;
+}
+
+/* Product cards: no box, so the product image carries the card. */
+.product-card,
+.product-tile {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Panel surface for forms, tables and admin cards. */
+.checkout-panel,
+.profile-card,
+.support-card,
+.login-container,
+.register-container,
+.basket-empty,
+.basket-table,
+.admin-card {
+  border: 1px solid var(--cae-line);
+  border-radius: var(--cae-radius-lg);
+  background: var(--cae-surface);
+  box-shadow: var(--cae-shadow-md);
+}
+
+/* Text inputs and selects. */
+.search-input,
+.filters-select,
+.filters-input,
+.checkout-input,
+.login-form-group input,
+.register-container input,
+.support-field input,
+.support-field select,
+.support-field textarea,
+.profile-editor input,
+.customer-field input,
+.customer-field select,
+.admin-field input,
+.admin-field select,
+.admin-field textarea,
+.a11y-field select,
+.stock-input {
+  border: 1px solid var(--cae-line-strong);
+  border-radius: var(--cae-radius-sm);
+  background: var(--cae-surface);
+  color: var(--cae-ink);
+  font: inherit;
+}
+
+.search-input:focus-visible,
+.filters-select:focus-visible,
+.filters-input:focus-visible,
+.checkout-input:focus-visible,
+.login-form-group input:focus-visible,
+.register-container input:focus-visible,
+.support-field input:focus-visible,
+.support-field select:focus-visible,
+.support-field textarea:focus-visible,
+.profile-editor input:focus-visible,
+.customer-field input:focus-visible,
+.customer-field select:focus-visible,
+.admin-field input:focus-visible,
+.admin-field select:focus-visible,
+.admin-field textarea:focus-visible,
+.stock-input:focus-visible {
+  border-color: var(--cae-accent);
+  outline: 3px solid var(--cae-focus);
+  outline-offset: 2px;
+}
+
+/* Form labels. */
+.login-form-group label,
+.register-container label,
+.support-field label,
+.checkout-label,
+.profile-editor label,
+.admin-field label,
+.customer-field label {
+  color: var(--cae-ink);
+  font-weight: 700;
+}
+
+/* Pill-shaped status labels. */
+.ticket-status,
+.admin-status-badge,
+.inventory-stock,
+.stock-badge {
+  border-radius: var(--cae-radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Every interactive component shows the same keyboard focus ring. */
+.cta-button:focus-visible,
+.basket-button:focus-visible,
+.button-link:focus-visible,
+.button-primary:focus-visible,
+.button-secondary:focus-visible,
+.login-btn:focus-visible,
+.register-btn:focus-visible,
+.support-button:focus-visible,
+.profile-save-button:focus-visible,
+.customer-button:focus-visible,
+.details-button:focus-visible,
+.checkout-secondary-button:focus-visible,
+.admin-secondary-button:focus-visible,
+.filters-apply:focus-visible,
+.a11y-save:focus-visible {
+  outline: 3px solid var(--cae-focus);
+  outline-offset: 3px;
+}
+
+/* Breadcrumb trail, e.g. Shop / Hoodie / Kainos Hoodie. */
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+  padding: 0;
+  color: var(--cae-muted);
+  font-size: 0.8rem;
+  list-style: none;
+}
+
+.breadcrumb li + li::before {
+  content: "/";
+  margin-right: 0.5rem;
+  color: var(--cae-line-strong);
+}
+
+.breadcrumb a {
+  color: var(--cae-ink);
+}
+
+.breadcrumb [aria-current="page"] {
+  color: var(--cae-muted);
+}
+
+/* Help text under a form field. */
+.form-hint {
+  margin: 0.4rem 0 0;
+  color: var(--cae-muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+/* "Already have an account? Log in" under the login and register forms. */
+.login-link {
+  margin: 1.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--cae-line);
+  color: var(--cae-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.login-link a {
+  color: var(--cae-ink);
+  font-weight: 700;
+}

@@ -8,17 +8,17 @@
 
 .profile-copy {
   margin: 0.75rem 0 0;
-  color: #475569;
+  color: var(--cae-muted);
   line-height: 1.6;
 }
 
 .profile-notice {
   margin: 1.5rem 0;
   padding: 1rem 1.25rem;
-  border: 1px solid #bbf7d0;
-  border-radius: 0.7rem;
-  background: #f0fdf4;
-  color: #14532d;
+  border: 1px solid var(--cae-accent-line-soft);
+  border-radius: var(--cae-radius-sm);
+  background: var(--cae-accent-tint);
+  color: var(--cae-accent-strong);
   line-height: 1.6;
 }
 
@@ -32,21 +32,16 @@
 .profile-card {
   min-width: 0;
   padding: 2rem;
-  border: 1px solid #d5e5da;
-  border-radius: 0.9rem;
-  background: #fff;
-  box-shadow: 0 4px 14px rgba(20, 83, 45, 0.06);
   overflow-wrap: anywhere;
 }
 
 .profile-summary {
-  border-top: 4px solid #15803d;
   text-align: center;
 }
 
 .profile-card h2 {
   margin: 0;
-  color: #14532d;
+  color: var(--cae-ink);
   font-size: 1.4rem;
   line-height: 1.3;
 }
@@ -54,7 +49,7 @@
 .profile-preview-avatar {
   display: block;
   margin: 0 auto 1.25rem;
-  border: 5px solid #f0fdf4;
+  border: 5px solid var(--cae-surface-muted);
   border-radius: 50%;
   object-fit: cover;
 }
@@ -80,12 +75,12 @@
 }
 
 .profile-error {
-  color: #991b1b;
+  color: var(--cae-danger-strong);
 }
 
 .profile-notice.profile-error {
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: var(--cae-danger-line);
+  background: var(--cae-danger-soft);
 }
 
 .profile-photo-actions {
@@ -96,13 +91,13 @@
 }
 
 .profile-editor input[readonly] {
-  background: #f1f5f9;
+  background: var(--cae-line);
 }
 
 .profile-picture-field {
   margin-block: 1.5rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--cae-line);
 }
 
 .profile-fields {
@@ -122,9 +117,7 @@
 .profile-editor label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #1e293b;
   font-size: 0.9rem;
-  font-weight: 700;
 }
 
 .profile-editor input {
@@ -133,21 +126,11 @@
   min-width: 0;
   min-height: 44px;
   padding: 0.75rem;
-  border: 1px solid #94a3b8;
-  border-radius: 0.5rem;
-  background: #fff;
-  color: #111827;
-  font: inherit;
 }
 
 .profile-editor input::placeholder {
-  color: #64748b;
+  color: var(--cae-muted);
   opacity: 1;
-}
-
-.profile-editor input:focus-visible {
-  outline: 3px solid #15803d;
-  outline-offset: 3px;
 }
 
 .profile-editor input[type="file"] {
@@ -160,10 +143,10 @@
   min-height: 36px;
   margin-right: 0.75rem;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #bbf7d0;
+  border: 1px solid var(--cae-accent-line-soft);
   border-radius: 0.35rem;
-  background: #f0fdf4;
-  color: #14532d;
+  background: var(--cae-accent-tint);
+  color: var(--cae-accent-strong);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -171,7 +154,7 @@
 
 .profile-hint {
   margin: 0.5rem 0 0;
-  color: #475569;
+  color: var(--cae-muted);
   font-size: 0.85rem;
   line-height: 1.5;
 }
@@ -183,7 +166,7 @@
   gap: 1rem;
   margin-top: 1.75rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--cae-line);
 }
 
 .profile-actions .profile-hint {
@@ -192,40 +175,6 @@
 
 .profile-save-button {
   flex-shrink: 0;
-  min-height: 44px;
-  padding: 0.75rem 1.25rem;
-  border: 1px solid #15803d;
-  border-radius: 0.5rem;
-  background: #15803d;
-  color: #fff;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.profile-save-button:hover:not(:disabled) {
-  background: #14532d;
-}
-
-.profile-save-button:focus-visible {
-  outline: 3px solid #15803d;
-  outline-offset: 3px;
-}
-
-.profile-secondary-button {
-  background: #fff;
-  color: #14532d;
-}
-
-.profile-secondary-button:hover:not(:disabled) {
-  background: #f0fdf4;
-}
-
-.profile-save-button:disabled {
-  border-color: #cbd5e1;
-  background: #e2e8f0;
-  color: #475569;
-  cursor: not-allowed;
 }
 
 @media (max-width: 760px) {
@@ -252,19 +201,19 @@
 .profile-credit {
   margin: 1.5rem 0 0;
   padding: 1rem;
-  border: 1px solid #86efac;
-  border-radius: 0.5rem;
+  border: 1px solid var(--cae-line);
+  background: var(--cae-bg);
 }
 
 .profile-credit-label {
   margin: 0;
-  color: #14532d;
+  color: var(--cae-accent-strong);
   font-size: 1rem;
 }
 
 .profile-credit-amount {
   margin: 0.25rem 0;
-  color: #14532d;
+  color: var(--cae-accent-strong);
   font-size: 2rem;
   font-weight: 700;
 }

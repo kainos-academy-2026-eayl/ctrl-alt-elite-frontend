@@ -38,57 +38,31 @@
   min-width: 1.4rem;
   padding: 0.1rem 0.35rem;
   border-radius: 999px;
-  background: #15803d;
-  color: #f8fafc;
-  font-size: 0.8rem;
+  background: var(--cae-accent);
+  color: var(--cae-on-accent);
+  font-size: 0.7rem;
   font-weight: 800;
   line-height: 1.2;
   text-align: center;
 }
 
-.basket-button {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: #15803d;
-  color: #f8fafc;
-  font: inherit;
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background-color 0.15s ease-in-out;
-}
-
-.basket-button:hover {
-  background: #14532d;
-}
-
-.basket-button:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-}
-
 .basket button:focus-visible {
-  outline: 3px solid #22c55e;
+  outline: 3px solid var(--cae-focus);
   outline-offset: 3px;
 }
 
 .basket-alert {
   margin: 0 0 1.5rem;
   padding: 1rem 1.25rem;
-  border-left: 0.35rem solid #ef4444;
-  border-radius: 0.5rem;
-  background: #fff;
-  box-shadow: 0 1px 3px rgb(17 24 39 / 0.12);
+  border-left: 0.35rem solid var(--cae-danger);
+  border-radius: var(--cae-radius-sm);
+  background: var(--cae-surface);
+  box-shadow: var(--cae-shadow-sm);
   line-height: 1.5;
 }
 
 .basket-empty {
   padding: 2.5rem 1.5rem;
-  border-radius: 0.75rem;
-  background: #fff;
-  box-shadow: 0 1px 3px rgb(17 24 39 / 0.12);
   text-align: center;
 }
 
@@ -98,24 +72,25 @@
   font-weight: 700;
 }
 
+/* Separate borders so the card's rounded corners show. */
 .basket-table {
   width: 100%;
-  border-collapse: collapse;
-  border-radius: 0.75rem;
-  background: #fff;
-  box-shadow: 0 1px 3px rgb(17 24 39 / 0.12);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
 }
 
 .basket-table th,
 .basket-table td {
   padding: 1rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--cae-line);
   text-align: left;
   vertical-align: middle;
 }
 
 .basket-table thead th {
-  color: #14532d;
+  background: var(--cae-surface-muted);
+  color: var(--cae-muted);
   font-size: 0.85rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -138,10 +113,10 @@
 .basket-quantity button {
   width: 2.25rem;
   height: 2.25rem;
-  border: 2px solid #15803d;
-  border-radius: 0.5rem;
-  background: #fff;
-  color: #14532d;
+  border: 1px solid var(--cae-ink);
+  border-radius: var(--cae-radius-sm);
+  background: var(--cae-surface);
+  color: var(--cae-accent-strong);
   font: inherit;
   font-size: 1.2rem;
   font-weight: 800;
@@ -150,12 +125,12 @@
 }
 
 .basket-quantity button:hover:not(:disabled) {
-  background: #f0fdf4;
+  background: var(--cae-accent-tint);
 }
 
 .basket-quantity button:disabled {
-  border-color: #cbd5e1;
-  color: #94a3b8;
+  border-color: var(--cae-line);
+  color: var(--cae-line-strong);
   cursor: not-allowed;
 }
 
@@ -165,11 +140,31 @@
   text-align: center;
 }
 
+.basket-product {
+  color: var(--cae-ink);
+  text-decoration: none;
+}
+
+.basket-product:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.basket-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.basket-summary-actions form {
+  margin: 0;
+}
+
 .basket-remove {
   padding: 0.25rem 0;
   border: 0;
   background: none;
-  color: #14532d;
+  color: var(--cae-accent-strong);
   font: inherit;
   font-weight: 700;
   text-decoration: underline;
@@ -194,23 +189,23 @@
 .basket-notice {
   margin: 0 0 1.5rem;
   padding: 1rem 1.25rem;
-  border-left: 0.35rem solid #22c55e;
+  border-left: 0.35rem solid var(--cae-focus);
   border-radius: 0.5rem;
-  background: #fff;
-  box-shadow: 0 1px 3px rgb(17 24 39 / 0.12);
-  color: #14532d;
+  background: var(--cae-surface);
+  box-shadow: var(--cae-shadow-sm);
+  color: var(--cae-accent-strong);
   font-weight: 700;
   line-height: 1.5;
 }
 
 .basket-notice--error {
-  border-left-color: #ef4444;
-  color: #111827;
+  border-left-color: var(--cae-danger);
+  color: var(--cae-ink);
 }
 
 .basket-checkout-note {
   margin: 0;
-  color: #475569;
+  color: var(--cae-muted);
 }
 
 .basket-table form {
@@ -237,7 +232,7 @@
 
   .basket-table tr {
     padding: 0.5rem 0;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--cae-line);
   }
 
   .basket-table th,
@@ -255,7 +250,7 @@
 
   .basket-table td[data-label]:not([data-label=""])::before {
     content: attr(data-label);
-    color: #14532d;
+    color: var(--cae-accent-strong);
     font-weight: 700;
   }
 
@@ -265,6 +260,8 @@
     text-align: right;
   }
 
+  .basket-summary-actions,
+  .basket-summary-actions > *,
   .basket-summary .basket-button {
     width: 100%;
   }

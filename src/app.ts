@@ -19,7 +19,7 @@ import { SearchController } from './controllers/searchController';
 import { StatusController } from './controllers/status-controller';
 import { SupportController } from './controllers/support-controller';
 import { addI18nGlobals } from './i18n/templates';
-import { errorHandler } from './middleware/errorHandler';
+import { errorHandler, renderErrorPage } from './middleware/errorHandler';
 import { requireSameOrigin } from './middleware/requireSameOrigin';
 import {
   addSiteNavigationGlobal,
@@ -225,6 +225,9 @@ export function createApp(
 
   app.get('/unavailable', statusController.showUnavailable);
   app.get('/health', statusController.health);
+
+  // Any other address shows the site's own "page not found" page.
+  app.use((_req, res) => renderErrorPage(res, 404));
 
   // Must be registered after every route so it catches their errors.
   app.use(errorHandler);

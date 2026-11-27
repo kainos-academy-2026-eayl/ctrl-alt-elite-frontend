@@ -1,0 +1,27 @@
+{#
+  One product in a grid, shared by the catalogue (product.njk) and search
+  results (search.njk). Set `tile` before including:
+    id, name, image, price, stock (text), available (boolean),
+    category (raw category name, or empty).
+  The image and name link to the product page; the image link is hidden from
+  screen readers and the keyboard because the name link goes to the same place.
+#}
+{% set detailsUrl = "/products/" + (tile.id | urlencode) %}
+<article class="product-tile" data-product-card data-category="{{ tile.category }}">
+    <a class="product-image-wrap" href="{{ detailsUrl }}" tabindex="-1" aria-hidden="true">
+        <img class="product-image" src="{{ tile.image }}" alt="" width="400" height="500" loading="lazy">
+        {% if tile.category %}<span class="product-category">{{ tCategory(tile.category) }}</span>{% endif %}
+    </a>
+    <div class="product-content">
+        <h2><a class="product-name" href="{{ detailsUrl }}">{{ tile.name }}</a></h2>
+        <p class="product-price">{{ tile.price }}</p>
+        <p class="product-stock{% if not tile.available %} is-out{% endif %}">{{ tile.stock }}</p>
+        <div class="product-actions">
+            <a class="button button-secondary" href="{{ detailsUrl }}" aria-label="{{ t('product.viewDetailsOf', { name: tile.name }) }}">{{ t('product.viewDetails') }}</a>
+            <form action="/basket/items" method="post">
+                <input type="hidden" name="productId" value="{{ tile.id }}" />
+                <button class="button button-primary" type="submit"{% if not tile.available %} disabled{% endif %}>{{ t('product.addToBasket') }}</button>
+            </form>
+        </div>
+    </div>
+</article>

@@ -5,49 +5,40 @@
 {% block bodyClass %}home-page{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="/assets/conveyor.css" />
+<link rel="stylesheet" href="/assets/home.css" />
 {% endblock %}
 
 {% block content %}
-    <section class="page-width welcome" aria-labelledby="welcome-heading">
-      <p class="eyebrow">{{ t('home.eyebrow') }}</p>
-      <h1 id="welcome-heading">{{ t('home.heading') }}</h1>
-      <p class="welcome-copy">
-        {{ t('home.intro') }}
+    <section class="page-width hero" aria-labelledby="welcome-heading">
+      <div class="hero-copy">
+        <p class="eyebrow">{{ t('home.eyebrow') }}</p>
+        <h1 id="welcome-heading">{{ t('home.heading') }}</h1>
+        <p class="hero-intro">{{ t('home.intro') }}</p>
         <a class="cta-button" href="/products">{{ t('home.browse') }}</a>
-      </p>
-    </section>
-
-    {% if conveyorCards.length %}
-    <section class="conveyor" aria-labelledby="conveyor-heading">
-      <h2 id="conveyor-heading" class="conveyor-heading">{{ t('home.conveyor') }}</h2>
-      <div class="conveyor-track">
-        {# The second group is a copy so the loop is seamless; it is hidden from screen readers and the keyboard. #}
-        {% for isCopy in [false, true] %}
-        <ul class="conveyor-group"{% if isCopy %} aria-hidden="true"{% endif %}>
-          {% for card in conveyorCards %}
-          <li>
-            <a class="conveyor-card" href="{{ card.url }}"{% if isCopy %} tabindex="-1"{% endif %}>
-              <img class="conveyor-image" src="{{ card.imageUrl }}" alt="" width="200" height="150" />
-              <span class="conveyor-name">{{ card.name }}</span>
-              <span class="conveyor-price">{{ card.price }}</span>
-            </a>
-          </li>
-          {% endfor %}
-        </ul>
-        {% endfor %}
       </div>
+      {% if products and products.length >= 2 %}
+      {# Decorative: the same products are listed, with names, just below. #}
+      <div class="hero-images" aria-hidden="true">
+        {% for product in products %}{% if loop.index <= 2 %}
+        <img class="hero-image" src="{{ product.imageUrl }}" alt="" width="400" height="500" />
+        {% endif %}{% endfor %}
+      </div>
+      {% endif %}
     </section>
-    {% endif %}
 
     {% if products and products.length %}
     <section class="page-width products" aria-labelledby="products-heading">
-      <h2 id="products-heading">{{ t('home.featured') }}</h2>
+      <div class="section-head">
+        <h2 id="products-heading">{{ t('home.featured') }}</h2>
+        <a class="section-link" href="/products">{{ t('home.browse') }}</a>
+      </div>
       <ul class="product-grid">
         {% for product in products %}
         <li class="product-card">
-          <img class="product-image featured-image" src="{{ product.imageUrl }}" alt="" width="160" height="120" />
-          <h3>{{ product.name }}</h3>
+          <a class="product-image-link" href="{{ product.detailsUrl }}" tabindex="-1" aria-hidden="true">
+            <img class="product-image" src="{{ product.imageUrl }}" alt="" width="400" height="500" />
+          </a>
+          <h3><a class="product-name" href="{{ product.detailsUrl }}">{{ product.name }}</a></h3>
           <p class="product-price">{{ product.price }}</p>
           <div class="product-actions">
             <a class="details-button" href="{{ product.detailsUrl }}" aria-label="{{ t('product.viewDetailsOf', { name: product.name }) }}">{{ t('product.viewDetails') }}</a>
@@ -59,6 +50,30 @@
         </li>
         {% endfor %}
       </ul>
+    </section>
+    {% endif %}
+
+    {% if conveyorCards.length %}
+    <section class="conveyor" aria-labelledby="conveyor-heading">
+      <div class="page-width section-head">
+        <h2 id="conveyor-heading" class="conveyor-heading">{{ t('home.conveyor') }}</h2>
+      </div>
+      <div class="conveyor-track">
+        {# The second group is a copy so the loop is seamless; it is hidden from screen readers and the keyboard. #}
+        {% for isCopy in [false, true] %}
+        <ul class="conveyor-group"{% if isCopy %} aria-hidden="true"{% endif %}>
+          {% for card in conveyorCards %}
+          <li>
+            <a class="conveyor-card" href="{{ card.url }}"{% if isCopy %} tabindex="-1"{% endif %}>
+              <img class="conveyor-image" src="{{ card.imageUrl }}" alt="" width="200" height="250" />
+              <span class="conveyor-name">{{ card.name }}</span>
+              <span class="conveyor-price">{{ card.price }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endfor %}
+      </div>
     </section>
     {% endif %}
 {% endblock %}

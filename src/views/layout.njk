@@ -5,7 +5,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="{% block description %}{{ t('site.name') }}{% endblock %}" />
+  <link rel="stylesheet" href="/assets/tokens.css" />
   <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/components.css" />
   <link rel="stylesheet" href="/assets/a11y.css" />
   <link rel="stylesheet" href="/assets/basket.css" />
   <link rel="stylesheet" href="/assets/search.css" />
@@ -19,8 +21,7 @@
   <header class="site-header">
     <div class="page-width header-content">
       <a class="brand" href="/" aria-label="{{ t('site.home') }}">
-        <span class="brand-mark" aria-hidden="true">C</span>
-        <span>{{ t('site.name') }}</span>
+        <span class="brand-keys" aria-hidden="true"><span>Ctrl</span><span>Alt</span><span>Elite</span></span>
       </a>
       {% block navigation %}{% include "_siteNav.njk" %}{% endblock %}
     </div>
@@ -30,9 +31,37 @@
     {% block content %}{% endblock %}
   </main>
 
+  {% set footerNav = siteNav() if siteNav else {} %}
   <footer class="site-footer">
-    <div class="page-width">
-      <p>{{ t('site.copyright', { year: currentYear }) }}</p>
+    <div class="page-width footer-grid">
+      <div class="footer-brand">
+        <p class="footer-name">{{ t('site.name') }}</p>
+        <p class="footer-tagline">{{ t('footer.tagline') }}</p>
+      </div>
+      <nav class="footer-links" aria-label="{{ t('footer.navigation') }}">
+        <div>
+          <h2 class="footer-heading">{{ t('nav.shop') }}</h2>
+          <ul>
+            <li><a href="/products">{{ t('nav.allProducts') }}</a></li>
+            <li><a href="/search">{{ t('search.button') }}</a></li>
+            <li><a href="/basket">{{ t('header.basketShort') }}</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="footer-heading">{{ t('account.label') }}</h2>
+          <ul>
+            {# Mirrors the account menu: signed-in pages never link to Login or Register. #}
+            {% if footerNav.isAuthenticated %}
+            <li><a href="/profile">{{ t('account.profile') }}</a></li>
+            <li><a href="/account/support">{{ t('account.support') }}</a></li>
+            {% else %}
+            <li><a href="/login">{{ t('account.login') }}</a></li>
+            <li><a href="/register">{{ t('account.register') }}</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </nav>
+      <p class="footer-copyright">{{ t('site.copyright', { year: currentYear or calendarYear() }) }}</p>
     </div>
   </footer>
   {% include "_browserMessages.njk" %}

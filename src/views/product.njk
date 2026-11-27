@@ -27,30 +27,12 @@
         <p class="empty-state" role="alert">{{ productError }}</p>
         {% else %}
         {% for product in products %}
-        <article class="product-tile" data-product-card data-category="{{ product.category }}">
-            <div class="product-image-wrap">
-                <img class="product-image" src="{{ product.image }}" alt="{{ product.name }}" loading="lazy">
-                <span class="product-category">{{ tCategory(product.category) }}</span>
-            </div>
-            <div class="product-content">
-                <h2>{{ product.name }}</h2>
-                <p class="product-price">{{ product.priceLabel }}</p>
-                <p class="product-stock">{{ product.stockLabel }}</p>
-                <div class="product-actions">
-                    <a class="button button-secondary" href="/products/{{ product.id | urlencode }}" aria-label="{{ t('product.viewDetailsOf', { name: product.name }) }}">{{ t('product.viewDetails') }}</a>
-                    <form action="/basket/items" method="post">
-                        <input type="hidden" name="productId" value="{{ product.id }}" />
-                        <button class="button button-primary" type="submit" {% if not product.available %}
-                            disabled{% endif %}>{{ t('product.addToBasket') }}</button>
-                    </form>
-                </div>
-            </div>
-        </article>
+        {% set tile = { id: product.id, name: product.name, image: product.image, price: product.priceLabel, stock: product.stockLabel, available: product.available, category: product.category } %}
+        {% include "_productTile.njk" %}
         {% else %}
         <p class="empty-state">{{ t('catalogue.empty') }}</p>
         {% endfor %}
         {% endif %}
     </section>
-    <a class="cta-button" href="/">{{ t('catalogue.goHome') }}</a>
 </div>
 {% endblock %}

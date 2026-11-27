@@ -4,6 +4,14 @@ const ga: Partial<Record<string, string>> = {
   'site.name': 'Ctrl-Alt-Elite',
   'site.home': 'Leathanach baile Ctrl-Alt-Elite',
   'site.skipToContent': 'Léim go dtí an príomhábhar',
+  'nav.shop': 'Siopa',
+  'nav.categories': 'Catagóirí',
+  'nav.allProducts': 'Gach táirge',
+  'nav.menu': 'Roghchlár',
+  'footer.tagline': 'Éadaí do dhaoine a mhaireann ar an méarchlár.',
+  'footer.help': 'Cabhair',
+  'footer.navigation': 'Buntásc',
+  'site.breadcrumb': 'Rian aráin',
   'site.mainNavigation': 'Príomhnascleanúint',
   'site.copyright': '© {year} Ctrl-Alt-Elite',
   'site.backToHome': 'Ar ais chuig an leathanach baile',
@@ -63,14 +71,14 @@ const ga: Partial<Record<string, string>> = {
   // Homepage
   'home.title': 'Ctrl-Alt-Elite | Baile',
   'home.description':
-    'Fáilte go Ctrl-Alt-Elite. Logáil isteach nó brabhsáil na táirgí.',
-  'home.eyebrow': 'Fáilte go Ctrl-Alt-Elite',
-  'home.heading': 'Aimsigh do rogha nua.',
+    'Díolann Ctrl-Alt-Elite hoodies, t-léinte, denim agus seaicéid. Siopáil an bailiúchán nó logáil isteach.',
+  'home.eyebrow': 'Hoodies, t-léinte, denim agus seaicéid',
+  'home.heading': 'Logáil amach. Gléas suas.',
   'home.intro':
-    'Taiscéal ár mbailiúchán agus aimsigh rud éigin a oireann do do shaol laethúil.',
-  'home.browse': 'Brabhsáil Táirgí',
-  'home.conveyor': 'Siopáil ár réimse',
-  'home.featured': 'Táirgí roghnaithe',
+    'Éadaí a sheasann gach sprint, gach cruinniú seasaimh agus gach scaoileadh déanach san oíche. Agus cúpla rud do do dheasc freisin.',
+  'home.browse': 'Siopáil gach rud',
+  'home.conveyor': 'Tuilleadh ó na ráillí',
+  'home.featured': 'Ar stoc anois',
 
   // Product cards and pages
   'product.viewDetails': 'Féach ar na sonraí',
@@ -173,6 +181,7 @@ const ga: Partial<Record<string, string>> = {
   'basket.heading': 'Do chiseán',
   'basket.empty': 'Tá do chiseán folamh.',
   'basket.browse': 'Brabhsáil táirgí',
+  'basket.continue': 'Lean ort ag siopadóireacht',
   'basket.caption': 'Earraí i do chiseán',
   'basket.product': 'Táirge',
   'basket.unitPrice': 'Praghas aonaid',
@@ -344,6 +353,7 @@ const ga: Partial<Record<string, string>> = {
   'login.email': 'Seoladh ríomhphoist',
   'login.password': 'Pasfhocal',
   'login.submit': 'Logáil isteach',
+  'login.newHere': 'Nua ag Ctrl-Alt-Elite?',
   'login.error.form': 'Seol isteach an fhoirm logála isteach, le do thoil.',
   'login.error.missing':
     'Cuir isteach do sheoladh ríomhphoist agus do phasfhocal.',
@@ -369,6 +379,9 @@ const ga: Partial<Record<string, string>> = {
   'register.password': 'Pasfhocal',
   'register.confirmPassword': 'Deimhnigh an pasfhocal',
   'register.submit': 'Cláraigh',
+  'register.passwordHint':
+    '8 gcarachtar ar a laghad, le huimhir agus ceann de @ £ $ % &.',
+  'register.haveAccount': 'An bhfuil cuntas agat cheana?',
 
   // Profile
   'profile.title': 'Mo Phróifíl | Ctrl-Alt-Elite',

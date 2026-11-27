@@ -6,6 +6,7 @@ import {
   loadDashboardCustomerData,
   loadDashboardOrderData,
   loadProductCount,
+  loadStockAlertCount,
   renderActivity,
   renderNotifications,
   renderSystemStatus,
@@ -13,6 +14,7 @@ import {
   UNAVAILABLE_ORDER_DATA,
 } from '../util/adminDashboard';
 import { createOrdersApi } from '../util/adminOrdersApi';
+import { createStockApi } from '../util/stockApi';
 import { createApiCustomerSource } from './customerApi';
 
 const DASHBOARD_TIMEOUT_MS = 3000;
@@ -55,6 +57,17 @@ async function updateProductCount(): Promise<void> {
   if (productsValue) productsValue.textContent = String(count);
 }
 
+async function updateStockAlerts(): Promise<void> {
+  const count = await loadStockAlertCount(
+    createStockApi({ timeoutMs: DASHBOARD_TIMEOUT_MS }),
+  );
+  if (count === null) return;
+  const alertsValue = document.querySelector(
+    '[data-summary-card="Stock Alerts"]',
+  );
+  if (alertsValue) alertsValue.textContent = String(count);
+}
+
 async function updateDashboard(): Promise<void> {
   const data = await loadDashboardCustomerData(
     createApiCustomerSource({ timeoutMs: DASHBOARD_TIMEOUT_MS }),
@@ -79,4 +92,5 @@ async function updateDashboard(): Promise<void> {
 
 void updateDashboard();
 void updateProductCount();
+void updateStockAlerts();
 void updateOrders();

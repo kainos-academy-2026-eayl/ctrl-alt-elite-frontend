@@ -5,8 +5,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Ctrl-Alt-Elite Admin Portal." />
+  <link rel="stylesheet" href="/assets/tokens.css" />
   <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/components.css" />
   <link rel="stylesheet" href="/assets/admin.css" />
+  {% block styles %}{% endblock %}
   <title>{{ title }} | Admin | Ctrl-Alt-Elite</title>
   <script src="/client/adminPreferences.js"></script>
 </head>
@@ -15,7 +18,6 @@
   <div class="admin-shell">
     <aside class="admin-sidebar">
       <a class="brand admin-brand" href="/admin" aria-label="Admin Portal home">
-        <span class="brand-mark" aria-hidden="true">C</span>
         <span>Admin Portal</span>
       </a>
       {% set displayName = profile.name if profile else 'Admin' %}

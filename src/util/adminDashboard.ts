@@ -7,6 +7,7 @@ import {
   formatRegistrationDate,
 } from './customers';
 import { escapeHtml } from './customerViews';
+import type { StockApi } from './stockApi';
 
 const PENDING_STATUS = 'PENDING';
 
@@ -86,6 +87,22 @@ export async function loadProductCount(
     return Array.isArray(list) ? list.length : null;
   } catch (error) {
     console.error('Unable to load the product count:', error);
+    return null;
+  }
+}
+
+/**
+ * Products needing attention: low on stock or out of stock, as counted by the
+ * inventory dashboard. Null keeps the placeholder when the count is unavailable.
+ */
+export async function loadStockAlertCount(
+  api: Pick<StockApi, 'getDashboard'>,
+): Promise<number | null> {
+  try {
+    const { summary } = await api.getDashboard();
+    return summary.lowStock + summary.outOfStock;
+  } catch (error) {
+    console.error('Unable to load the stock alert count:', error);
     return null;
   }
 }

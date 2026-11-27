@@ -13,8 +13,8 @@ import { escapeHtml, renderPagination } from './customerViews';
 
 // Colour is never the only signal: every badge also has an icon and a label.
 const STATUS_BADGES: Readonly<Record<string, { icon: string; css: string }>> = {
-  PENDING: { icon: '\u23F3', css: 'is-low-stock' },
-  PROCESSING: { icon: '\u2699', css: 'is-low-stock' },
+  PENDING: { icon: '\u25CB', css: 'is-low-stock' },
+  PROCESSING: { icon: '\u25D0', css: 'is-low-stock' },
   SHIPPED: { icon: '\u2192', css: '' },
   DELIVERED: { icon: '\u2713', css: '' },
   CANCELLED: { icon: '\u2715', css: 'is-out-of-stock' },
@@ -105,11 +105,11 @@ export function renderOrderDetail(order: OrderDetail): string {
         `<tr><td data-label="Product">${escapeHtml(item.name)}</td><td data-label="Quantity">${item.quantity}</td><td data-label="Unit price">${escapeHtml(formatPence(item.unitPricePence))}</td><td data-label="Line total">${escapeHtml(formatPence(item.unitPricePence * item.quantity))}</td></tr>`,
     )
     .join('');
-  const items = `<section class="admin-card" aria-labelledby="order-items-heading"><h2 id="order-items-heading">Items</h2><div class="customer-table-card"><table class="customer-table"><thead><tr><th scope="col">Product</th><th scope="col">Quantity</th><th scope="col">Unit price</th><th scope="col">Line total</th></tr></thead><tbody>${rows}</tbody></table></div><dl class="customer-details"><div><dt>Subtotal</dt><dd>${escapeHtml(formatPence(subtotal))}</dd></div><div><dt>Delivery</dt><dd>${escapeHtml(formatPence(order.delivery.pricePence))}</dd></div><div><dt>Total</dt><dd data-order-total>${escapeHtml(formatPence(order.totalPence))}</dd></div></dl></section>`;
+  const items = `<section class="admin-card" aria-labelledby="order-items-heading"><h2 id="order-items-heading">Items</h2><div class="customer-table-card"><table class="customer-table"><thead><tr><th scope="col">Product</th><th scope="col">Quantity</th><th scope="col">Unit price</th><th scope="col">Line total</th></tr></thead><tbody>${rows}</tbody></table></div><dl class="customer-details order-totals"><div><dt>Subtotal</dt><dd>${escapeHtml(formatPence(subtotal))}</dd></div><div><dt>Delivery</dt><dd>${escapeHtml(formatPence(order.delivery.pricePence))}</dd></div><div><dt>Total</dt><dd data-order-total>${escapeHtml(formatPence(order.totalPence))}</dd></div></dl></section>`;
   const phone = order.customer.phone
     ? `<div><dt>Phone</dt><dd>${escapeHtml(order.customer.phone)}</dd></div>`
     : '';
   const summary = `<section class="admin-card" aria-labelledby="order-summary-heading"><h2 id="order-summary-heading">Order summary</h2><dl class="customer-details"><div><dt>Status</dt><dd>${renderOrderStatusBadge(order.status)}</dd></div><div><dt>Placed</dt><dd>${dateHtml(order.createdAt)}</dd></div><div><dt>Customer</dt><dd>${customerLink}</dd></div><div><dt>Email Address</dt><dd>${escapeHtml(order.customer.email)}</dd></div>${phone}</dl></section>`;
   const delivery = `<section class="admin-card" aria-labelledby="order-delivery-heading"><h2 id="order-delivery-heading">Delivery</h2><dl class="customer-details"><div><dt>Method</dt><dd>${order.delivery.option ? escapeHtml(order.delivery.option) : 'Not recorded'}</dd></div><div><dt>Address</dt><dd>${renderAddress(order.delivery)}</dd></div></dl></section>`;
-  return `<header class="admin-page-header"><h1 data-order-heading>Order ${reference}</h1></header><div class="customer-manage">${summary}${delivery}${items}</div>`;
+  return `<header class="admin-page-header"><h1 data-order-heading>Order ${reference}</h1></header><div class="customer-manage order-detail">${summary}${delivery}${items}</div>`;
 }

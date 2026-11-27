@@ -10,5 +10,9 @@
   <p class="eyebrow">{{ t('error.eyebrow', { status: status }) }}</p>
   <h1 id="error-heading">{{ title }}</h1>
   <p class="welcome-copy">{{ message }}</p>
+  <div class="error-actions">
+    <a class="cta-button" href="/products">{{ t('home.browse') }}</a>
+    <a class="details-button" href="/">{{ t('site.backToHome') }}</a>
+  </div>
 </section>
 {% endblock %}

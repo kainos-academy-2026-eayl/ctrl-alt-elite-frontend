@@ -373,7 +373,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: kainos-academy-2026-eayl/ctrl-alt-elite-test-harness
-          ref: 79473c121a4b8bb99ea18921ccbcf8819e619d2e
+          ref: c9c509c4c0f34abe9491548feab12a21e62adae7
           path: test-harness
           token: ${{ secrets.TEST_HARNESS_READ_TOKEN }}
           persist-credentials: false

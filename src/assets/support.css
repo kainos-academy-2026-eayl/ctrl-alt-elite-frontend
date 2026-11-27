@@ -27,15 +27,11 @@
 
 .support-card {
   padding: 1.5rem;
-  border: 1px solid #14532d;
-  border-radius: 0.7rem;
-  background: #fff;
-  box-shadow: 0 4px 10px rgba(20, 83, 45, 0.12);
 }
 
 .support-card h2 {
   margin: 0 0 1rem;
-  color: #14532d;
+  color: var(--cae-ink);
   font-size: 1.25rem;
   overflow-wrap: anywhere;
 }
@@ -45,46 +41,21 @@
 }
 
 .support-muted {
-  color: #4b5563;
+  color: var(--cae-muted);
 }
 
 .support-link,
 .support-table a,
-.support-state a:not(.support-button) {
-  color: #15803d;
+.support-state a:not(.support-button),
+.support-link-button {
+  color: var(--cae-accent);
   font-weight: 700;
 }
 
-.support-button {
-  display: inline-block;
-  padding: 0.7rem 1.1rem;
-  border: none;
-  border-radius: 0.5rem;
-  background: #15803d;
-  color: #f8fafc;
-  font: inherit;
-  font-weight: 800;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.support-button:hover:not(:disabled) {
-  background: #14532d;
-}
-
-.support-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.support-button:focus-visible,
 .support-link:focus-visible,
 .support-link-button:focus-visible,
-.support-table a:focus-visible,
-.support-field input:focus-visible,
-.support-field select:focus-visible,
-.support-field textarea:focus-visible {
-  outline: 3px solid #22c55e;
+.support-table a:focus-visible {
+  outline: 3px solid var(--cae-focus);
   outline-offset: 3px;
 }
 
@@ -92,7 +63,6 @@
   padding: 0;
   border: none;
   background: none;
-  color: #14532d;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -111,8 +81,6 @@
 .support-field label {
   display: block;
   margin-bottom: 0.35rem;
-  color: #14532d;
-  font-weight: 700;
 }
 
 .support-field input,
@@ -120,11 +88,6 @@
 .support-field textarea {
   width: 100%;
   padding: 0.65rem 0.75rem;
-  border: 1px solid #14532d;
-  border-radius: 0.5rem;
-  background: #f8fafc;
-  color: #111827;
-  font: inherit;
 }
 
 .support-field textarea {
@@ -137,7 +100,7 @@
 
 .support-error {
   margin: 0;
-  color: #b91c1c;
+  color: var(--cae-danger);
   font-weight: 700;
 }
 
@@ -154,13 +117,15 @@
 .support-table th,
 .support-table td {
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid #d1fae5;
+  border-bottom: 1px solid var(--cae-line);
   text-align: left;
 }
 
 .support-table th {
-  background: #f0fdf4;
-  color: #14532d;
+  background: var(--cae-surface-muted);
+  color: var(--cae-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
 }
 
 .support-table tbody tr:last-child td {
@@ -174,7 +139,7 @@
 }
 
 .ticket-details dt {
-  color: #14532d;
+  color: var(--cae-accent-strong);
   font-size: 0.85rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -200,7 +165,7 @@
 
   .support-table tr {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #d1fae5;
+    border-bottom: 1px solid var(--cae-line);
   }
 
   .support-table td {
@@ -210,7 +175,7 @@
 
   .support-table td::before {
     content: attr(data-label) ": ";
-    color: #14532d;
+    color: var(--cae-accent-strong);
     font-weight: 700;
   }
 }

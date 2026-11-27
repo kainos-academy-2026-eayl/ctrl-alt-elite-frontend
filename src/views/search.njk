@@ -8,26 +8,31 @@
 {% block description %}{{ t('search.description') }}{% endblock %}
 
 {% block styles %}
+<link rel="stylesheet" href="/product-catalog/product_catalog.css" />
 <link rel="stylesheet" href="/assets/filters.css" />
 {% endblock %}
 
 {% block content %}
-<section class="page-width products search-results" aria-labelledby="search-heading">
-  <h1 id="search-heading" class="search-heading">{{ t('search.heading') }}</h1>
+<div class="catalog-main search-results">
+  <section class="catalog-toolbar" aria-labelledby="search-heading">
+    <p class="eyebrow">{{ t('search.button') }}</p>
+    <h1 id="search-heading" class="search-heading">{{ t('search.heading') }}</h1>
+    {% if errorMessage %}
+    <p class="basket-alert" role="alert">{{ errorMessage }}</p>
+    {% else %}
+    <p class="catalog-summary search-message" role="status">{{ statusMessage }}</p>
+    {% endif %}
+  </section>
   {% if filterPanel %}
   {% include "_filterPanel.njk" %}
   {% endif %}
-  {% if errorMessage %}
-  <p class="basket-alert" role="alert">{{ errorMessage }}</p>
-  {% else %}
-  <p class="search-message" role="status">{{ statusMessage }}</p>
-  {% endif %}
   {% if products.length %}
-  <ul class="product-grid">
+  <section class="product-grid" aria-label="{{ t('catalogue.products') }}">
     {% for product in products %}
-    {% include "_productCard.njk" %}
+    {% set tile = { id: product.id, name: product.name, image: product.imageUrl, price: product.price, stock: t('product.inStock') if product.isInStock else t('product.outOfStock'), available: product.isInStock, category: '' } %}
+    {% include "_productTile.njk" %}
     {% endfor %}
-  </ul>
+  </section>
   {% endif %}
-</section>
+</div>
 {% endblock %}

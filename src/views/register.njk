@@ -30,7 +30,8 @@
 
             <div class="form-group">
                 <label for="password">{{ t('register.password') }}</label>
-                <input type="password" id="password" name="password" minlength="8" autocomplete="new-password" required>
+                <input type="password" id="password" name="password" minlength="8" autocomplete="new-password" aria-describedby="password-hint" required>
+                <p class="form-hint" id="password-hint">{{ t('register.passwordHint') }}</p>
             </div>
             <div class="form-group">
                 <label for="confirmPassword">{{ t('register.confirmPassword') }}</label>
@@ -44,6 +45,7 @@
             </button>
         </form>
 
+        <p class="login-link">{{ t('register.haveAccount') }} <a href="/login">{{ t('account.login') }}</a></p>
     </div>
 {% endblock %}
 

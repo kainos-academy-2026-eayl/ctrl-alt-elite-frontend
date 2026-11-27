@@ -6,10 +6,10 @@ export const ADMIN_SUMMARY_CARDS = [
 ] as const;
 
 export const ADMIN_QUICK_ACTIONS = [
-  { label: 'Add Product', href: '/admin/inventory' },
+  { label: 'Add Product', href: '/admin/inventory/new' },
   { label: 'View Orders', href: '/admin/orders' },
   { label: 'Manage Customers', href: '/admin/customers' },
-  { label: 'Inventory Management', href: '/admin/inventory' },
+  { label: 'Inventory Management', href: '/admin/stock' },
 ] as const;
 
 export const CUSTOMER_SERVICE_SHORTCUTS = [
