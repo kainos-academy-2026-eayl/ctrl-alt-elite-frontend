@@ -74,13 +74,17 @@ async function readAppVersion(): Promise<string> {
 
 export interface AppOptions {
   jwtSecret?: string;
+  trustProxy?: boolean;
 }
 
 export function createApp(
   backendOrigin: string,
-  { jwtSecret = process.env.JWT_SECRET }: AppOptions = {},
+  { jwtSecret = process.env.JWT_SECRET, trustProxy = false }: AppOptions = {},
 ): Express {
   const app = express();
+  if (trustProxy) {
+    app.set('trust proxy', 1);
+  }
   app.set('views', VIEWS_DIRECTORY);
   const customerTemplates = nunjucks.configure([VIEWS_DIRECTORY], {
     autoescape: true,

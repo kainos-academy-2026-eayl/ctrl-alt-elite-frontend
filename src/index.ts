@@ -27,7 +27,18 @@ if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is not set');
 }
 
-const app = createApp(BACKEND_ORIGIN, { jwtSecret: process.env.JWT_SECRET });
+if (
+  process.env.TRUST_PROXY !== undefined &&
+  process.env.TRUST_PROXY !== 'true' &&
+  process.env.TRUST_PROXY !== 'false'
+) {
+  throw new Error('TRUST_PROXY must be true or false');
+}
+
+const app = createApp(BACKEND_ORIGIN, {
+  jwtSecret: process.env.JWT_SECRET,
+  trustProxy: process.env.TRUST_PROXY === 'true',
+});
 
 // Register new controllers / middleware here!
 
